@@ -46,3 +46,8 @@ El proyecto usa ScrumBan y no mantiene un SRS monolítico. Antes de implementar:
 
 Las reglas aún abiertas de los diagramas están identificadas en el modelo de
 dominio y deben resolverse como criterios de aceptación antes de programarse.
+
+## Despliegue
+
+La imagen Docker de producción y la configuración exacta para Dokploy se
+documentan en [docs/deployment/dokploy.md](docs/deployment/dokploy.md).

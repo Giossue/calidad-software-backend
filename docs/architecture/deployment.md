@@ -3,8 +3,9 @@
 ## Unidad desplegable
 
 Laravel y el build React/Inertia forman una sola aplicación. El servidor web
-sirve `public/` y PHP-FPM ejecuta Laravel. PostgreSQL es externo o usa un volumen
-persistente separado; workers/scheduler usan la misma imagen y configuración.
+sirve `public/` y PHP ejecuta Laravel. En Dokploy, una imagen Apache/PHP expone el
+puerto interno 8080. PostgreSQL es externo o usa un volumen persistente separado;
+workers/scheduler reutilizan la misma imagen cuando sean necesarios.
 
 Servicios según necesidad:
 
@@ -16,6 +17,8 @@ Servicios según necesidad:
 
 No se despliega un servidor Node: Node/npm solo construye assets, salvo que un
 ADR habilite SSR de Inertia.
+
+La guía operativa exacta está en `docs/deployment/dokploy.md`.
 
 ## Build y release
 

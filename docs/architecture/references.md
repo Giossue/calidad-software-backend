@@ -29,3 +29,11 @@ aplicar una API y registra desviaciones importantes en un ADR.
 - [Constraints](https://www.postgresql.org/docs/current/ddl-constraints.html)
 - [Indexes](https://www.postgresql.org/docs/current/indexes.html)
 - [Transaction isolation](https://www.postgresql.org/docs/current/transaction-iso.html)
+
+## Docker y Dokploy
+
+- [Dokploy build types](https://docs.dokploy.com/docs/core/applications/build-type)
+- [Dokploy applications](https://docs.dokploy.com/docs/core/applications)
+- [Dokploy domains and ports](https://docs.dokploy.com/docs/core/troubleshooting/domains)
+- [Docker multi-stage builds](https://docs.docker.com/build/building/multi-stage/)
+- [Docker build secrets](https://docs.docker.com/build/building/secrets/)
