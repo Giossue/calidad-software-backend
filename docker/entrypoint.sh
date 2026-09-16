@@ -27,6 +27,5 @@ chown -R www-data:www-data storage bootstrap/cache
 
 php artisan config:cache --no-interaction
 php artisan route:cache --no-interaction
-php artisan view:cache --no-interaction
 
 exec "$@"
