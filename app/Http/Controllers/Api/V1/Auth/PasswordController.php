@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api\V1\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Api\V1\Auth\ResetPasswordRequest;
-use App\Models\User;
+use App\Models\Usuario;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Password;
@@ -33,7 +33,7 @@ class PasswordController extends Controller
                 'password_confirmation' => $request->validated('password_confirmation'),
                 'token' => $request->validated('token'),
             ],
-            function (User $user, string $password) use ($request, $resetter): void {
+            function (Usuario $user, string $password) use ($request, $resetter): void {
                 $resetter->reset($user, [
                     'password' => $password,
                     'password_confirmation' => $request->validated('password_confirmation'),

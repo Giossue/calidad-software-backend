@@ -4,7 +4,7 @@ namespace App\Providers;
 
 use App\Actions\Fortify\CreateNewUser;
 use App\Actions\Fortify\ResetUserPassword;
-use App\Models\User;
+use App\Models\Usuario;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -46,14 +46,14 @@ class FortifyServiceProvider extends ServiceProvider
 
     private function configureNotificationUrls(): void
     {
-        ResetPassword::createUrlUsing(function (User $user, string $token): string {
+        ResetPassword::createUrlUsing(function (Usuario $user, string $token): string {
             return rtrim((string) config('app.frontend_url'), '/').'/reset-password?'.http_build_query([
                 'token' => $token,
                 'email' => $user->getEmailForPasswordReset(),
             ]);
         });
 
-        VerifyEmail::createUrlUsing(function (User $notifiable): string {
+        VerifyEmail::createUrlUsing(function (Usuario $notifiable): string {
             $apiUrl = URL::temporarySignedRoute(
                 'api.v1.auth.verification.verify',
                 now()->addMinutes(60),

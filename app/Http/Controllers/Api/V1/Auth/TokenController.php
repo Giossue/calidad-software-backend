@@ -6,7 +6,7 @@ use App\Actions\Auth\IssueUserToken;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Auth\IssueTokenRequest;
 use App\Http\Resources\Api\V1\UserResource;
-use App\Models\User;
+use App\Models\Usuario;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -18,7 +18,7 @@ class TokenController extends Controller
     public function store(IssueTokenRequest $request, IssueUserToken $issueUserToken): JsonResponse
     {
         $credentials = $request->safe()->only(['email', 'password']);
-        $user = User::query()->whereRaw('lower(correo) = lower(?)', [$credentials['email']])->first();
+        $user = Usuario::query()->whereRaw('lower(correo) = lower(?)', [$credentials['email']])->first();
 
         if (! $user || ! $user->estado || ! Hash::check($credentials['password'], $user->password_hash)) {
             throw ValidationException::withMessages([
