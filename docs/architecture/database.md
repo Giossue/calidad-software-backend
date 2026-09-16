@@ -15,11 +15,11 @@ fuente de verdad del esquema. Eloquent es el acceso predeterminado.
 - `date` para fechas académicas, `time` para hora local y timestamps para eventos.
 - `decimal` para porcentajes/notas; nunca `float` para valores exactos.
 
-## Modelo inicial recomendado
+## Esquema académico vigente
 
 | Tabla                 | Propósito                                                                     |
 | --------------------- | ----------------------------------------------------------------------------- |
-| `users`               | Identidad autenticable única.                                                 |
+| `usuario`             | Identidad autenticable única y roles del esquema entregado.                   |
 | `roles`, `role_user`  | Roles múltiples por usuario, salvo que un enum simple se confirme suficiente. |
 | `academic_periods`    | Períodos académicos.                                                          |
 | `degree_topics`       | Propuestas de titulación por estudiante/período.                              |
@@ -32,6 +32,11 @@ fuente de verdad del esquema. Eloquent es el acceso predeterminado.
 
 Esta lista no autoriza crear tablas cuyas cardinalidades/reglas sigan abiertas en
 `docs/product/domain-model.md`.
+
+La API mapea `User` sobre `usuario`. Laravel añade únicamente `migrations`,
+`password_reset_tokens` y `personal_access_tokens`; no se mantiene una tabla
+`users` paralela. El resto del esquema académico corresponde al baseline aprobado
+en PostgreSQL.
 
 ## Integridad
 

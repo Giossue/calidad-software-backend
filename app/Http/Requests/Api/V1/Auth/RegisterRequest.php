@@ -30,6 +30,7 @@ class RegisterRequest extends FormRequest
     public function attributes(): array
     {
         return [
+            'identification' => 'cédula',
             'name' => 'nombre',
             'email' => 'correo electrónico',
             'password' => 'contraseña',

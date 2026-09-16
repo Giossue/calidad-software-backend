@@ -21,6 +21,7 @@ class AccountFlowsTest extends TestCase
         Notification::fake();
 
         $response = $this->postJson('/api/v1/auth/register', [
+            'identification' => '0201234567',
             'name' => 'Ana Torres',
             'email' => 'ana@example.com',
             'password' => 'Password1!',
@@ -32,7 +33,7 @@ class AccountFlowsTest extends TestCase
             ->assertJsonPath('data.user.email', 'ana@example.com')
             ->assertJsonStructure(['data' => ['access_token']]);
 
-        $user = User::query()->where('email', 'ana@example.com')->firstOrFail();
+        $user = User::query()->where('correo', 'ana@example.com')->firstOrFail();
         Notification::assertSentTo($user, VerifyEmail::class);
     }
 
@@ -41,7 +42,7 @@ class AccountFlowsTest extends TestCase
         Notification::fake();
         $user = User::factory()->create();
 
-        $this->postJson('/api/v1/auth/forgot-password', ['email' => $user->email])
+        $this->postJson('/api/v1/auth/forgot-password', ['email' => $user->correo])
             ->assertAccepted();
         $this->postJson('/api/v1/auth/forgot-password', ['email' => 'unknown@example.com'])
             ->assertAccepted();
@@ -56,13 +57,13 @@ class AccountFlowsTest extends TestCase
         $token = Password::createToken($user);
 
         $this->postJson('/api/v1/auth/reset-password', [
-            'email' => $user->email,
+            'email' => $user->correo,
             'token' => $token,
             'password' => 'NewPassword1!',
             'password_confirmation' => 'NewPassword1!',
         ])->assertOk();
 
-        $this->assertTrue(password_verify('NewPassword1!', $user->fresh()->password));
+        $this->assertTrue(password_verify('NewPassword1!', $user->fresh()->password_hash));
         $this->assertDatabaseCount('personal_access_tokens', 0);
     }
 
@@ -72,7 +73,7 @@ class AccountFlowsTest extends TestCase
         $url = URL::temporarySignedRoute(
             'api.v1.auth.verification.verify',
             now()->addHour(),
-            ['id' => $user->id, 'hash' => sha1($user->email)],
+            ['id' => $user->getKey(), 'hash' => sha1($user->correo)],
         );
 
         $this->getJson($url)->assertOk();
@@ -83,14 +84,14 @@ class AccountFlowsTest extends TestCase
     public function test_two_factor_recovery_code_exchanges_challenge_for_session_token(): void
     {
         $user = User::factory()->create([
-            'password' => 'password',
+            'password_hash' => 'password',
             'two_factor_secret' => Fortify::currentEncrypter()->encrypt('secret'),
             'two_factor_recovery_codes' => Fortify::currentEncrypter()->encrypt(json_encode(['recovery-code'])),
             'two_factor_confirmed_at' => now(),
         ]);
 
         $challengeToken = $this->postJson('/api/v1/auth/login', [
-            'email' => $user->email,
+            'email' => $user->correo,
             'password' => 'password',
             'device_name' => 'frontend-web',
         ])->json('data.challenge_token');
@@ -101,11 +102,11 @@ class AccountFlowsTest extends TestCase
 
         $response->assertOk()->assertJsonStructure(['data' => ['access_token']]);
         $this->assertDatabaseMissing('personal_access_tokens', [
-            'tokenable_id' => $user->id,
+            'tokenable_id' => $user->getKey(),
             'name' => 'two-factor-challenge:frontend-web',
         ]);
         $this->assertDatabaseHas('personal_access_tokens', [
-            'tokenable_id' => $user->id,
+            'tokenable_id' => $user->getKey(),
             'name' => 'frontend-web',
         ]);
     }

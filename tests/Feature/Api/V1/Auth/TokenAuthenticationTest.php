@@ -13,22 +13,22 @@ class TokenAuthenticationTest extends TestCase
 
     public function test_user_can_issue_a_token_with_valid_credentials(): void
     {
-        $user = User::factory()->create(['password' => 'password']);
+        $user = User::factory()->create(['password_hash' => 'password']);
 
         $response = $this->postJson('/api/v1/auth/login', [
-            'email' => $user->email,
+            'email' => $user->correo,
             'password' => 'password',
             'device_name' => 'frontend-web',
         ]);
 
         $response->assertOk()
             ->assertJsonPath('data.token_type', 'Bearer')
-            ->assertJsonPath('data.user.id', $user->id)
-            ->assertJsonPath('data.user.email', $user->email)
+            ->assertJsonPath('data.user.id', $user->getKey())
+            ->assertJsonPath('data.user.email', $user->correo)
             ->assertJsonStructure(['data' => ['access_token', 'expires_at']]);
 
         $this->assertDatabaseHas('personal_access_tokens', [
-            'tokenable_id' => $user->id,
+            'tokenable_id' => $user->getKey(),
             'name' => 'frontend-web',
         ]);
     }
@@ -38,7 +38,7 @@ class TokenAuthenticationTest extends TestCase
         $user = User::factory()->create();
 
         $this->postJson('/api/v1/auth/login', [
-            'email' => $user->email,
+            'email' => $user->correo,
             'password' => 'incorrecta',
             'device_name' => 'frontend-web',
         ])->assertUnprocessable()->assertJsonValidationErrors('email');
@@ -49,12 +49,12 @@ class TokenAuthenticationTest extends TestCase
     public function test_two_factor_account_does_not_bypass_its_challenge(): void
     {
         $user = User::factory()->create([
-            'password' => 'password',
+            'password_hash' => 'password',
             'two_factor_confirmed_at' => now(),
         ]);
 
         $this->postJson('/api/v1/auth/login', [
-            'email' => $user->email,
+            'email' => $user->correo,
             'password' => 'password',
             'device_name' => 'frontend-web',
         ])->assertConflict()
@@ -62,7 +62,7 @@ class TokenAuthenticationTest extends TestCase
             ->assertJsonStructure(['data' => ['challenge_token', 'expires_at']]);
 
         $this->assertDatabaseHas('personal_access_tokens', [
-            'tokenable_id' => $user->id,
+            'tokenable_id' => $user->getKey(),
             'name' => 'two-factor-challenge:frontend-web',
         ]);
     }
@@ -79,7 +79,7 @@ class TokenAuthenticationTest extends TestCase
         $headers = ['Authorization' => 'Bearer '.$plainTextToken];
 
         $this->withHeaders($headers)->getJson('/api/v1/auth/user')
-            ->assertOk()->assertJsonPath('data.id', $user->id);
+            ->assertOk()->assertJsonPath('data.id', $user->getKey());
         $this->withHeaders($headers)->deleteJson('/api/v1/auth/logout')
             ->assertNoContent();
 

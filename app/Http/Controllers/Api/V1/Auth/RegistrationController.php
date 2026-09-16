@@ -18,7 +18,7 @@ class RegistrationController extends Controller
         IssueUserToken $issueUserToken,
     ): JsonResponse {
         $user = $creator->create($request->safe()->only([
-            'name', 'email', 'password', 'password_confirmation',
+            'identification', 'name', 'email', 'password', 'password_confirmation',
         ]));
 
         event(new Registered($user));

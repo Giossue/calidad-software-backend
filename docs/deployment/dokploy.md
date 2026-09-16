@@ -39,8 +39,9 @@ DB_DATABASE=calidad_software
 DB_USERNAME=calidad_software
 DB_PASSWORD=replace-with-a-secret
 
-CACHE_STORE=database
-QUEUE_CONNECTION=database
+CACHE_STORE=file
+QUEUE_CONNECTION=sync
+SESSION_DRIVER=file
 FILESYSTEM_DISK=local
 
 MAIL_MAILER=smtp
@@ -69,6 +70,9 @@ sola vez desde **Advanced → Run Command**:
 php artisan migrate:status
 php artisan migrate --force
 ```
+
+La API usa tokens Bearer, por lo que las sesiones y la caché no requieren tablas
+PostgreSQL. Mientras no exista un worker de colas administrado, usa `sync`.
 
 No uses `migrate:fresh`, `db:wipe`, seeders de demostración ni rollback automático
 en producción.

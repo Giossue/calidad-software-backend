@@ -17,7 +17,7 @@ class PasswordController extends Controller
 {
     public function forgot(ForgotPasswordRequest $request): JsonResponse
     {
-        Password::sendResetLink($request->safe()->only('email'));
+        Password::sendResetLink(['correo' => $request->validated('email')]);
 
         return response()->json([
             'message' => 'Si el correo está registrado, recibirás un enlace para restablecer la contraseña.',
@@ -27,7 +27,12 @@ class PasswordController extends Controller
     public function reset(ResetPasswordRequest $request, ResetsUserPasswords $resetter): JsonResponse
     {
         $status = Password::reset(
-            $request->safe()->only('email', 'password', 'password_confirmation', 'token'),
+            [
+                'correo' => $request->validated('email'),
+                'password' => $request->validated('password'),
+                'password_confirmation' => $request->validated('password_confirmation'),
+                'token' => $request->validated('token'),
+            ],
             function (User $user, string $password) use ($request, $resetter): void {
                 $resetter->reset($user, [
                     'password' => $password,

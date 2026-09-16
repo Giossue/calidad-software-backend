@@ -18,9 +18,9 @@ class TokenController extends Controller
     public function store(IssueTokenRequest $request, IssueUserToken $issueUserToken): JsonResponse
     {
         $credentials = $request->safe()->only(['email', 'password']);
-        $user = User::query()->where('email', $credentials['email'])->first();
+        $user = User::query()->whereRaw('lower(correo) = lower(?)', [$credentials['email']])->first();
 
-        if (! $user || ! Hash::check($credentials['password'], $user->password)) {
+        if (! $user || ! $user->estado || ! Hash::check($credentials['password'], $user->password_hash)) {
             throw ValidationException::withMessages([
                 'email' => ['Las credenciales proporcionadas no son correctas.'],
             ]);
