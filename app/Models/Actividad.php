@@ -26,7 +26,7 @@ class Actividad extends Model
     /**
      * @return BelongsTo<Tema, $this>
      */
-    public function topic(): BelongsTo
+    public function tema(): BelongsTo
     {
         return $this->belongsTo(Tema::class, 'fk_tema');
     }
@@ -34,7 +34,7 @@ class Actividad extends Model
     /**
      * @return HasMany<Metodologia, $this>
      */
-    public function methodologies(): HasMany
+    public function metodologias(): HasMany
     {
         return $this->hasMany(Metodologia::class, 'fk_actividad');
     }

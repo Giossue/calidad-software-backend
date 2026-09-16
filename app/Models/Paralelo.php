@@ -23,12 +23,12 @@ class Paralelo extends Model
     }
 
     /**
-     * @return BelongsToMany<User, $this>
+     * @return BelongsToMany<Usuario, $this>
      */
-    public function users(): BelongsToMany
+    public function usuarios(): BelongsToMany
     {
         return $this->belongsToMany(
-            User::class,
+            Usuario::class,
             'usuario_paralelo',
             'fk_paralelo',
             'fk_usuario'

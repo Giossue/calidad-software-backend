@@ -31,16 +31,16 @@ class InformeTitulacion extends Model
     /**
      * @return BelongsTo<FichaSeguimiento, $this>
      */
-    public function trackingSheet(): BelongsTo
+    public function ficha(): BelongsTo
     {
         return $this->belongsTo(FichaSeguimiento::class, 'fk_ficha');
     }
 
     /**
-     * @return BelongsTo<User, $this>
+     * @return BelongsTo<Usuario, $this>
      */
-    public function coordinator(): BelongsTo
+    public function coordinador(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'fk_coord_tit');
+        return $this->belongsTo(Usuario::class, 'fk_coord_tit');
     }
 }

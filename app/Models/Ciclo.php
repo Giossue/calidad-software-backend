@@ -27,7 +27,7 @@ class Ciclo extends Model
     /**
      * @return BelongsTo<Carrera, $this>
      */
-    public function career(): BelongsTo
+    public function carrera(): BelongsTo
     {
         return $this->belongsTo(Carrera::class, 'fk_carrera');
     }
@@ -35,7 +35,7 @@ class Ciclo extends Model
     /**
      * @return BelongsToMany<PeriodoAcademico, $this>
      */
-    public function academicPeriods(): BelongsToMany
+    public function periodos(): BelongsToMany
     {
         return $this->belongsToMany(
             PeriodoAcademico::class,
@@ -48,7 +48,7 @@ class Ciclo extends Model
     /**
      * @return HasMany<AsignaturaTutoria, $this>
      */
-    public function tutoringSubjects(): HasMany
+    public function asignaturasTutoria(): HasMany
     {
         return $this->hasMany(AsignaturaTutoria::class, 'fk_ciclo');
     }

@@ -33,33 +33,33 @@ class TemaTitulacion extends Model
     }
 
     /**
-     * @return BelongsTo<User, $this>
+     * @return BelongsTo<Usuario, $this>
      */
-    public function student(): BelongsTo
+    public function estudiante(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'fk_id_usuario');
+        return $this->belongsTo(Usuario::class, 'fk_id_usuario');
     }
 
     /**
      * @return BelongsTo<PeriodoAcademico, $this>
      */
-    public function academicPeriod(): BelongsTo
+    public function periodo(): BelongsTo
     {
         return $this->belongsTo(PeriodoAcademico::class, 'fk_periodo');
     }
 
     /**
-     * @return BelongsTo<User, $this>
+     * @return BelongsTo<Usuario, $this>
      */
-    public function reviewingCoordinator(): BelongsTo
+    public function coordinadorRevisor(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'fk_coord_revisor');
+        return $this->belongsTo(Usuario::class, 'fk_coord_revisor');
     }
 
     /**
      * @return HasMany<AsignacionDocente, $this>
      */
-    public function assignments(): HasMany
+    public function asignaciones(): HasMany
     {
         return $this->hasMany(AsignacionDocente::class, 'fk_tema_tit');
     }
@@ -67,7 +67,7 @@ class TemaTitulacion extends Model
     /**
      * @return HasOne<FichaSeguimiento, $this>
      */
-    public function trackingSheet(): HasOne
+    public function fichaSeguimiento(): HasOne
     {
         return $this->hasOne(FichaSeguimiento::class, 'fk_tema_tit');
     }
@@ -75,7 +75,7 @@ class TemaTitulacion extends Model
     /**
      * @return HasMany<HorarioTitulacion, $this>
      */
-    public function schedules(): HasMany
+    public function horarios(): HasMany
     {
         return $this->hasMany(HorarioTitulacion::class, 'fk_tema_tit');
     }
@@ -83,7 +83,7 @@ class TemaTitulacion extends Model
     /**
      * @return HasMany<ObservacionTitulacion, $this>
      */
-    public function observations(): HasMany
+    public function observaciones(): HasMany
     {
         return $this->hasMany(ObservacionTitulacion::class, 'fk_tema_tit');
     }

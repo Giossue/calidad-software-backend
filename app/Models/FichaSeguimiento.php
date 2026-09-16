@@ -32,7 +32,7 @@ class FichaSeguimiento extends Model
     /**
      * @return BelongsTo<TemaTitulacion, $this>
      */
-    public function degreeTopic(): BelongsTo
+    public function temaTitulacion(): BelongsTo
     {
         return $this->belongsTo(TemaTitulacion::class, 'fk_tema_tit');
     }
@@ -40,7 +40,7 @@ class FichaSeguimiento extends Model
     /**
      * @return HasMany<ActividadAvance, $this>
      */
-    public function activities(): HasMany
+    public function actividades(): HasMany
     {
         return $this->hasMany(ActividadAvance::class, 'fk_ficha');
     }
@@ -48,7 +48,7 @@ class FichaSeguimiento extends Model
     /**
      * @return HasMany<InformeTitulacion, $this>
      */
-    public function reports(): HasMany
+    public function informes(): HasMany
     {
         return $this->hasMany(InformeTitulacion::class, 'fk_ficha');
     }

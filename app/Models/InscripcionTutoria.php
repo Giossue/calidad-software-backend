@@ -32,23 +32,23 @@ class InscripcionTutoria extends Model
     /**
      * @return BelongsTo<AsignaturaTutoria, $this>
      */
-    public function tutoringSubject(): BelongsTo
+    public function asignaturaTutoria(): BelongsTo
     {
         return $this->belongsTo(AsignaturaTutoria::class, 'fk_asig_tutoria');
     }
 
     /**
-     * @return BelongsTo<User, $this>
+     * @return BelongsTo<Usuario, $this>
      */
-    public function student(): BelongsTo
+    public function estudiante(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'fk_id_usuario');
+        return $this->belongsTo(Usuario::class, 'fk_id_usuario');
     }
 
     /**
      * @return HasMany<Nota, $this>
      */
-    public function grades(): HasMany
+    public function notas(): HasMany
     {
         return $this->hasMany(Nota::class, 'fk_inscripcion');
     }
@@ -56,7 +56,7 @@ class InscripcionTutoria extends Model
     /**
      * @return HasMany<Asistencia, $this>
      */
-    public function attendances(): HasMany
+    public function asistencias(): HasMany
     {
         return $this->hasMany(Asistencia::class, 'fk_inscripcion');
     }

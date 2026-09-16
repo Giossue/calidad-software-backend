@@ -29,17 +29,17 @@ class UsuarioParalelo extends Model
     }
 
     /**
-     * @return BelongsTo<User, $this>
+     * @return BelongsTo<Usuario, $this>
      */
-    public function user(): BelongsTo
+    public function usuario(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'fk_usuario');
+        return $this->belongsTo(Usuario::class, 'fk_usuario');
     }
 
     /**
      * @return BelongsTo<Paralelo, $this>
      */
-    public function parallel(): BelongsTo
+    public function paralelo(): BelongsTo
     {
         return $this->belongsTo(Paralelo::class, 'fk_paralelo');
     }

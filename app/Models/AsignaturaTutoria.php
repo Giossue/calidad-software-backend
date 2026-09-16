@@ -29,7 +29,7 @@ class AsignaturaTutoria extends Model
     /**
      * @return BelongsTo<Ciclo, $this>
      */
-    public function cycle(): BelongsTo
+    public function ciclo(): BelongsTo
     {
         return $this->belongsTo(Ciclo::class, 'fk_ciclo');
     }
@@ -37,7 +37,7 @@ class AsignaturaTutoria extends Model
     /**
      * @return BelongsTo<PeriodoAcademico, $this>
      */
-    public function academicPeriod(): BelongsTo
+    public function periodo(): BelongsTo
     {
         return $this->belongsTo(PeriodoAcademico::class, 'fk_periodo');
     }
@@ -45,7 +45,7 @@ class AsignaturaTutoria extends Model
     /**
      * @return BelongsTo<Modalidad, $this>
      */
-    public function modality(): BelongsTo
+    public function modalidad(): BelongsTo
     {
         return $this->belongsTo(Modalidad::class, 'fk_modalidad');
     }
@@ -53,23 +53,23 @@ class AsignaturaTutoria extends Model
     /**
      * @return BelongsTo<Paralelo, $this>
      */
-    public function parallel(): BelongsTo
+    public function paralelo(): BelongsTo
     {
         return $this->belongsTo(Paralelo::class, 'fk_paralelo');
     }
 
     /**
-     * @return BelongsTo<User, $this>
+     * @return BelongsTo<Usuario, $this>
      */
-    public function teacher(): BelongsTo
+    public function docente(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'fk_docente');
+        return $this->belongsTo(Usuario::class, 'fk_docente');
     }
 
     /**
      * @return HasMany<Horario, $this>
      */
-    public function schedules(): HasMany
+    public function horarios(): HasMany
     {
         return $this->hasMany(Horario::class, 'fk_asig_tutoria');
     }
@@ -77,7 +77,7 @@ class AsignaturaTutoria extends Model
     /**
      * @return HasMany<Tema, $this>
      */
-    public function topics(): HasMany
+    public function temas(): HasMany
     {
         return $this->hasMany(Tema::class, 'fk_asig_tutoria');
     }
@@ -85,7 +85,7 @@ class AsignaturaTutoria extends Model
     /**
      * @return HasMany<InscripcionTutoria, $this>
      */
-    public function enrollments(): HasMany
+    public function inscripciones(): HasMany
     {
         return $this->hasMany(InscripcionTutoria::class, 'fk_asig_tutoria');
     }
@@ -93,7 +93,7 @@ class AsignaturaTutoria extends Model
     /**
      * @return HasMany<Observacion, $this>
      */
-    public function observations(): HasMany
+    public function observaciones(): HasMany
     {
         return $this->hasMany(Observacion::class, 'fk_asig_tutoria');
     }
@@ -101,7 +101,7 @@ class AsignaturaTutoria extends Model
     /**
      * @return HasMany<Reporte, $this>
      */
-    public function reports(): HasMany
+    public function reportes(): HasMany
     {
         return $this->hasMany(Reporte::class, 'fk_asig_tutoria');
     }

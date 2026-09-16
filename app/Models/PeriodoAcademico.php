@@ -30,7 +30,7 @@ class PeriodoAcademico extends Model
     /**
      * @return BelongsToMany<Ciclo, $this>
      */
-    public function cycles(): BelongsToMany
+    public function ciclos(): BelongsToMany
     {
         return $this->belongsToMany(
             Ciclo::class,
@@ -43,7 +43,7 @@ class PeriodoAcademico extends Model
     /**
      * @return HasMany<AsignaturaTutoria, $this>
      */
-    public function tutoringSubjects(): HasMany
+    public function asignaturasTutoria(): HasMany
     {
         return $this->hasMany(AsignaturaTutoria::class, 'fk_periodo');
     }

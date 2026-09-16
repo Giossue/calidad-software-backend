@@ -28,7 +28,7 @@ class Horario extends Model
     /**
      * @return BelongsTo<AsignaturaTutoria, $this>
      */
-    public function tutoringSubject(): BelongsTo
+    public function asignaturaTutoria(): BelongsTo
     {
         return $this->belongsTo(AsignaturaTutoria::class, 'fk_asig_tutoria');
     }

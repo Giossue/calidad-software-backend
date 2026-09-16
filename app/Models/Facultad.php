@@ -25,7 +25,7 @@ class Facultad extends Model
     /**
      * @return HasMany<Carrera, $this>
      */
-    public function careers(): HasMany
+    public function carreras(): HasMany
     {
         return $this->hasMany(Carrera::class, 'fk_facultad');
     }

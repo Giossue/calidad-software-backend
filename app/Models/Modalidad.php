@@ -25,7 +25,7 @@ class Modalidad extends Model
     /**
      * @return HasMany<AsignaturaTutoria, $this>
      */
-    public function tutoringSubjects(): HasMany
+    public function asignaturasTutoria(): HasMany
     {
         return $this->hasMany(AsignaturaTutoria::class, 'fk_modalidad');
     }

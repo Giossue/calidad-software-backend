@@ -25,7 +25,7 @@ class PlanAccion extends Model
     /**
      * @return BelongsTo<MetricaConocimiento, $this>
      */
-    public function knowledgeMetric(): BelongsTo
+    public function metrica(): BelongsTo
     {
         return $this->belongsTo(MetricaConocimiento::class, 'fk_metrica');
     }

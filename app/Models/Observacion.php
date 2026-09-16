@@ -28,16 +28,16 @@ class Observacion extends Model
     /**
      * @return BelongsTo<AsignaturaTutoria, $this>
      */
-    public function tutoringSubject(): BelongsTo
+    public function asignaturaTutoria(): BelongsTo
     {
         return $this->belongsTo(AsignaturaTutoria::class, 'fk_asig_tutoria');
     }
 
     /**
-     * @return BelongsTo<User, $this>
+     * @return BelongsTo<Usuario, $this>
      */
-    public function teacher(): BelongsTo
+    public function docente(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'fk_docente');
+        return $this->belongsTo(Usuario::class, 'fk_docente');
     }
 }

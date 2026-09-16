@@ -26,7 +26,7 @@ class Carrera extends Model
     /**
      * @return BelongsTo<Facultad, $this>
      */
-    public function faculty(): BelongsTo
+    public function facultad(): BelongsTo
     {
         return $this->belongsTo(Facultad::class, 'fk_facultad');
     }
@@ -34,7 +34,7 @@ class Carrera extends Model
     /**
      * @return HasMany<Ciclo, $this>
      */
-    public function cycles(): HasMany
+    public function ciclos(): HasMany
     {
         return $this->hasMany(Ciclo::class, 'fk_carrera');
     }

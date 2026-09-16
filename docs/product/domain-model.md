@@ -8,7 +8,7 @@ integridad con claves foráneas, unicidad, checks e índices PostgreSQL.
 
 ## Identidad y roles
 
-`User` representa una persona autenticable (`identification`, `name`, `email`,
+`Usuario` representa una persona autenticable (`identification`, `name`, `email`,
 credenciales y estado de acceso). Sus roles posibles son:
 
 - `student`
@@ -83,13 +83,13 @@ nombre y correo no se duplican en tablas por rol.
 ## Relaciones conceptuales
 
 ```text
-User(student) 1 ── * DegreeTopic * ── 1 AcademicPeriod
-DegreeTopic   1 ── * TeacherAssignment * ── 1 User(teacher)
-DegreeTopic   1 ── 0..1 TrackingSheet
-TrackingSheet 1 ── * ProgressActivity * ── 1 User(teacher)
-DegreeTopic   1 ── * DegreeObservation * ── 1 User(degree_coordinator)
-DegreeTopic   1 ── * DegreeSchedule * ── 1 User(degree_coordinator)
-TrackingSheet 1 ── * DegreeReport * ── 1 User(degree_coordinator)
+Usuario(estudiante) 1 ── * TemaTitulacion * ── 1 PeriodoAcademico
+TemaTitulacion      1 ── * AsignacionDocente * ── 1 Usuario(docente)
+TemaTitulacion   1 ── 0..1 FichaSeguimiento
+FichaSeguimiento 1 ── * ActividadAvance * ── 1 Usuario(docente)
+TemaTitulacion   1 ── * ObservacionTitulacion * ── 1 Usuario(coordinador_titulacion)
+TemaTitulacion   1 ── * HorarioTitulacion * ── 1 Usuario(coordinador_titulacion)
+FichaSeguimiento 1 ── * InformeTitulacion * ── 1 Usuario(coordinador_titulacion)
 ```
 
 ## Estados

@@ -31,16 +31,16 @@ class AsignacionDocente extends Model
     /**
      * @return BelongsTo<TemaTitulacion, $this>
      */
-    public function degreeTopic(): BelongsTo
+    public function temaTitulacion(): BelongsTo
     {
         return $this->belongsTo(TemaTitulacion::class, 'fk_tema_tit');
     }
 
     /**
-     * @return BelongsTo<User, $this>
+     * @return BelongsTo<Usuario, $this>
      */
-    public function teacher(): BelongsTo
+    public function docente(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'fk_id_usuario');
+        return $this->belongsTo(Usuario::class, 'fk_id_usuario');
     }
 }

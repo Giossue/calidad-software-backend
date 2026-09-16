@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use Database\Factories\UserFactory;
+use Database\Factories\UsuarioFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -33,9 +33,9 @@ use Laravel\Sanctum\HasApiTokens;
  */
 #[Fillable(['cedula', 'nombre', 'correo', 'telefono', 'password_hash', 'rol', 'estado'])]
 #[Hidden(['password_hash', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
-class User extends Authenticatable implements MustVerifyEmail
+class Usuario extends Authenticatable implements MustVerifyEmail
 {
-    /** @use HasFactory<UserFactory> */
+    /** @use HasFactory<UsuarioFactory> */
     use HasApiTokens, HasFactory, Notifiable, TwoFactorAuthenticatable;
 
     protected $table = 'usuario';
@@ -65,7 +65,7 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * @return HasMany<InscripcionTutoria, $this>
      */
-    public function tutoringEnrollments(): HasMany
+    public function inscripciones(): HasMany
     {
         return $this->hasMany(InscripcionTutoria::class, 'fk_id_usuario');
     }
@@ -73,7 +73,7 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * @return HasMany<AsignaturaTutoria, $this>
      */
-    public function tutoringSubjects(): HasMany
+    public function asignaturasTutoria(): HasMany
     {
         return $this->hasMany(AsignaturaTutoria::class, 'fk_docente');
     }
@@ -81,7 +81,7 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * @return BelongsToMany<Paralelo, $this>
      */
-    public function parallels(): BelongsToMany
+    public function paralelos(): BelongsToMany
     {
         return $this->belongsToMany(
             Paralelo::class,
@@ -94,7 +94,7 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * @return HasMany<MetricaConocimiento, $this>
      */
-    public function knowledgeMetrics(): HasMany
+    public function metricas(): HasMany
     {
         return $this->hasMany(MetricaConocimiento::class, 'fk_id_usuario');
     }
@@ -102,7 +102,7 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * @return HasMany<TemaTitulacion, $this>
      */
-    public function degreeTopics(): HasMany
+    public function temasTitulacion(): HasMany
     {
         return $this->hasMany(TemaTitulacion::class, 'fk_id_usuario');
     }
@@ -110,7 +110,7 @@ class User extends Authenticatable implements MustVerifyEmail
     /**
      * @return HasMany<AsignacionDocente, $this>
      */
-    public function teachingAssignments(): HasMany
+    public function asignacionesDocente(): HasMany
     {
         return $this->hasMany(AsignacionDocente::class, 'fk_id_usuario');
     }

@@ -30,7 +30,7 @@ class Nota extends Model
     /**
      * @return BelongsTo<InscripcionTutoria, $this>
      */
-    public function enrollment(): BelongsTo
+    public function inscripcion(): BelongsTo
     {
         return $this->belongsTo(InscripcionTutoria::class, 'fk_inscripcion');
     }

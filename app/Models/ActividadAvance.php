@@ -31,16 +31,16 @@ class ActividadAvance extends Model
     /**
      * @return BelongsTo<FichaSeguimiento, $this>
      */
-    public function trackingSheet(): BelongsTo
+    public function ficha(): BelongsTo
     {
         return $this->belongsTo(FichaSeguimiento::class, 'fk_ficha');
     }
 
     /**
-     * @return BelongsTo<User, $this>
+     * @return BelongsTo<Usuario, $this>
      */
-    public function teacher(): BelongsTo
+    public function docente(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'fk_docente');
+        return $this->belongsTo(Usuario::class, 'fk_docente');
     }
 }

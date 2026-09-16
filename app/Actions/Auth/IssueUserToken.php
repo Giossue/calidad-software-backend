@@ -3,13 +3,13 @@
 namespace App\Actions\Auth;
 
 use App\Http\Resources\Api\V1\UserResource;
-use App\Models\User;
+use App\Models\Usuario;
 use Illuminate\Support\Carbon;
 
 class IssueUserToken
 {
     /** @return array{access_token: string, token_type: string, expires_at: string|null, user: UserResource} */
-    public function handle(User $user, string $deviceName): array
+    public function handle(Usuario $user, string $deviceName): array
     {
         $user->tokens()->where('name', $deviceName)->delete();
 

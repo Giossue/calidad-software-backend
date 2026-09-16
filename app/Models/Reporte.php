@@ -28,16 +28,16 @@ class Reporte extends Model
     /**
      * @return BelongsTo<AsignaturaTutoria, $this>
      */
-    public function tutoringSubject(): BelongsTo
+    public function asignaturaTutoria(): BelongsTo
     {
         return $this->belongsTo(AsignaturaTutoria::class, 'fk_asig_tutoria');
     }
 
     /**
-     * @return BelongsTo<User, $this>
+     * @return BelongsTo<Usuario, $this>
      */
-    public function generatedBy(): BelongsTo
+    public function generadoPor(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'fk_id_usuario');
+        return $this->belongsTo(Usuario::class, 'fk_id_usuario');
     }
 }

@@ -50,7 +50,7 @@ class CicloPeriodo extends Model
     /**
      * @return BelongsTo<Ciclo, $this>
      */
-    public function cycle(): BelongsTo
+    public function ciclo(): BelongsTo
     {
         return $this->belongsTo(Ciclo::class, 'fk_ciclo');
     }
@@ -58,7 +58,7 @@ class CicloPeriodo extends Model
     /**
      * @return BelongsTo<PeriodoAcademico, $this>
      */
-    public function academicPeriod(): BelongsTo
+    public function periodo(): BelongsTo
     {
         return $this->belongsTo(PeriodoAcademico::class, 'fk_periodo');
     }

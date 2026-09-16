@@ -25,7 +25,7 @@ class Metodologia extends Model
     /**
      * @return BelongsTo<Actividad, $this>
      */
-    public function activity(): BelongsTo
+    public function actividad(): BelongsTo
     {
         return $this->belongsTo(Actividad::class, 'fk_actividad');
     }

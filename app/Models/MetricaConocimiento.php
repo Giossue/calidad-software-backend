@@ -30,17 +30,17 @@ class MetricaConocimiento extends Model
     }
 
     /**
-     * @return BelongsTo<User, $this>
+     * @return BelongsTo<Usuario, $this>
      */
-    public function user(): BelongsTo
+    public function usuario(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'fk_id_usuario');
+        return $this->belongsTo(Usuario::class, 'fk_id_usuario');
     }
 
     /**
      * @return HasMany<PlanAccion, $this>
      */
-    public function actionPlans(): HasMany
+    public function planesAccion(): HasMany
     {
         return $this->hasMany(PlanAccion::class, 'fk_metrica');
     }

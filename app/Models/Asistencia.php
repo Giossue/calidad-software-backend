@@ -31,16 +31,16 @@ class Asistencia extends Model
     /**
      * @return BelongsTo<InscripcionTutoria, $this>
      */
-    public function enrollment(): BelongsTo
+    public function inscripcion(): BelongsTo
     {
         return $this->belongsTo(InscripcionTutoria::class, 'fk_inscripcion');
     }
 
     /**
-     * @return BelongsTo<User, $this>
+     * @return BelongsTo<Usuario, $this>
      */
-    public function student(): BelongsTo
+    public function estudiante(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'fk_id_usuario');
+        return $this->belongsTo(Usuario::class, 'fk_id_usuario');
     }
 }

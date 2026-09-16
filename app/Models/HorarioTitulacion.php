@@ -28,16 +28,16 @@ class HorarioTitulacion extends Model
     /**
      * @return BelongsTo<TemaTitulacion, $this>
      */
-    public function degreeTopic(): BelongsTo
+    public function temaTitulacion(): BelongsTo
     {
         return $this->belongsTo(TemaTitulacion::class, 'fk_tema_tit');
     }
 
     /**
-     * @return BelongsTo<User, $this>
+     * @return BelongsTo<Usuario, $this>
      */
-    public function coordinator(): BelongsTo
+    public function coordinador(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'fk_coord_tit');
+        return $this->belongsTo(Usuario::class, 'fk_coord_tit');
     }
 }

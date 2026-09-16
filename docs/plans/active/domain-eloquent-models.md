@@ -10,7 +10,7 @@ el esquema PostgreSQL desplegado y con la autenticación existente.
 - Cada tabla de negocio tiene un modelo con tabla, clave primaria, fillable y
   casts explícitos.
 - Las relaciones declaran tipos de retorno y las claves foráneas físicas.
-- Todas las relaciones de identidad utilizan `App\Models\User`; no existe un
+- Todas las relaciones de identidad utilizan `App\Models\Usuario`; no existe un
   segundo modelo autenticable para `usuario`.
 - La tabla de unión `ciclo_periodo` protege actualizaciones y eliminaciones con
   ambas columnas de su clave compuesta.
