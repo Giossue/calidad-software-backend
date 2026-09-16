@@ -19,7 +19,7 @@
 - Policies/Gates for each role and access to another actor's records.
 - Eloquent relationships, casts, scopes and critical transactional writes.
 - PostgreSQL migration assumptions.
-- Inertia form success, validation errors and preserved input.
+- API form success, validation errors and stable JSON contracts.
 - Table search, filters, sorting, pagination, column visibility, and row actions.
 - Modal focus management, dismissal, scroll containment, and submission states.
 - Toast semantics and retry behavior for successful and failed actions.
@@ -37,7 +37,7 @@
 
 - Prefer feature tests for behavior that crosses route, middleware, request,
   policy, action and database; do not mock framework internals.
-- Use `RefreshDatabase` and assert both response/Inertia props and persisted state.
+- Use `RefreshDatabase` and assert both JSON responses and persisted state.
 - Every bug fix includes a regression test that fails before the fix.
 - Use SQLite only for portable behavior. Run PostgreSQL-backed integration tests
   for checks, indexes, JSON/query behavior, locking or SQL specific to PostgreSQL.

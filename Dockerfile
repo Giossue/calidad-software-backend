@@ -1,7 +1,5 @@
 # syntax=docker/dockerfile:1.7
 
-FROM node:24-bookworm-slim AS node-runtime
-
 FROM php:8.4-apache-bookworm AS php-extensions
 
 RUN apt-get update \
@@ -25,11 +23,6 @@ WORKDIR /var/www/html
 FROM php-extensions AS build
 
 COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
-COPY --from=node-runtime /usr/local/bin/node /usr/local/bin/node
-COPY --from=node-runtime /usr/local/lib/node_modules /usr/local/lib/node_modules
-
-RUN ln -s /usr/local/lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm \
-    && ln -s /usr/local/lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
 
 COPY composer.json composer.lock ./
 RUN composer install \
@@ -39,20 +32,12 @@ RUN composer install \
     --no-scripts \
     --prefer-dist
 
-COPY package.json package-lock.json ./
-RUN npm ci --no-audit --no-fund
-
 COPY . .
-
-ARG VITE_APP_NAME="Calidad Software"
-ENV VITE_APP_NAME=${VITE_APP_NAME}
 
 RUN composer dump-autoload \
         --classmap-authoritative \
         --no-dev \
-        --no-interaction \
-    && npm run build \
-    && rm -rf node_modules
+        --no-interaction
 
 FROM php:8.4-apache-bookworm AS production
 

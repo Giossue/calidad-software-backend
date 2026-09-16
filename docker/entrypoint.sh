@@ -3,7 +3,7 @@ set -eu
 
 cd /var/www/html
 
-for variable_name in APP_KEY APP_URL DB_HOST DB_DATABASE DB_USERNAME; do
+for variable_name in APP_KEY APP_URL FRONTEND_URL CORS_ALLOWED_ORIGINS DB_HOST DB_DATABASE DB_USERNAME; do
     if [ -z "$(printenv "$variable_name" 2>/dev/null || true)" ]; then
         echo "Missing required environment variable: $variable_name" >&2
         exit 1

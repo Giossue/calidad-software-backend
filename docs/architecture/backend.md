@@ -2,19 +2,21 @@
 
 ## Principio
 
-Laravel es un monolito modular. Empieza con sus convenciones y extrae una Action
-o servicio cuando una operación tiene reglas, varias escrituras, reutilización o
-complejidad que no pertenece al controlador. Evita una arquitectura ceremonial.
+Laravel es un backend modular y la única autoridad sobre autenticación, reglas de
+negocio y persistencia. Expone una API JSON versionada para la SPA React. Empieza
+con sus convenciones y extrae una Action o servicio cuando una operación tiene
+reglas, varias escrituras, reutilización o complejidad que no pertenece al
+controlador. Evita una arquitectura ceremonial.
 
 ## Flujo de una solicitud
 
-1. La ruta con nombre aplica middleware `auth`, `verified` y/o `can`.
+1. La ruta bajo `/api/v1` aplica `auth:sanctum`, verificación y/o autorización.
 2. Un Form Request normaliza, autoriza y valida la entrada.
 3. El controlador recibe datos validados y delega la mutación a una Action.
 4. Una Policy/Gate comprueba capacidad y acceso al registro concreto.
 5. Eloquent persiste; `DB::transaction()` delimita cambios atómicos.
-6. El controlador redirige con flash data o devuelve una página Inertia con props
-   mínimos y explícitos.
+6. El controlador devuelve un Resource JSON con datos mínimos y explícitos y el
+   código HTTP correspondiente.
 
 ## Responsabilidades
 
@@ -54,7 +56,7 @@ complejidad que no pertenece al controlador. Evita una arquitectura ceremonial.
 - Usa eager loading para evitar N+1 y selecciona columnas necesarias.
 - Filtros y columnas ordenables provienen de allowlists.
 - Usa scopes pequeños para consultas reutilizables.
-- Usa lazy/deferred/partial props Inertia solo después de medir y prueba su contrato.
+- Los Resources constituyen el contrato público: no serialices modelos completos.
 
 ## Errores, jobs e integraciones
 

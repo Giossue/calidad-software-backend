@@ -10,7 +10,7 @@
 
 ## Trust Boundaries
 
-- Browser to Laravel/Inertia application.
+- Browser SPA to Laravel API across HTTPS and an explicit CORS allowlist.
 - Laravel application to PostgreSQL.
 - Laravel application/job to external provider.
 - Background job runner to database.
@@ -23,7 +23,7 @@
 | Token leakage                   | Provider abuse                        | Keep tokens server-side and out of logs.                                |
 | Unauthorized data access        | Privacy breach                        | Enforce auth middleware and permission checks.                          |
 | Unvalidated bulk input          | Data corruption                       | Validate, chunk, and report progress.                                   |
-| Hand-rolled authentication      | Account compromise                    | Use Fortify, session middleware and documented policies.                |
+| Hand-rolled authentication      | Account compromise                    | Use Fortify actions, Sanctum tokens and documented policies.            |
 | Horizontal privilege escalation | Exposure of another student's process | Authorize each record with Policies, not only roles or hidden controls. |
 | Invalid lifecycle transition    | Corrupt academic history              | Enforce explicit transitions, transactions and database constraints.    |
 | Overprivileged database user    | Production data loss                  | Reduce privileges after migrations.                                     |
