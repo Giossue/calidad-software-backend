@@ -7,6 +7,8 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
@@ -58,6 +60,59 @@ class User extends Authenticatable implements MustVerifyEmail
     public function routeNotificationForMail(): string
     {
         return $this->correo;
+    }
+
+    /**
+     * @return HasMany<InscripcionTutoria, $this>
+     */
+    public function tutoringEnrollments(): HasMany
+    {
+        return $this->hasMany(InscripcionTutoria::class, 'fk_id_usuario');
+    }
+
+    /**
+     * @return HasMany<AsignaturaTutoria, $this>
+     */
+    public function tutoringSubjects(): HasMany
+    {
+        return $this->hasMany(AsignaturaTutoria::class, 'fk_docente');
+    }
+
+    /**
+     * @return BelongsToMany<Paralelo, $this>
+     */
+    public function parallels(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Paralelo::class,
+            'usuario_paralelo',
+            'fk_usuario',
+            'fk_paralelo',
+        )->withPivot('fecha_asignacion', 'estado')->withTimestamps();
+    }
+
+    /**
+     * @return HasMany<MetricaConocimiento, $this>
+     */
+    public function knowledgeMetrics(): HasMany
+    {
+        return $this->hasMany(MetricaConocimiento::class, 'fk_id_usuario');
+    }
+
+    /**
+     * @return HasMany<TemaTitulacion, $this>
+     */
+    public function degreeTopics(): HasMany
+    {
+        return $this->hasMany(TemaTitulacion::class, 'fk_id_usuario');
+    }
+
+    /**
+     * @return HasMany<AsignacionDocente, $this>
+     */
+    public function teachingAssignments(): HasMany
+    {
+        return $this->hasMany(AsignacionDocente::class, 'fk_id_usuario');
     }
 
     /**

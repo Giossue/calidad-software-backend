@@ -1,20 +1,26 @@
 <?php
+
 // ============================================================
 // app/Models/MetricaConocimiento.php
 // ============================================================
+
 namespace App\Models;
+
 use Illuminate\Database\Eloquent\Model;
- 
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
 class MetricaConocimiento extends Model
 {
-    protected $table      = 'metrica_conocimiento';
+    protected $table = 'metrica_conocimiento';
+
     protected $primaryKey = 'id_metrica';
- 
+
     protected $fillable = [
         'fk_id_usuario', 'descripcion', 'rango',
         'nota_minima', 'nota_maxima', 'estado',
     ];
- 
+
     protected function casts(): array
     {
         return [
@@ -22,13 +28,19 @@ class MetricaConocimiento extends Model
             'nota_maxima' => 'decimal:2',
         ];
     }
- 
-    public function usuario()
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function user(): BelongsTo
     {
-        return $this->belongsTo(Usuario::class, 'fk_id_usuario');
+        return $this->belongsTo(User::class, 'fk_id_usuario');
     }
- 
-    public function planesAccion()
+
+    /**
+     * @return HasMany<PlanAccion, $this>
+     */
+    public function actionPlans(): HasMany
     {
         return $this->hasMany(PlanAccion::class, 'fk_metrica');
     }
