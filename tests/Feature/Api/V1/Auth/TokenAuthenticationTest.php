@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Api\V1\Auth;
 
-use App\Models\User;
+use App\Models\Usuario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\PersonalAccessToken;
 use Tests\TestCase;
@@ -13,7 +13,7 @@ class TokenAuthenticationTest extends TestCase
 
     public function test_user_can_issue_a_token_with_valid_credentials(): void
     {
-        $user = User::factory()->create(['password_hash' => 'password']);
+        $user = Usuario::factory()->create(['password_hash' => 'password']);
 
         $response = $this->postJson('/api/v1/auth/login', [
             'email' => $user->correo,
@@ -35,7 +35,7 @@ class TokenAuthenticationTest extends TestCase
 
     public function test_invalid_credentials_are_rejected_without_issuing_a_token(): void
     {
-        $user = User::factory()->create();
+        $user = Usuario::factory()->create();
 
         $this->postJson('/api/v1/auth/login', [
             'email' => $user->correo,
@@ -48,7 +48,7 @@ class TokenAuthenticationTest extends TestCase
 
     public function test_two_factor_account_does_not_bypass_its_challenge(): void
     {
-        $user = User::factory()->create([
+        $user = Usuario::factory()->create([
             'password_hash' => 'password',
             'two_factor_confirmed_at' => now(),
         ]);
@@ -74,7 +74,7 @@ class TokenAuthenticationTest extends TestCase
 
     public function test_authenticated_user_can_be_retrieved_and_logged_out(): void
     {
-        $user = User::factory()->create();
+        $user = Usuario::factory()->create();
         $plainTextToken = $user->createToken('frontend-web')->plainTextToken;
         $headers = ['Authorization' => 'Bearer '.$plainTextToken];
 

@@ -33,7 +33,7 @@ fuente de verdad del esquema. Eloquent es el acceso predeterminado.
 Esta lista no autoriza crear tablas cuyas cardinalidades/reglas sigan abiertas en
 `docs/product/domain-model.md`.
 
-La API mapea `User` sobre `usuario`. Laravel añade únicamente `migrations`,
+La API mapea `Usuario` sobre `usuario`. Laravel añade únicamente `migrations`,
 `password_reset_tokens` y `personal_access_tokens`; no se mantiene una tabla
 `users` paralela. El resto del esquema académico corresponde al baseline aprobado
 en PostgreSQL.

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
+use App\Models\Usuario;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -24,7 +24,7 @@ class EmailVerificationController extends Controller
 
     public function verify(int $id, string $hash): JsonResponse
     {
-        $user = User::query()->findOrFail($id);
+        $user = Usuario::query()->findOrFail($id);
 
         if (! hash_equals($hash, sha1($user->getEmailForVerification()))) {
             throw ValidationException::withMessages([

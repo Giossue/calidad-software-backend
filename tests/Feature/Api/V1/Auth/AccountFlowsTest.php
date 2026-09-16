@@ -2,7 +2,7 @@
 
 namespace Tests\Feature\Api\V1\Auth;
 
-use App\Models\User;
+use App\Models\Usuario;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -33,14 +33,14 @@ class AccountFlowsTest extends TestCase
             ->assertJsonPath('data.user.email', 'ana@example.com')
             ->assertJsonStructure(['data' => ['access_token']]);
 
-        $user = User::query()->where('correo', 'ana@example.com')->firstOrFail();
+        $user = Usuario::query()->where('correo', 'ana@example.com')->firstOrFail();
         Notification::assertSentTo($user, VerifyEmail::class);
     }
 
     public function test_password_reset_request_does_not_reveal_whether_email_exists(): void
     {
         Notification::fake();
-        $user = User::factory()->create();
+        $user = Usuario::factory()->create();
 
         $this->postJson('/api/v1/auth/forgot-password', ['email' => $user->correo])
             ->assertAccepted();
@@ -52,7 +52,7 @@ class AccountFlowsTest extends TestCase
 
     public function test_user_can_reset_password_and_existing_tokens_are_revoked(): void
     {
-        $user = User::factory()->create();
+        $user = Usuario::factory()->create();
         $user->createToken('frontend-web');
         $token = Password::createToken($user);
 
@@ -69,7 +69,7 @@ class AccountFlowsTest extends TestCase
 
     public function test_authenticated_user_can_verify_email_with_a_signed_link(): void
     {
-        $user = User::factory()->unverified()->create();
+        $user = Usuario::factory()->unverified()->create();
         $url = URL::temporarySignedRoute(
             'api.v1.auth.verification.verify',
             now()->addHour(),
@@ -83,7 +83,7 @@ class AccountFlowsTest extends TestCase
 
     public function test_two_factor_recovery_code_exchanges_challenge_for_session_token(): void
     {
-        $user = User::factory()->create([
+        $user = Usuario::factory()->create([
             'password_hash' => 'password',
             'two_factor_secret' => Fortify::currentEncrypter()->encrypt('secret'),
             'two_factor_recovery_codes' => Fortify::currentEncrypter()->encrypt(json_encode(['recovery-code'])),
