@@ -9,8 +9,8 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
     Route::prefix('auth')->name('auth.')->group(function (): void {
-        Route::post('register', [RegistrationController::class, 'store'])
-            ->middleware('throttle:5,1')->name('register');
+        /*Route::post('register', [RegistrationController::class, 'store'])
+            ->middleware('throttle:5,1')->name('register');*/
         Route::post('login', [TokenController::class, 'store'])
             ->middleware('throttle:5,1')->name('login');
         Route::post('two-factor-challenge', [TwoFactorChallengeController::class, 'store'])
