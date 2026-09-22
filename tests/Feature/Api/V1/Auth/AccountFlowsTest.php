@@ -4,6 +4,7 @@ namespace Tests\Feature\Api\V1\Auth;
 
 use App\Models\Usuario;
 use Illuminate\Auth\Notifications\ResetPassword;
+use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Password;
@@ -15,8 +16,10 @@ class AccountFlowsTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_public_registration_is_disabled(): void
+    public function test_user_can_register_and_receives_a_verification_notification(): void
     {
+        Notification::fake();
+
         $response = $this->postJson('/api/v1/auth/register', [
             'identification' => '0201234567',
             'name' => 'Ana Torres',
@@ -26,8 +29,12 @@ class AccountFlowsTest extends TestCase
             'device_name' => 'frontend-web',
         ]);
 
-        $response->assertNotFound();
-        $this->assertDatabaseCount('usuario', 0);
+        $response->assertCreated()
+            ->assertJsonPath('data.user.email', 'ana@example.com')
+            ->assertJsonStructure(['data' => ['access_token']]);
+
+        $user = Usuario::query()->where('correo', 'ana@example.com')->firstOrFail();
+        Notification::assertSentTo($user, VerifyEmail::class);
     }
 
     public function test_password_reset_request_does_not_reveal_whether_email_exists(): void

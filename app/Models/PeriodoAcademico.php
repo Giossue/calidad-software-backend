@@ -6,10 +6,20 @@
 
 namespace App\Models;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id_periodo
+ * @property string $nombre
+ * @property CarbonInterface $fecha_inicio
+ * @property CarbonInterface $fecha_fin
+ * @property bool $estado
+ * @property CarbonInterface|null $created_at
+ * @property CarbonInterface|null $updated_at
+ */
 class PeriodoAcademico extends Model
 {
     protected $table = 'periodo_academico';
