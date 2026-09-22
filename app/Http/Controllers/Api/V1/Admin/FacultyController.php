@@ -7,10 +7,12 @@ use App\Http\Requests\Api\V1\Admin\StoreFacultyRequest;
 use App\Http\Requests\Api\V1\Admin\UpdateFacultyRequest;
 use App\Http\Resources\Api\V1\FacultyResource;
 use App\Models\Facultad;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 
 class FacultyController extends Controller
 {
@@ -19,7 +21,13 @@ class FacultyController extends Controller
         Gate::authorize('viewAny', Facultad::class);
 
         return FacultyResource::collection(
-            Facultad::query()->orderBy('nombre')->get(),
+            Facultad::query()
+                ->withCount([
+                    'carreras',
+                    'carreras as active_careers_count' => fn (Builder $query) => $query->where('estado', true),
+                ])
+                ->orderBy('nombre')
+                ->get(),
         );
     }
 
@@ -48,6 +56,13 @@ class FacultyController extends Controller
     public function deactivate(Facultad $faculty): FacultyResource
     {
         Gate::authorize('deactivate', $faculty);
+
+        if ($faculty->carreras()->where('estado', true)->exists()) {
+            throw ValidationException::withMessages([
+                'faculty' => ['No puedes desactivar esta facultad porque tiene carreras activas asignadas. Desactiva primero sus carreras.'],
+            ]);
+        }
+
         $faculty->update(['estado' => false]);
 
         return FacultyResource::make($faculty->refresh());

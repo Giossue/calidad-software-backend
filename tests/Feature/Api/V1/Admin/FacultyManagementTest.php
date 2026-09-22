@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api\V1\Admin;
 
+use App\Models\Carrera;
 use App\Models\Facultad;
 use App\Models\Usuario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -124,5 +125,52 @@ class FacultyManagementTest extends TestCase
         $ids = collect($response->json('data'))->pluck('id');
         $this->assertTrue($ids->contains($active->getKey()));
         $this->assertTrue($ids->contains($inactive->getKey()));
+    }
+
+    public function test_faculty_cannot_be_deactivated_while_it_has_an_active_career(): void
+    {
+        $faculty = Facultad::create(['nombre' => 'Facultad de Ciencias']);
+        Carrera::create(['fk_facultad' => $faculty->getKey(), 'nombre' => 'Matemática', 'estado' => true]);
+
+        $this->patchJson("/api/v1/faculties/{$faculty->getKey()}/deactivate")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['faculty']);
+
+        $this->assertTrue($faculty->fresh()->estado);
+    }
+
+    public function test_faculty_can_be_deactivated_once_its_careers_are_inactive(): void
+    {
+        $faculty = Facultad::create(['nombre' => 'Facultad de Artes']);
+        Carrera::create(['fk_facultad' => $faculty->getKey(), 'nombre' => 'Pintura', 'estado' => false]);
+
+        $this->patchJson("/api/v1/faculties/{$faculty->getKey()}/deactivate")
+            ->assertOk()
+            ->assertJsonPath('data.is_active', false);
+
+        $this->assertFalse($faculty->fresh()->estado);
+    }
+
+    public function test_faculty_can_be_deactivated_when_it_has_no_careers(): void
+    {
+        $faculty = Facultad::create(['nombre' => 'Facultad Sin Carreras']);
+
+        $this->patchJson("/api/v1/faculties/{$faculty->getKey()}/deactivate")
+            ->assertOk()
+            ->assertJsonPath('data.is_active', false);
+    }
+
+    public function test_faculty_index_reports_career_counts(): void
+    {
+        $faculty = Facultad::create(['nombre' => 'Facultad de Derecho']);
+        Carrera::create(['fk_facultad' => $faculty->getKey(), 'nombre' => 'Derecho Penal', 'estado' => true]);
+        Carrera::create(['fk_facultad' => $faculty->getKey(), 'nombre' => 'Derecho Civil', 'estado' => false]);
+
+        $response = $this->getJson('/api/v1/admin/faculties');
+
+        $response->assertOk();
+        $data = collect($response->json('data'))->firstWhere('id', $faculty->getKey());
+        $this->assertSame(2, $data['careers_count']);
+        $this->assertSame(1, $data['active_careers_count']);
     }
 }
