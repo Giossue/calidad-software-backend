@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\V1\Admin\FacultyController;
+use App\Http\Controllers\Api\V1\Admin\UserController;
 use App\Http\Controllers\Api\V1\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\V1\Auth\PasswordController;
 use App\Http\Controllers\Api\V1\Auth\RegistrationController;
@@ -28,5 +30,17 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::post('email/verification-notification', [EmailVerificationController::class, 'send'])
                 ->middleware('throttle:6,1')->name('verification.send');
         });
+    });
+
+    Route::middleware('auth:sanctum')->prefix('users')->name('users.')->group(function (): void {
+        Route::post('/', [UserController::class, 'store'])->name('store');
+        Route::patch('{user}', [UserController::class, 'update'])->name('update');
+        Route::patch('{user}/deactivate', [UserController::class, 'deactivate'])->name('deactivate');
+    });
+
+    Route::middleware('auth:sanctum')->prefix('faculties')->name('faculties.')->group(function (): void {
+        Route::post('/', [FacultyController::class, 'store'])->name('store');
+        Route::patch('{faculty}', [FacultyController::class, 'update'])->name('update');
+        Route::patch('{faculty}/deactivate', [FacultyController::class, 'deactivate'])->name('deactivate');
     });
 });

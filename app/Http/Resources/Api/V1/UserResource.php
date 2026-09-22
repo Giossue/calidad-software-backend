@@ -17,7 +17,9 @@ class UserResource extends JsonResource
             'identification' => $this->cedula,
             'name' => $this->nombre,
             'email' => $this->correo,
+            'phone' => $this->telefono,
             'role' => $this->rol,
+            'is_active' => $this->estado,
             'email_verified_at' => $this->email_verified_at?->toISOString(),
             'has_two_factor' => $this->two_factor_confirmed_at !== null,
         ];
