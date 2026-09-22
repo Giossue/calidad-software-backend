@@ -31,7 +31,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['cedula', 'nombre', 'correo', 'telefono', 'password_hash', 'rol', 'estado'])]
+#[Fillable(['cedula', 'nombre', 'correo', 'telefono', 'password_hash', 'rol', 'estado', 'email_verified_at'])]
 #[Hidden(['password_hash', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class Usuario extends Authenticatable implements MustVerifyEmail
 {
