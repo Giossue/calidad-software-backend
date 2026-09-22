@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Admin;
 
+use App\Actions\Academic\ActivateCareer;
 use App\Actions\Academic\CreateCareer;
 use App\Actions\Academic\DeactivateCareer;
 use App\Actions\Academic\UpdateCareer;
@@ -43,5 +44,10 @@ class CareerController extends Controller
     public function deactivate(Carrera $career, DeactivateCareer $deactivateCareer): CareerResource
     {
         return CareerResource::make($deactivateCareer->handle($career));
+    }
+
+    public function activate(Carrera $career, ActivateCareer $activateCareer): CareerResource
+    {
+        return CareerResource::make($activateCareer->handle($career));
     }
 }

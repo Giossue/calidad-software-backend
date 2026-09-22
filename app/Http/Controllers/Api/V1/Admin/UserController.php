@@ -89,4 +89,15 @@ class UserController extends Controller
             'data' => new UserResource($user),
         ]);
     }
+
+    public function activate(Usuario $user): JsonResponse
+    {
+        Gate::authorize('activate', $user);
+        $user->estado = true;
+        $user->save();
+
+        return response()->json([
+            'data' => new UserResource($user),
+        ]);
+    }
 }

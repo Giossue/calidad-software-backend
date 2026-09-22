@@ -190,6 +190,21 @@ class UserManagementTest extends TestCase
         $this->assertDatabaseCount('usuario', 2);
     }
 
+    public function test_admin_can_reactivate_a_deactivated_user(): void
+    {
+        $user = Usuario::factory()->create(['estado' => false]);
+
+        $response = $this->patchJson("/api/v1/users/{$user->getKey()}/activate");
+
+        $response->assertOk()
+            ->assertJsonPath('data.is_active', true);
+
+        $this->assertDatabaseHas('usuario', [
+            'id_usuario' => $user->getKey(),
+            'estado' => true,
+        ]);
+    }
+
     public function test_deactivated_user_cannot_login(): void
     {
         $user = Usuario::factory()->create();

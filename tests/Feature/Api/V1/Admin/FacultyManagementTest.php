@@ -97,4 +97,32 @@ class FacultyManagementTest extends TestCase
         $this->patchJson('/api/v1/faculties/99999/deactivate')
             ->assertNotFound();
     }
+
+    public function test_admin_can_reactivate_a_deactivated_faculty(): void
+    {
+        $faculty = Facultad::create(['nombre' => 'Facultad de Arquitectura', 'estado' => false]);
+
+        $response = $this->patchJson("/api/v1/faculties/{$faculty->getKey()}/activate");
+
+        $response->assertOk()
+            ->assertJsonPath('data.is_active', true);
+
+        $this->assertDatabaseHas('facultad', [
+            'id_facultad' => $faculty->getKey(),
+            'estado' => true,
+        ]);
+    }
+
+    public function test_faculty_index_lists_both_active_and_inactive_faculties(): void
+    {
+        $active = Facultad::create(['nombre' => 'Facultad Activa']);
+        $inactive = Facultad::create(['nombre' => 'Facultad Inactiva', 'estado' => false]);
+
+        $response = $this->getJson('/api/v1/admin/faculties');
+
+        $response->assertOk();
+        $ids = collect($response->json('data'))->pluck('id');
+        $this->assertTrue($ids->contains($active->getKey()));
+        $this->assertTrue($ids->contains($inactive->getKey()));
+    }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Actions\Modalities\ActivateModality;
 use App\Actions\Modalities\DeactivateModality;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Modalities\StoreModalityRequest;
@@ -40,5 +41,12 @@ class ModalityController extends Controller
         $this->authorize('deactivate', $modality);
 
         return ModalityResource::make($deactivateModality->handle($modality));
+    }
+
+    public function activate(Modalidad $modality, ActivateModality $activateModality): ModalityResource
+    {
+        $this->authorize('activate', $modality);
+
+        return ModalityResource::make($activateModality->handle($modality));
     }
 }

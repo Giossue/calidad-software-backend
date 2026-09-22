@@ -26,4 +26,9 @@ class ModalityPolicy
     {
         return $user->rol === 'administrador';
     }
+
+    public function activate(Usuario $user, Modalidad $modality): bool
+    {
+        return $user->rol === 'administrador';
+    }
 }

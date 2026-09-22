@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Admin;
 
+use App\Actions\Academic\ActivateCycle;
 use App\Actions\Academic\CreateCycle;
 use App\Actions\Academic\DeactivateCycle;
 use App\Actions\Academic\UpdateCycle;
@@ -43,5 +44,10 @@ class CycleController extends Controller
     public function deactivate(Ciclo $cycle, DeactivateCycle $deactivateCycle): CycleResource
     {
         return CycleResource::make($deactivateCycle->handle($cycle));
+    }
+
+    public function activate(Ciclo $cycle, ActivateCycle $activateCycle): CycleResource
+    {
+        return CycleResource::make($activateCycle->handle($cycle));
     }
 }

@@ -26,4 +26,9 @@ class AcademicPeriodPolicy
     {
         return $user->rol === 'administrador';
     }
+
+    public function activate(Usuario $user, PeriodoAcademico $academicPeriod): bool
+    {
+        return $user->rol === 'administrador';
+    }
 }

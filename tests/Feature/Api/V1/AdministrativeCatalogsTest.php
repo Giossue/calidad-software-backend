@@ -64,6 +64,11 @@ class AdministrativeCatalogsTest extends TestCase
             ->assertOk()->assertJsonPath('data.is_active', false);
 
         $this->assertDatabaseHas('periodo_academico', ['id_periodo' => $id, 'estado' => false]);
+
+        $this->patchJson("/api/v1/academic-periods/{$id}/activate")
+            ->assertOk()->assertJsonPath('data.is_active', true);
+
+        $this->assertDatabaseHas('periodo_academico', ['id_periodo' => $id, 'estado' => true]);
     }
 
     public function test_academic_period_rejects_an_end_date_before_its_start_date(): void
@@ -93,6 +98,11 @@ class AdministrativeCatalogsTest extends TestCase
             ->assertOk()->assertJsonPath('data.is_active', false);
 
         $this->assertDatabaseHas('modalidad', ['id_modalidad' => $id, 'estado' => false]);
+
+        $this->patchJson("/api/v1/modalities/{$id}/activate")
+            ->assertOk()->assertJsonPath('data.is_active', true);
+
+        $this->assertDatabaseHas('modalidad', ['id_modalidad' => $id, 'estado' => true]);
     }
 
     public function test_non_administrator_cannot_manage_administrative_catalogs(): void

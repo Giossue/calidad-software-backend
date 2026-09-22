@@ -19,7 +19,7 @@ class FacultyController extends Controller
         Gate::authorize('viewAny', Facultad::class);
 
         return FacultyResource::collection(
-            Facultad::query()->where('estado', true)->orderBy('nombre')->get(),
+            Facultad::query()->orderBy('nombre')->get(),
         );
     }
 
@@ -49,6 +49,14 @@ class FacultyController extends Controller
     {
         Gate::authorize('deactivate', $faculty);
         $faculty->update(['estado' => false]);
+
+        return FacultyResource::make($faculty->refresh());
+    }
+
+    public function activate(Facultad $faculty): FacultyResource
+    {
+        Gate::authorize('activate', $faculty);
+        $faculty->update(['estado' => true]);
 
         return FacultyResource::make($faculty->refresh());
     }

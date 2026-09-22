@@ -26,4 +26,9 @@ class CarreraPolicy
     {
         return $this->create($user) && $carrera->estado;
     }
+
+    public function activate(Usuario $user, Carrera $carrera): bool
+    {
+        return $this->create($user) && ! $carrera->estado;
+    }
 }

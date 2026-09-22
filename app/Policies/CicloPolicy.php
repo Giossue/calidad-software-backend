@@ -26,4 +26,9 @@ class CicloPolicy
     {
         return $this->create($user) && $ciclo->estado;
     }
+
+    public function activate(Usuario $user, Ciclo $ciclo): bool
+    {
+        return $this->create($user) && ! $ciclo->estado;
+    }
 }

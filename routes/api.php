@@ -41,6 +41,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::post('/', [UserController::class, 'store'])->name('store');
             Route::patch('{user}', [UserController::class, 'update'])->name('update');
             Route::patch('{user}/deactivate', [UserController::class, 'deactivate'])->name('deactivate');
+            Route::patch('{user}/activate', [UserController::class, 'activate'])->name('activate');
         });
 
         Route::prefix('faculties')->name('faculties.')->group(function (): void {
@@ -48,6 +49,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::post('/', [FacultyController::class, 'store'])->name('store');
             Route::patch('{faculty}', [FacultyController::class, 'update'])->name('update');
             Route::patch('{faculty}/deactivate', [FacultyController::class, 'deactivate'])->name('deactivate');
+            Route::patch('{faculty}/activate', [FacultyController::class, 'activate'])->name('activate');
         });
     });
 
@@ -57,11 +59,15 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::patch('academic-periods/{academicPeriod}', [AcademicPeriodController::class, 'update'])->name('academic-periods.update.legacy');
         Route::patch('academic-periods/{academicPeriod}/deactivate', [AcademicPeriodController::class, 'deactivate'])
             ->middleware('can:deactivate,academicPeriod')->name('academic-periods.deactivate.legacy');
+        Route::patch('academic-periods/{academicPeriod}/activate', [AcademicPeriodController::class, 'activate'])
+            ->middleware('can:activate,academicPeriod')->name('academic-periods.activate.legacy');
         Route::get('modalities', [ModalityController::class, 'index'])->name('modalities.index.legacy');
         Route::post('modalities', [ModalityController::class, 'store'])->name('modalities.store.legacy');
         Route::patch('modalities/{modality}', [ModalityController::class, 'update'])->name('modalities.update.legacy');
         Route::patch('modalities/{modality}/deactivate', [ModalityController::class, 'deactivate'])
             ->middleware('can:deactivate,modality')->name('modalities.deactivate.legacy');
+        Route::patch('modalities/{modality}/activate', [ModalityController::class, 'activate'])
+            ->middleware('can:activate,modality')->name('modalities.activate.legacy');
     });
 
     Route::middleware(['auth:sanctum', 'verified'])
@@ -75,19 +81,27 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::patch('careers/{career}', [CareerController::class, 'update'])->name('careers.update');
             Route::patch('careers/{career}/deactivate', [CareerController::class, 'deactivate'])
                 ->middleware('can:deactivate,career')->name('careers.deactivate');
+            Route::patch('careers/{career}/activate', [CareerController::class, 'activate'])
+                ->middleware('can:activate,career')->name('careers.activate');
             Route::post('cycles', [CycleController::class, 'store'])->name('cycles.store');
             Route::patch('cycles/{cycle}', [CycleController::class, 'update'])->name('cycles.update');
             Route::patch('cycles/{cycle}/deactivate', [CycleController::class, 'deactivate'])
                 ->middleware('can:deactivate,cycle')->name('cycles.deactivate');
+            Route::patch('cycles/{cycle}/activate', [CycleController::class, 'activate'])
+                ->middleware('can:activate,cycle')->name('cycles.activate');
             Route::get('academic-periods', [AcademicPeriodController::class, 'index'])->name('academic-periods.index');
             Route::post('academic-periods', [AcademicPeriodController::class, 'store'])->name('academic-periods.store');
             Route::patch('academic-periods/{academicPeriod}', [AcademicPeriodController::class, 'update'])->name('academic-periods.update');
             Route::patch('academic-periods/{academicPeriod}/deactivate', [AcademicPeriodController::class, 'deactivate'])
                 ->middleware('can:deactivate,academicPeriod')->name('academic-periods.deactivate');
+            Route::patch('academic-periods/{academicPeriod}/activate', [AcademicPeriodController::class, 'activate'])
+                ->middleware('can:activate,academicPeriod')->name('academic-periods.activate');
             Route::get('modalities', [ModalityController::class, 'index'])->name('modalities.index');
             Route::post('modalities', [ModalityController::class, 'store'])->name('modalities.store');
             Route::patch('modalities/{modality}', [ModalityController::class, 'update'])->name('modalities.update');
             Route::patch('modalities/{modality}/deactivate', [ModalityController::class, 'deactivate'])
                 ->middleware('can:deactivate,modality')->name('modalities.deactivate');
+            Route::patch('modalities/{modality}/activate', [ModalityController::class, 'activate'])
+                ->middleware('can:activate,modality')->name('modalities.activate');
         });
 });

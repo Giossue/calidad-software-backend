@@ -22,6 +22,11 @@ class FacultadPolicy
         return $this->viewAny($user) && $faculty->estado;
     }
 
+    public function activate(Usuario $user, Facultad $faculty): bool
+    {
+        return $this->viewAny($user) && ! $faculty->estado;
+    }
+
     public function viewAny(Usuario $user): bool
     {
         return $user->rol === 'administrador' && $user->estado;

@@ -25,4 +25,9 @@ class UsuarioPolicy
     {
         return $this->create($user) && $target->estado;
     }
+
+    public function activate(Usuario $user, Usuario $target): bool
+    {
+        return $this->create($user) && ! $target->estado;
+    }
 }

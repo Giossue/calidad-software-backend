@@ -42,6 +42,12 @@ class AcademicCatalogTest extends TestCase
             ->assertJsonPath('data.status', false);
 
         $this->assertFalse($career->fresh()->estado);
+
+        $this->patchJson('/api/v1/admin/careers/'.$career->getKey().'/activate')
+            ->assertOk()
+            ->assertJsonPath('data.status', true);
+
+        $this->assertTrue($career->fresh()->estado);
     }
 
     public function test_career_name_is_unique_inside_a_faculty(): void
@@ -129,6 +135,12 @@ class AcademicCatalogTest extends TestCase
             ->assertJsonPath('data.status', false);
 
         $this->assertFalse($cycle->fresh()->estado);
+
+        $this->patchJson('/api/v1/admin/cycles/'.$cycle->getKey().'/activate')
+            ->assertOk()
+            ->assertJsonPath('data.status', true);
+
+        $this->assertTrue($cycle->fresh()->estado);
     }
 
     private function actingAsAdministrator(): Usuario
