@@ -2,9 +2,14 @@
 
 namespace App\Providers;
 
+use App\Models\Modalidad;
+use App\Models\PeriodoAcademico;
+use App\Policies\AcademicPeriodPolicy;
+use App\Policies\ModalityPolicy;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -24,6 +29,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+
+        Gate::policy(PeriodoAcademico::class, AcademicPeriodPolicy::class);
+        Gate::policy(Modalidad::class, ModalityPolicy::class);
     }
 
     /**

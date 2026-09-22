@@ -1,16 +1,21 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AcademicPeriodController;
 use App\Http\Controllers\Api\V1\Admin\CareerController;
 use App\Http\Controllers\Api\V1\Admin\CycleController;
 use App\Http\Controllers\Api\V1\Admin\FacultyController;
 use App\Http\Controllers\Api\V1\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\V1\Auth\PasswordController;
+use App\Http\Controllers\Api\V1\Auth\RegistrationController;
 use App\Http\Controllers\Api\V1\Auth\TokenController;
 use App\Http\Controllers\Api\V1\Auth\TwoFactorChallengeController;
+use App\Http\Controllers\Api\V1\ModalityController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
     Route::prefix('auth')->name('auth.')->group(function (): void {
+        Route::post('register', [RegistrationController::class, 'store'])->name('register');
+
         Route::post('login', [TokenController::class, 'store'])
             ->middleware('throttle:5,1')->name('login');
         Route::post('two-factor-challenge', [TwoFactorChallengeController::class, 'store'])
@@ -48,5 +53,25 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::patch('cycles/{cycle}/deactivate', [CycleController::class, 'deactivate'])
                 ->middleware('can:deactivate,cycle')
                 ->name('cycles.deactivate');
+
+            Route::get('academic-periods', [AcademicPeriodController::class, 'index'])
+                ->name('academic-periods.index');
+            Route::post('academic-periods', [AcademicPeriodController::class, 'store'])
+                ->name('academic-periods.store');
+            Route::patch('academic-periods/{academicPeriod}', [AcademicPeriodController::class, 'update'])
+                ->name('academic-periods.update');
+            Route::patch('academic-periods/{academicPeriod}/deactivate', [AcademicPeriodController::class, 'deactivate'])
+                ->middleware('can:deactivate,academicPeriod')
+                ->name('academic-periods.deactivate');
+
+            Route::get('modalities', [ModalityController::class, 'index'])
+                ->name('modalities.index');
+            Route::post('modalities', [ModalityController::class, 'store'])
+                ->name('modalities.store');
+            Route::patch('modalities/{modality}', [ModalityController::class, 'update'])
+                ->name('modalities.update');
+            Route::patch('modalities/{modality}/deactivate', [ModalityController::class, 'deactivate'])
+                ->middleware('can:deactivate,modality')
+                ->name('modalities.deactivate');
         });
 });

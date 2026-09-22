@@ -29,6 +29,7 @@ frontend, separados por comas. La API se sirve por defecto en
 
 La API expone:
 
+- `POST /api/v1/auth/register`;
 - `POST /api/v1/auth/login`: recibe `email`, `password` y `device_name`;
 - `POST /api/v1/auth/two-factor-challenge`;
 - `POST /api/v1/auth/forgot-password` y `/reset-password`;

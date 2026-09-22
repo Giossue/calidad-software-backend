@@ -6,9 +6,17 @@
 
 namespace App\Models;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id_modalidad
+ * @property string $nombre
+ * @property bool $estado
+ * @property CarbonInterface|null $created_at
+ * @property CarbonInterface|null $updated_at
+ */
 class Modalidad extends Model
 {
     protected $table = 'modalidad';
