@@ -37,6 +37,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
     Route::middleware('auth:sanctum')->group(function (): void {
         Route::prefix('users')->name('users.')->group(function (): void {
+            Route::get('/', [UserController::class, 'index'])->name('index');
             Route::post('/', [UserController::class, 'store'])->name('store');
             Route::patch('{user}', [UserController::class, 'update'])->name('update');
             Route::patch('{user}/deactivate', [UserController::class, 'deactivate'])->name('deactivate');

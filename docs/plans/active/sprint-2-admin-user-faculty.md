@@ -14,6 +14,7 @@ arquitectura existente (controladores delgados + Form Requests + Resources).
 - [x] Crear Form Requests: `StoreUserRequest`, `UpdateUserRequest`,
       `StoreFacultyRequest`, `UpdateFacultyRequest`.
 - [x] Crear `UserController` y `FacultyController`.
+- [x] Agregar listado administrativo de usuarios para soportar la pestaña de gestión.
 - [x] Registrar rutas bajo `/api/v1/users` y `/api/v1/faculties` con `auth:sanctum`.
 - [x] Reparar referencia rota de `RegisterRequest` (phpstan), sin habilitar rutas.
 - [x] Tests de Feature para las seis historias.

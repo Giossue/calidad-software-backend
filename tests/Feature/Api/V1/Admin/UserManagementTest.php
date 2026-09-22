@@ -21,6 +21,26 @@ class UserManagementTest extends TestCase
         Sanctum::actingAs($this->admin);
     }
 
+    public function test_admin_can_list_active_and_deactivated_users(): void
+    {
+        $active = Usuario::factory()->create(['nombre' => 'Ana Activa']);
+        $inactive = Usuario::factory()->create(['nombre' => 'Bruno Inactivo', 'estado' => false]);
+
+        $this->getJson('/api/v1/users')
+            ->assertOk()
+            ->assertJsonPath('data.0.id', $active->getKey())
+            ->assertJsonPath('data.0.is_active', true)
+            ->assertJsonPath('data.1.id', $inactive->getKey())
+            ->assertJsonPath('data.1.is_active', false);
+    }
+
+    public function test_non_administrator_cannot_list_users(): void
+    {
+        Sanctum::actingAs(Usuario::factory()->create(['rol' => 'docente']));
+
+        $this->getJson('/api/v1/users')->assertForbidden();
+    }
+
     public function test_admin_can_register_a_user(): void
     {
         $response = $this->postJson('/api/v1/users', [

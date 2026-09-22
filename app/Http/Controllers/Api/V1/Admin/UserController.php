@@ -8,11 +8,21 @@ use App\Http\Requests\Api\V1\Admin\UpdateUserRequest;
 use App\Http\Resources\Api\V1\UserResource;
 use App\Models\Usuario;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 
 class UserController extends Controller
 {
+    public function index(): AnonymousResourceCollection
+    {
+        Gate::authorize('viewAny', Usuario::class);
+
+        return UserResource::collection(
+            Usuario::query()->orderBy('nombre')->orderBy('id_usuario')->get(),
+        );
+    }
+
     public function store(StoreUserRequest $request): JsonResponse
     {
         $user = Usuario::create([
