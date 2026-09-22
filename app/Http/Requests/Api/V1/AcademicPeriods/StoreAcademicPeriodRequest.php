@@ -15,7 +15,11 @@ class StoreAcademicPeriodRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $this->merge(['nombre' => trim((string) $this->input('nombre'))]);
+        $this->merge([
+            'nombre' => trim((string) ($this->input('nombre') ?? $this->input('name'))),
+            'fecha_inicio' => $this->input('fecha_inicio') ?? $this->input('start_date'),
+            'fecha_fin' => $this->input('fecha_fin') ?? $this->input('end_date'),
+        ]);
     }
 
     /** @return array<string, mixed> */

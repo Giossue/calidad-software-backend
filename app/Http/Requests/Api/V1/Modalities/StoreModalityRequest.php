@@ -15,7 +15,7 @@ class StoreModalityRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
-        $this->merge(['nombre' => trim((string) $this->input('nombre'))]);
+        $this->merge(['nombre' => trim((string) ($this->input('nombre') ?? $this->input('name')))]);
     }
 
     /** @return array<string, mixed> */
