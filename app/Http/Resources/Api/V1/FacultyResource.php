@@ -16,6 +16,9 @@ class FacultyResource extends JsonResource
             'id' => $this->getKey(),
             'name' => $this->nombre,
             'status' => $this->estado,
+            'is_active' => $this->estado,
+            'created_at' => $this->created_at?->toISOString(),
+            'updated_at' => $this->updated_at?->toISOString(),
         ];
     }
 }
