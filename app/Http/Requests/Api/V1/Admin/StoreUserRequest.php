@@ -7,7 +7,6 @@ use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\In;
-use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\Rules\Unique;
 
 class StoreUserRequest extends FormRequest
@@ -17,7 +16,7 @@ class StoreUserRequest extends FormRequest
         return $this->user()?->can('create', Usuario::class) ?? false;
     }
 
-    /** @return array<string, array<int, string|In|Password|Unique|ValidationRule>> */
+    /** @return array<string, array<int, string|In|Unique|ValidationRule>> */
     public function rules(): array
     {
         return [
@@ -32,8 +31,6 @@ class StoreUserRequest extends FormRequest
                 'coordinador_titulacion',
                 'administrador',
             ])],
-            'password' => ['required', 'string', Password::default(), 'confirmed'],
-            'password_confirmation' => ['required', 'string'],
         ];
     }
 
@@ -46,8 +43,6 @@ class StoreUserRequest extends FormRequest
             'email' => 'correo electrónico',
             'phone' => 'teléfono',
             'role' => 'rol',
-            'password' => 'contraseña',
-            'password_confirmation' => 'confirmación de contraseña',
         ];
     }
 }

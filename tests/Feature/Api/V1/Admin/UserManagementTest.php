@@ -3,7 +3,9 @@
 namespace Tests\Feature\Api\V1\Admin;
 
 use App\Models\Usuario;
+use App\Notifications\ProvisionalPasswordNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -43,21 +45,22 @@ class UserManagementTest extends TestCase
 
     public function test_admin_can_register_a_user(): void
     {
+        Notification::fake();
+
         $response = $this->postJson('/api/v1/users', [
             'identification' => '0102030405',
             'name' => 'Luis Pérez',
             'email' => 'luis@example.com',
             'phone' => '0991234567',
             'role' => 'estudiante',
-            'password' => 'Password1!',
-            'password_confirmation' => 'Password1!',
         ]);
 
         $response->assertCreated()
             ->assertJsonPath('data.identification', '0102030405')
             ->assertJsonPath('data.email', 'luis@example.com')
             ->assertJsonPath('data.role', 'estudiante')
-            ->assertJsonPath('data.is_active', true);
+            ->assertJsonPath('data.is_active', true)
+            ->assertJsonPath('message', 'Usuario creado. Revisa el correo registrado para obtener la contraseña provisional.');
 
         $this->assertDatabaseHas('usuario', [
             'cedula' => '0102030405',
@@ -68,8 +71,10 @@ class UserManagementTest extends TestCase
         ]);
 
         $user = Usuario::query()->where('correo', 'luis@example.com')->firstOrFail();
-        $this->assertNotSame('Password1!', $user->password_hash);
-        $this->assertTrue(password_verify('Password1!', $user->password_hash));
+        $this->assertNotNull($user->email_verified_at);
+        Notification::assertSentTo($user, ProvisionalPasswordNotification::class, function (ProvisionalPasswordNotification $notification) use ($user): bool {
+            return password_verify($notification->provisionalPassword, $user->password_hash);
+        });
     }
 
     public function test_registering_a_user_rejects_duplicate_cedula_and_email(): void
@@ -81,15 +86,13 @@ class UserManagementTest extends TestCase
             'name' => 'Luis Pérez',
             'email' => 'existente@example.com',
             'role' => 'estudiante',
-            'password' => 'Password1!',
-            'password_confirmation' => 'Password1!',
         ]);
 
         $response->assertUnprocessable()
             ->assertJsonValidationErrors(['identification', 'email']);
     }
 
-    public function test_registering_a_user_rejects_invalid_role_or_missing_password(): void
+    public function test_registering_a_user_rejects_an_invalid_role(): void
     {
         $this->postJson('/api/v1/users', [
             'identification' => '0102030405',
@@ -97,7 +100,7 @@ class UserManagementTest extends TestCase
             'email' => 'luis@example.com',
             'role' => 'lider',
         ])->assertUnprocessable()
-            ->assertJsonValidationErrors(['role', 'password']);
+            ->assertJsonValidationErrors(['role']);
     }
 
     public function test_admin_can_update_a_user(): void
