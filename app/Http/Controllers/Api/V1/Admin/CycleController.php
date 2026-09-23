@@ -25,6 +25,11 @@ class CycleController extends Controller
         Gate::authorize('viewAny', Ciclo::class);
 
         $query = Ciclo::query()->with('carrera');
+        $careerId = $request->integer('career_id') ?: null;
+
+        if ($careerId) {
+            $query->where('fk_carrera', $careerId);
+        }
 
         if ($search = trim((string) $request->string('search'))) {
             $query->where(function (Builder $inner) use ($search) {
@@ -33,11 +38,16 @@ class CycleController extends Controller
             });
         }
 
+        $scopedCount = fn (bool $active) => Ciclo::query()
+            ->when($careerId, fn (Builder $q) => $q->where('fk_carrera', $careerId))
+            ->where('estado', $active)
+            ->count();
+
         return CycleResource::collection(
             $query->orderBy('fk_carrera')->orderBy('numero')->paginate($request->integer('per_page', 15)),
         )->additional(['meta' => [
-            'active_count' => Ciclo::query()->where('estado', true)->count(),
-            'inactive_count' => Ciclo::query()->where('estado', false)->count(),
+            'active_count' => $scopedCount(true),
+            'inactive_count' => $scopedCount(false),
         ]]);
     }
 

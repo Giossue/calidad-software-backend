@@ -24,7 +24,10 @@ class CareerController extends Controller
     {
         Gate::authorize('viewAny', Carrera::class);
 
-        $query = Carrera::query()->with('facultad');
+        $query = Carrera::query()->with('facultad')->withCount([
+            'ciclos',
+            'ciclos as active_cycles_count' => fn (Builder $q) => $q->where('estado', true),
+        ]);
 
         if ($search = trim((string) $request->string('search'))) {
             $query->where(function (Builder $inner) use ($search) {

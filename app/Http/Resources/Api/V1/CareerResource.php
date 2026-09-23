@@ -18,6 +18,8 @@ class CareerResource extends JsonResource
             'faculty_name' => $this->whenLoaded('facultad', fn (): string => $this->facultad->nombre),
             'name' => $this->nombre,
             'status' => $this->estado,
+            'cycles_count' => (int) ($this->ciclos_count ?? 0),
+            'active_cycles_count' => (int) ($this->active_cycles_count ?? 0),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

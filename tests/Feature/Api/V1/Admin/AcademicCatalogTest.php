@@ -207,6 +207,45 @@ class AcademicCatalogTest extends TestCase
         $this->assertFalse($names->contains('Nivel inicial'));
     }
 
+    public function test_cycle_index_filters_by_career_id_and_scopes_counts_to_it(): void
+    {
+        $this->actingAsAdministrator();
+        $faculty = Facultad::query()->create(['nombre' => 'Facultad de Ciencias']);
+        $career = Carrera::query()->create(['fk_facultad' => $faculty->getKey(), 'nombre' => 'Física', 'estado' => true]);
+        $otherCareer = Carrera::query()->create(['fk_facultad' => $faculty->getKey(), 'nombre' => 'Química', 'estado' => true]);
+        Ciclo::query()->create(['fk_carrera' => $career->getKey(), 'nombre' => 'Ciclo Uno', 'numero' => 1, 'estado' => true]);
+        Ciclo::query()->create(['fk_carrera' => $career->getKey(), 'nombre' => 'Ciclo Dos', 'numero' => 2, 'estado' => false]);
+        Ciclo::query()->create(['fk_carrera' => $otherCareer->getKey(), 'nombre' => 'Otro Ciclo', 'numero' => 1, 'estado' => true]);
+
+        $response = $this->getJson("/api/v1/admin/cycles?career_id={$career->getKey()}");
+
+        $response->assertOk()
+            ->assertJsonPath('meta.total', 2)
+            ->assertJsonPath('meta.active_count', 1)
+            ->assertJsonPath('meta.inactive_count', 1);
+
+        $names = collect($response->json('data'))->pluck('name');
+        $this->assertTrue($names->contains('Ciclo Uno'));
+        $this->assertTrue($names->contains('Ciclo Dos'));
+        $this->assertFalse($names->contains('Otro Ciclo'));
+    }
+
+    public function test_career_index_reports_cycle_counts(): void
+    {
+        $this->actingAsAdministrator();
+        $faculty = Facultad::query()->create(['nombre' => 'Facultad de Derecho']);
+        $career = Carrera::query()->create(['fk_facultad' => $faculty->getKey(), 'nombre' => 'Derecho', 'estado' => true]);
+        Ciclo::query()->create(['fk_carrera' => $career->getKey(), 'nombre' => 'Ciclo Uno', 'numero' => 1, 'estado' => true]);
+        Ciclo::query()->create(['fk_carrera' => $career->getKey(), 'nombre' => 'Ciclo Dos', 'numero' => 2, 'estado' => false]);
+
+        $response = $this->getJson('/api/v1/admin/careers');
+
+        $response->assertOk();
+        $data = collect($response->json('data'))->firstWhere('id', $career->getKey());
+        $this->assertSame(2, $data['cycles_count']);
+        $this->assertSame(1, $data['active_cycles_count']);
+    }
+
     private function actingAsAdministrator(): Usuario
     {
         $administrator = Usuario::factory()->create(['rol' => 'administrador']);
