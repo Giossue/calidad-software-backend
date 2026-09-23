@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Usuario;
+use App\Rules\CedulaEcuatoriana;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -25,9 +26,10 @@ class UsuarioFactory extends Factory
     public function definition(): array
     {
         return [
-            'cedula' => fake()->unique()->numerify('##########'),
+            'cedula' => self::generateValidCedula(),
             'nombre' => fake()->name(),
             'correo' => fake()->unique()->safeEmail(),
+            'telefono' => fake()->unique()->numerify('09########'),
             'email_verified_at' => now(),
             'password_hash' => static::$password ??= Hash::make('password'),
             'rol' => 'estudiante',
@@ -37,6 +39,21 @@ class UsuarioFactory extends Factory
             'two_factor_recovery_codes' => null,
             'two_factor_confirmed_at' => null,
         ];
+    }
+
+    /**
+     * Generates a cédula that satisfies the Ecuadorian módulo-10 checksum,
+     * matching the constraints enforced by App\Rules\CedulaEcuatoriana.
+     */
+    private static function generateValidCedula(): string
+    {
+        $province = str_pad((string) fake()->numberBetween(1, 24), 2, '0', STR_PAD_LEFT);
+        $thirdDigit = (string) fake()->numberBetween(0, 5);
+        $rest = fake()->unique()->numerify('######');
+
+        $firstNineDigits = array_map('intval', str_split($province.$thirdDigit.$rest));
+
+        return implode('', $firstNineDigits).CedulaEcuatoriana::checkDigit($firstNineDigits);
     }
 
     /**

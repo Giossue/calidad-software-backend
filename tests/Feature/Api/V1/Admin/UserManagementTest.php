@@ -48,7 +48,7 @@ class UserManagementTest extends TestCase
         Notification::fake();
 
         $response = $this->postJson('/api/v1/users', [
-            'identification' => '0102030405',
+            'identification' => '0926687856',
             'name' => 'Luis Pérez',
             'email' => 'luis@example.com',
             'phone' => '0991234567',
@@ -56,14 +56,14 @@ class UserManagementTest extends TestCase
         ]);
 
         $response->assertCreated()
-            ->assertJsonPath('data.identification', '0102030405')
+            ->assertJsonPath('data.identification', '0926687856')
             ->assertJsonPath('data.email', 'luis@example.com')
             ->assertJsonPath('data.role', 'estudiante')
             ->assertJsonPath('data.is_active', true)
             ->assertJsonPath('message', 'Usuario creado. Revisa el correo registrado para obtener la contraseña provisional.');
 
         $this->assertDatabaseHas('usuario', [
-            'cedula' => '0102030405',
+            'cedula' => '0926687856',
             'correo' => 'luis@example.com',
             'telefono' => '0991234567',
             'rol' => 'estudiante',
@@ -79,12 +79,13 @@ class UserManagementTest extends TestCase
 
     public function test_registering_a_user_rejects_duplicate_cedula_and_email(): void
     {
-        Usuario::factory()->create(['cedula' => '0102030405', 'correo' => 'existente@example.com']);
+        Usuario::factory()->create(['cedula' => '0926687856', 'correo' => 'existente@example.com']);
 
         $response = $this->postJson('/api/v1/users', [
-            'identification' => '0102030405',
+            'identification' => '0926687856',
             'name' => 'Luis Pérez',
             'email' => 'existente@example.com',
+            'phone' => '0991234567',
             'role' => 'estudiante',
         ]);
 
@@ -95,12 +96,57 @@ class UserManagementTest extends TestCase
     public function test_registering_a_user_rejects_an_invalid_role(): void
     {
         $this->postJson('/api/v1/users', [
-            'identification' => '0102030405',
+            'identification' => '0926687856',
             'name' => 'Luis Pérez',
             'email' => 'luis@example.com',
+            'phone' => '0991234567',
             'role' => 'lider',
         ])->assertUnprocessable()
             ->assertJsonValidationErrors(['role']);
+    }
+
+    public function test_registering_a_user_rejects_an_invalid_cedula_checksum(): void
+    {
+        $this->postJson('/api/v1/users', [
+            'identification' => '0102030405',
+            'name' => 'Luis Pérez',
+            'email' => 'luis@example.com',
+            'phone' => '0991234567',
+            'role' => 'estudiante',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['identification']);
+    }
+
+    public function test_registering_a_user_requires_a_ten_digit_phone(): void
+    {
+        $this->postJson('/api/v1/users', [
+            'identification' => '0926687856',
+            'name' => 'Luis Pérez',
+            'email' => 'luis@example.com',
+            'phone' => '099123',
+            'role' => 'estudiante',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['phone']);
+
+        $this->postJson('/api/v1/users', [
+            'identification' => '0926687856',
+            'name' => 'Luis Pérez',
+            'email' => 'luis@example.com',
+            'role' => 'estudiante',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['phone']);
+    }
+
+    public function test_registering_a_user_rejects_a_name_with_digits_or_symbols(): void
+    {
+        $this->postJson('/api/v1/users', [
+            'identification' => '0926687856',
+            'name' => 'Luis P3rez!',
+            'email' => 'luis@example.com',
+            'phone' => '0991234567',
+            'role' => 'estudiante',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['name']);
     }
 
     public function test_admin_can_update_a_user(): void
@@ -145,7 +191,7 @@ class UserManagementTest extends TestCase
 
     public function test_update_with_password_rehashes_and_preserves_other_fields(): void
     {
-        $user = Usuario::factory()->create(['cedula' => '0302010405']);
+        $user = Usuario::factory()->create(['cedula' => '0320104052']);
 
         $this->patchJson("/api/v1/users/{$user->getKey()}", [
             'password' => 'NuevaClave1!',
@@ -155,7 +201,7 @@ class UserManagementTest extends TestCase
         $fresh = $user->fresh();
         $this->assertNotSame($user->password_hash, $fresh->password_hash);
         $this->assertTrue(password_verify('NuevaClave1!', $fresh->password_hash));
-        $this->assertSame('0302010405', $fresh->cedula);
+        $this->assertSame('0320104052', $fresh->cedula);
     }
 
     public function test_update_rejects_cedula_or_email_used_by_another_user(): void

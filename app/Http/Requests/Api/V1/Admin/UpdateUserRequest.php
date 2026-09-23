@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\Usuario;
+use App\Rules\CedulaEcuatoriana;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -25,15 +26,15 @@ class UpdateUserRequest extends FormRequest
     {
         return [
             'identification' => [
-                'sometimes', 'string', 'max:20',
+                'sometimes', 'digits:10', new CedulaEcuatoriana,
                 Rule::unique('usuario', 'cedula')->ignore($this->route('user')),
             ],
-            'name' => ['sometimes', 'string', 'max:150'],
+            'name' => ['sometimes', 'string', 'max:150', 'regex:/^[\pL\s]+$/u'],
             'email' => [
                 'sometimes', 'string', 'email:rfc', 'max:150',
                 Rule::unique('usuario', 'correo')->ignore($this->route('user')),
             ],
-            'phone' => ['sometimes', 'nullable', 'string', 'max:20'],
+            'phone' => ['sometimes', 'digits:10'],
             'role' => ['sometimes', Rule::in([
                 'estudiante',
                 'docente',
