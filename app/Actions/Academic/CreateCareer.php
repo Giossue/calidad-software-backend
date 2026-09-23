@@ -11,6 +11,7 @@ class CreateCareer
     {
         return Carrera::query()->create([
             'fk_facultad' => (int) $attributes['faculty_id'],
+            'fk_modalidad' => isset($attributes['modality_id']) ? (int) $attributes['modality_id'] : null,
             'nombre' => (string) $attributes['name'],
             'estado' => true,
         ]);

@@ -43,13 +43,21 @@ class UpdateCareerRequest extends FormRequest
                     ->where(fn (Builder $query): Builder => $query->where('fk_facultad', $facultyId))
                     ->ignore($career?->getKey(), $career?->getKeyName()),
             ],
+            'modality_id' => [
+                'sometimes',
+                'nullable',
+                'integer',
+                Rule::exists('modalidad', 'id_modalidad')->where(
+                    fn (Builder $query): Builder => $query->where('estado', true),
+                ),
+            ],
         ];
     }
 
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            if (! $this->hasAny(['faculty_id', 'name'])) {
+            if (! $this->hasAny(['faculty_id', 'name', 'modality_id'])) {
                 $validator->errors()->add('career', 'Debes enviar al menos un campo para actualizar.');
             }
         });
@@ -61,6 +69,7 @@ class UpdateCareerRequest extends FormRequest
         return [
             'faculty_id' => 'facultad',
             'name' => 'nombre de la carrera',
+            'modality_id' => 'modalidad',
         ];
     }
 }

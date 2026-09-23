@@ -33,6 +33,13 @@ class StoreCareerRequest extends FormRequest
                     fn (Builder $query): Builder => $query->where('fk_facultad', $this->integer('faculty_id')),
                 ),
             ],
+            'modality_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('modalidad', 'id_modalidad')->where(
+                    fn (Builder $query): Builder => $query->where('estado', true),
+                ),
+            ],
         ];
     }
 
@@ -42,6 +49,7 @@ class StoreCareerRequest extends FormRequest
         return [
             'faculty_id' => 'facultad',
             'name' => 'nombre de la carrera',
+            'modality_id' => 'modalidad',
         ];
     }
 }

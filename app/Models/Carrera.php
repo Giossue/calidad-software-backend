@@ -16,7 +16,7 @@ class Carrera extends Model
 
     protected $primaryKey = 'id_carrera';
 
-    protected $fillable = ['fk_facultad', 'nombre', 'estado'];
+    protected $fillable = ['fk_facultad', 'fk_modalidad', 'nombre', 'estado'];
 
     protected function casts(): array
     {
@@ -29,6 +29,14 @@ class Carrera extends Model
     public function facultad(): BelongsTo
     {
         return $this->belongsTo(Facultad::class, 'fk_facultad');
+    }
+
+    /**
+     * @return BelongsTo<Modalidad, $this>
+     */
+    public function modalidad(): BelongsTo
+    {
+        return $this->belongsTo(Modalidad::class, 'fk_modalidad');
     }
 
     /**

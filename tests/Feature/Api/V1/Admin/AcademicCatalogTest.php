@@ -5,6 +5,7 @@ namespace Tests\Feature\Api\V1\Admin;
 use App\Models\Carrera;
 use App\Models\Ciclo;
 use App\Models\Facultad;
+use App\Models\Modalidad;
 use App\Models\Usuario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -244,6 +245,73 @@ class AcademicCatalogTest extends TestCase
         $data = collect($response->json('data'))->firstWhere('id', $career->getKey());
         $this->assertSame(2, $data['cycles_count']);
         $this->assertSame(1, $data['active_cycles_count']);
+    }
+
+    public function test_career_can_be_created_with_a_modality_and_it_is_reported_in_the_index(): void
+    {
+        $this->actingAsAdministrator();
+        $faculty = Facultad::query()->create(['nombre' => 'Facultad de Ingeniería', 'estado' => true]);
+        $modality = Modalidad::query()->create(['nombre' => 'Presencial', 'estado' => true]);
+
+        $response = $this->postJson('/api/v1/admin/careers', [
+            'faculty_id' => $faculty->getKey(),
+            'name' => 'Ingeniería en Sistemas',
+            'modality_id' => $modality->getKey(),
+        ]);
+
+        $careerId = $response->assertCreated()
+            ->assertJsonPath('data.modality_id', $modality->getKey())
+            ->json('data.id');
+
+        $this->assertDatabaseHas('carrera', [
+            'id_carrera' => $careerId,
+            'fk_modalidad' => $modality->getKey(),
+        ]);
+
+        $index = $this->getJson('/api/v1/admin/careers');
+        $data = collect($index->json('data'))->firstWhere('id', $careerId);
+        $this->assertSame($modality->getKey(), $data['modality_id']);
+        $this->assertSame('Presencial', $data['modality_name']);
+    }
+
+    public function test_career_modality_remains_optional(): void
+    {
+        $this->actingAsAdministrator();
+        $faculty = Facultad::query()->create(['nombre' => 'Facultad de Ciencias', 'estado' => true]);
+
+        $response = $this->postJson('/api/v1/admin/careers', [
+            'faculty_id' => $faculty->getKey(),
+            'name' => 'Matemática Pura',
+        ]);
+
+        $careerId = $response->assertCreated()
+            ->assertJsonPath('data.modality_id', null)
+            ->json('data.id');
+
+        $modality = Modalidad::query()->create(['nombre' => 'Virtual', 'estado' => true]);
+
+        $this->patchJson('/api/v1/admin/careers/'.$careerId, ['modality_id' => $modality->getKey()])
+            ->assertOk()
+            ->assertJsonPath('data.modality_id', $modality->getKey());
+    }
+
+    public function test_career_rejects_an_inactive_or_unknown_modality(): void
+    {
+        $this->actingAsAdministrator();
+        $faculty = Facultad::query()->create(['nombre' => 'Facultad de Artes', 'estado' => true]);
+        $inactiveModality = Modalidad::query()->create(['nombre' => 'Modalidad Inactiva', 'estado' => false]);
+
+        $this->postJson('/api/v1/admin/careers', [
+            'faculty_id' => $faculty->getKey(),
+            'name' => 'Bellas Artes',
+            'modality_id' => $inactiveModality->getKey(),
+        ])->assertUnprocessable()->assertJsonValidationErrors('modality_id');
+
+        $this->postJson('/api/v1/admin/careers', [
+            'faculty_id' => $faculty->getKey(),
+            'name' => 'Bellas Artes',
+            'modality_id' => 99999,
+        ])->assertUnprocessable()->assertJsonValidationErrors('modality_id');
     }
 
     private function actingAsAdministrator(): Usuario

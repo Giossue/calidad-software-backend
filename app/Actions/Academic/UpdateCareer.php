@@ -19,6 +19,10 @@ class UpdateCareer
             $changes['nombre'] = (string) $attributes['name'];
         }
 
+        if (array_key_exists('modality_id', $attributes)) {
+            $changes['fk_modalidad'] = $attributes['modality_id'] !== null ? (int) $attributes['modality_id'] : null;
+        }
+
         $career->fill($changes)->save();
 
         return $career;

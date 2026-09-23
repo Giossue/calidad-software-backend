@@ -37,4 +37,12 @@ class Modalidad extends Model
     {
         return $this->hasMany(AsignaturaTutoria::class, 'fk_modalidad');
     }
+
+    /**
+     * @return HasMany<Carrera, $this>
+     */
+    public function carreras(): HasMany
+    {
+        return $this->hasMany(Carrera::class, 'fk_modalidad');
+    }
 }
