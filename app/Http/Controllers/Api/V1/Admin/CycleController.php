@@ -11,20 +11,34 @@ use App\Http\Requests\Api\V1\Admin\StoreCycleRequest;
 use App\Http\Requests\Api\V1\Admin\UpdateCycleRequest;
 use App\Http\Resources\Api\V1\CycleResource;
 use App\Models\Ciclo;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 
 class CycleController extends Controller
 {
-    public function index(): AnonymousResourceCollection
+    public function index(Request $request): AnonymousResourceCollection
     {
         Gate::authorize('viewAny', Ciclo::class);
 
+        $query = Ciclo::query()->with('carrera');
+
+        if ($search = trim((string) $request->string('search'))) {
+            $query->where(function (Builder $inner) use ($search) {
+                $inner->whereLike('nombre', "%{$search}%")
+                    ->orWhereHas('carrera', fn (Builder $q) => $q->whereLike('nombre', "%{$search}%"));
+            });
+        }
+
         return CycleResource::collection(
-            Ciclo::query()->with('carrera')->orderBy('fk_carrera')->orderBy('numero')->get(),
-        );
+            $query->orderBy('fk_carrera')->orderBy('numero')->paginate($request->integer('per_page', 15)),
+        )->additional(['meta' => [
+            'active_count' => Ciclo::query()->where('estado', true)->count(),
+            'inactive_count' => Ciclo::query()->where('estado', false)->count(),
+        ]]);
     }
 
     public function store(StoreCycleRequest $request, CreateCycle $createCycle): JsonResponse

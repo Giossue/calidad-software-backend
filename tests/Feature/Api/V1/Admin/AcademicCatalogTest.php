@@ -143,6 +143,70 @@ class AcademicCatalogTest extends TestCase
         $this->assertTrue($cycle->fresh()->estado);
     }
 
+    public function test_career_index_paginates_searches_and_reports_catalog_wide_counts(): void
+    {
+        $this->actingAsAdministrator();
+        $engineering = Facultad::query()->create(['nombre' => 'Facultad de Ingeniería']);
+        $health = Facultad::query()->create(['nombre' => 'Facultad de Salud']);
+        Carrera::query()->create(['fk_facultad' => $engineering->getKey(), 'nombre' => 'Ingeniería de Software', 'estado' => true]);
+        Carrera::query()->create(['fk_facultad' => $engineering->getKey(), 'nombre' => 'Ingeniería Civil', 'estado' => true]);
+        Carrera::query()->create(['fk_facultad' => $health->getKey(), 'nombre' => 'Medicina', 'estado' => false]);
+
+        $paginated = $this->getJson('/api/v1/admin/careers?per_page=2');
+        $paginated->assertOk()
+            ->assertJsonPath('meta.per_page', 2)
+            ->assertJsonPath('meta.total', 3)
+            ->assertJsonPath('meta.active_count', 2)
+            ->assertJsonPath('meta.inactive_count', 1);
+        $this->assertCount(2, $paginated->json('data'));
+
+        $searched = $this->getJson('/api/v1/admin/careers?search=ingenier');
+        $names = collect($searched->json('data'))->pluck('name');
+        $this->assertTrue($names->contains('Ingeniería de Software'));
+        $this->assertTrue($names->contains('Ingeniería Civil'));
+        $this->assertFalse($names->contains('Medicina'));
+
+        $searchedByFaculty = $this->getJson('/api/v1/admin/careers?search=salud');
+        $byFacultyNames = collect($searchedByFaculty->json('data'))->pluck('name');
+        $this->assertTrue($byFacultyNames->contains('Medicina'));
+    }
+
+    public function test_career_all_mode_returns_every_active_career_unpaginated(): void
+    {
+        $this->actingAsAdministrator();
+        $faculty = Facultad::query()->create(['nombre' => 'Facultad de Ciencias']);
+        Carrera::query()->create(['fk_facultad' => $faculty->getKey(), 'nombre' => 'Física', 'estado' => true]);
+        Carrera::query()->create(['fk_facultad' => $faculty->getKey(), 'nombre' => 'Química Inactiva', 'estado' => false]);
+
+        $response = $this->getJson('/api/v1/admin/careers?all=1');
+
+        $response->assertOk()->assertJsonMissingPath('meta');
+        $names = collect($response->json('data'))->pluck('name');
+        $this->assertTrue($names->contains('Física'));
+        $this->assertFalse($names->contains('Química Inactiva'));
+    }
+
+    public function test_cycle_index_paginates_and_searches_by_own_or_career_name(): void
+    {
+        $this->actingAsAdministrator();
+        $faculty = Facultad::query()->create(['nombre' => 'Facultad de Educación']);
+        $career = Carrera::query()->create(['fk_facultad' => $faculty->getKey(), 'nombre' => 'Pedagogía Especial', 'estado' => true]);
+        $otherCareer = Carrera::query()->create(['fk_facultad' => $faculty->getKey(), 'nombre' => 'Historia', 'estado' => true]);
+        Ciclo::query()->create(['fk_carrera' => $career->getKey(), 'nombre' => 'Primer ciclo', 'numero' => 1, 'estado' => true]);
+        Ciclo::query()->create(['fk_carrera' => $otherCareer->getKey(), 'nombre' => 'Nivel inicial', 'numero' => 1, 'estado' => false]);
+
+        $paginated = $this->getJson('/api/v1/admin/cycles?per_page=1');
+        $paginated->assertOk()
+            ->assertJsonPath('meta.total', 2)
+            ->assertJsonPath('meta.active_count', 1)
+            ->assertJsonPath('meta.inactive_count', 1);
+
+        $byCareerName = $this->getJson('/api/v1/admin/cycles?search=pedagog');
+        $names = collect($byCareerName->json('data'))->pluck('name');
+        $this->assertTrue($names->contains('Primer ciclo'));
+        $this->assertFalse($names->contains('Nivel inicial'));
+    }
+
     private function actingAsAdministrator(): Usuario
     {
         $administrator = Usuario::factory()->create(['rol' => 'administrador']);

@@ -8,7 +8,9 @@ use App\Http\Requests\Api\V1\Admin\UpdateUserRequest;
 use App\Http\Resources\Api\V1\UserResource;
 use App\Models\Usuario;
 use App\Notifications\ProvisionalPasswordNotification;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -18,13 +20,33 @@ use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
-    public function index(): AnonymousResourceCollection
+    public function index(Request $request): AnonymousResourceCollection
     {
         Gate::authorize('viewAny', Usuario::class);
 
+        $query = Usuario::query();
+
+        if ($search = trim((string) $request->string('search'))) {
+            $query->where(function (Builder $inner) use ($search) {
+                $inner->whereLike('nombre', "%{$search}%")
+                    ->orWhereLike('correo', "%{$search}%")
+                    ->orWhereLike('cedula', "%{$search}%");
+            });
+        }
+
+        if ($role = trim((string) $request->string('role'))) {
+            $query->where('rol', $role);
+        }
+
         return UserResource::collection(
-            Usuario::query()->orderBy('nombre')->orderBy('id_usuario')->get(),
-        );
+            $query->orderBy('nombre')->orderBy('id_usuario')->paginate($request->integer('per_page', 15)),
+        )->additional(['meta' => [
+            'active_count' => Usuario::query()->where('estado', true)->count(),
+            'inactive_count' => Usuario::query()->where('estado', false)->count(),
+            'admin_count' => Usuario::query()->where('rol', 'administrador')->count(),
+            'teacher_count' => Usuario::query()->where('rol', 'docente')->count(),
+            'student_count' => Usuario::query()->where('rol', 'estudiante')->count(),
+        ]]);
     }
 
     public function store(StoreUserRequest $request): JsonResponse

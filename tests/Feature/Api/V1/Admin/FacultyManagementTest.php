@@ -173,4 +173,48 @@ class FacultyManagementTest extends TestCase
         $this->assertSame(2, $data['careers_count']);
         $this->assertSame(1, $data['active_careers_count']);
     }
+
+    public function test_faculty_index_paginates_and_reports_catalog_wide_counts(): void
+    {
+        Facultad::create(['nombre' => 'Facultad A']);
+        Facultad::create(['nombre' => 'Facultad B']);
+        Facultad::create(['nombre' => 'Facultad C', 'estado' => false]);
+
+        $response = $this->getJson('/api/v1/admin/faculties?per_page=2');
+
+        $response->assertOk()
+            ->assertJsonPath('meta.per_page', 2)
+            ->assertJsonPath('meta.total', 3)
+            ->assertJsonPath('meta.active_count', 2)
+            ->assertJsonPath('meta.inactive_count', 1);
+        $this->assertCount(2, $response->json('data'));
+    }
+
+    public function test_faculty_index_filters_by_search(): void
+    {
+        Facultad::create(['nombre' => 'Facultad de Ingeniería']);
+        Facultad::create(['nombre' => 'Facultad de Salud']);
+
+        $response = $this->getJson('/api/v1/admin/faculties?search=ingenier');
+
+        $response->assertOk();
+        $names = collect($response->json('data'))->pluck('name');
+        $this->assertTrue($names->contains('Facultad de Ingeniería'));
+        $this->assertFalse($names->contains('Facultad de Salud'));
+    }
+
+    public function test_faculty_all_mode_returns_every_active_faculty_unpaginated(): void
+    {
+        Facultad::create(['nombre' => 'Facultad Activa Uno']);
+        Facultad::create(['nombre' => 'Facultad Activa Dos']);
+        Facultad::create(['nombre' => 'Facultad Inactiva', 'estado' => false]);
+
+        $response = $this->getJson('/api/v1/admin/faculties?all=1');
+
+        $response->assertOk()->assertJsonMissingPath('meta');
+        $names = collect($response->json('data'))->pluck('name');
+        $this->assertTrue($names->contains('Facultad Activa Uno'));
+        $this->assertTrue($names->contains('Facultad Activa Dos'));
+        $this->assertFalse($names->contains('Facultad Inactiva'));
+    }
 }

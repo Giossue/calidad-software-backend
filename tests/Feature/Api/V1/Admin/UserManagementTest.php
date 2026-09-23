@@ -205,6 +205,39 @@ class UserManagementTest extends TestCase
         ]);
     }
 
+    public function test_user_index_paginates_and_reports_catalog_wide_counts(): void
+    {
+        Usuario::factory()->create(['nombre' => 'Usuario Activo Uno']);
+        Usuario::factory()->create(['nombre' => 'Usuario Activo Dos']);
+        Usuario::factory()->create(['nombre' => 'Usuario Inactivo', 'estado' => false]);
+
+        $response = $this->getJson('/api/v1/users?per_page=2');
+
+        $response->assertOk()->assertJsonPath('meta.per_page', 2);
+        // +1 porque el administrador de setUp() también cuenta.
+        $this->assertSame(3, $response->json('meta.active_count'));
+        $this->assertSame(1, $response->json('meta.inactive_count'));
+        $this->assertSame(1, $response->json('meta.admin_count'));
+        $this->assertSame(3, $response->json('meta.student_count'));
+        $this->assertSame(0, $response->json('meta.teacher_count'));
+        $this->assertCount(2, $response->json('data'));
+    }
+
+    public function test_user_index_filters_by_search_and_role(): void
+    {
+        Usuario::factory()->create(['nombre' => 'Laura Estudiante', 'correo' => 'laura@example.com', 'rol' => 'estudiante']);
+        Usuario::factory()->create(['nombre' => 'Marco Docente', 'correo' => 'marco@example.com', 'rol' => 'docente']);
+
+        $bySearch = $this->getJson('/api/v1/users?search=laura');
+        $names = collect($bySearch->json('data'))->pluck('name');
+        $this->assertTrue($names->contains('Laura Estudiante'));
+        $this->assertFalse($names->contains('Marco Docente'));
+
+        $byRole = $this->getJson('/api/v1/users?role=docente');
+        $roles = collect($byRole->json('data'))->pluck('role');
+        $this->assertTrue($roles->every(fn (string $role) => $role === 'docente'));
+    }
+
     public function test_deactivated_user_cannot_login(): void
     {
         $user = Usuario::factory()->create();

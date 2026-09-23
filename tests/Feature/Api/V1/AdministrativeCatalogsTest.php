@@ -71,6 +71,29 @@ class AdministrativeCatalogsTest extends TestCase
         $this->assertDatabaseHas('periodo_academico', ['id_periodo' => $id, 'estado' => true]);
     }
 
+    public function test_academic_period_index_paginates_searches_and_reports_catalog_wide_counts(): void
+    {
+        Sanctum::actingAs($this->administrator());
+
+        $this->postJson('/api/v1/academic-periods', ['nombre' => '2026-A', 'fecha_inicio' => '2026-04-01', 'fecha_fin' => '2026-08-31'])->assertCreated();
+        $this->postJson('/api/v1/academic-periods', ['nombre' => '2026-B', 'fecha_inicio' => '2026-09-01', 'fecha_fin' => '2027-02-28'])->assertCreated();
+        $inactiveId = $this->postJson('/api/v1/academic-periods', ['nombre' => '2025-B', 'fecha_inicio' => '2025-09-01', 'fecha_fin' => '2026-02-28'])
+            ->assertCreated()->json('data.id');
+        $this->patchJson("/api/v1/academic-periods/{$inactiveId}/deactivate")->assertOk();
+
+        $paginated = $this->getJson('/api/v1/academic-periods?per_page=2');
+        $paginated->assertOk()
+            ->assertJsonPath('meta.per_page', 2)
+            ->assertJsonPath('meta.total', 3)
+            ->assertJsonPath('meta.active_count', 2)
+            ->assertJsonPath('meta.inactive_count', 1);
+
+        $searched = $this->getJson('/api/v1/academic-periods?search=2026-A');
+        $names = collect($searched->json('data'))->pluck('name');
+        $this->assertTrue($names->contains('2026-A'));
+        $this->assertFalse($names->contains('2026-B'));
+    }
+
     public function test_academic_period_rejects_an_end_date_before_its_start_date(): void
     {
         Sanctum::actingAs($this->administrator());

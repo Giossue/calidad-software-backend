@@ -11,20 +11,39 @@ use App\Http\Requests\Api\V1\Admin\StoreCareerRequest;
 use App\Http\Requests\Api\V1\Admin\UpdateCareerRequest;
 use App\Http\Resources\Api\V1\CareerResource;
 use App\Models\Carrera;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Gate;
 
 class CareerController extends Controller
 {
-    public function index(): AnonymousResourceCollection
+    public function index(Request $request): AnonymousResourceCollection
     {
         Gate::authorize('viewAny', Carrera::class);
 
-        return CareerResource::collection(
-            Carrera::query()->with('facultad')->orderBy('nombre')->get(),
-        );
+        $query = Carrera::query()->with('facultad');
+
+        if ($search = trim((string) $request->string('search'))) {
+            $query->where(function (Builder $inner) use ($search) {
+                $inner->whereLike('nombre', "%{$search}%")
+                    ->orWhereHas('facultad', fn (Builder $q) => $q->whereLike('nombre', "%{$search}%"));
+            });
+        }
+
+        if ($request->boolean('all')) {
+            return CareerResource::collection(
+                (clone $query)->where('estado', true)->orderBy('nombre')->get(),
+            );
+        }
+
+        return CareerResource::collection($query->orderBy('nombre')->paginate($request->integer('per_page', 15)))
+            ->additional(['meta' => [
+                'active_count' => Carrera::query()->where('estado', true)->count(),
+                'inactive_count' => Carrera::query()->where('estado', false)->count(),
+            ]]);
     }
 
     public function store(StoreCareerRequest $request, CreateCareer $createCareer): JsonResponse
