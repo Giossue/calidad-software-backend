@@ -19,8 +19,8 @@ fuente de verdad del esquema. Eloquent es el acceso predeterminado.
 
 | Tabla                 | Propósito                                                                     |
 | --------------------- | ----------------------------------------------------------------------------- |
-| `usuario`             | Identidad autenticable única y roles del esquema entregado.                   |
-| `roles`, `role_user`  | Roles múltiples por usuario, salvo que un enum simple se confirme suficiente. |
+| `usuario`             | Identidad autenticable única del esquema entregado.                          |
+| `roles`, `role_user`  | Catálogo de roles y su asignación N:N a `usuario`; reemplaza el enum previo.  |
 | `academic_periods`    | Períodos académicos.                                                          |
 | `degree_topics`       | Propuestas de titulación por estudiante/período.                              |
 | `teacher_assignments` | Tutor o par académico asignado al tema.                                       |

@@ -9,26 +9,26 @@ class AcademicPeriodPolicy
 {
     public function viewAny(Usuario $user): bool
     {
-        return $user->rol === 'administrador';
+        return $user->hasRole('administrador');
     }
 
     public function create(Usuario $user): bool
     {
-        return $user->rol === 'administrador';
+        return $user->hasRole('administrador');
     }
 
     public function update(Usuario $user, PeriodoAcademico $academicPeriod): bool
     {
-        return $user->rol === 'administrador';
+        return $user->hasRole('administrador');
     }
 
     public function deactivate(Usuario $user, PeriodoAcademico $academicPeriod): bool
     {
-        return $user->rol === 'administrador';
+        return $user->hasRole('administrador');
     }
 
     public function activate(Usuario $user, PeriodoAcademico $academicPeriod): bool
     {
-        return $user->rol === 'administrador';
+        return $user->hasRole('administrador');
     }
 }

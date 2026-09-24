@@ -82,7 +82,7 @@ class AcademicCatalogTest extends TestCase
             'estado' => true,
         ]);
 
-        $this->actingAs(Usuario::factory()->create(['rol' => 'estudiante']), 'sanctum');
+        $this->actingAs(Usuario::factory()->withRole('estudiante')->create(), 'sanctum');
 
         $this->postJson('/api/v1/admin/careers', [
             'faculty_id' => $faculty->getKey(),
@@ -316,7 +316,7 @@ class AcademicCatalogTest extends TestCase
 
     private function actingAsAdministrator(): Usuario
     {
-        $administrator = Usuario::factory()->create(['rol' => 'administrador']);
+        $administrator = Usuario::factory()->withRole('administrador')->create();
         $this->actingAs($administrator, 'sanctum');
 
         return $administrator;

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Admin\StoreUserRequest;
 use App\Http\Requests\Api\V1\Admin\UpdateUserRequest;
 use App\Http\Resources\Api\V1\UserResource;
+use App\Models\Role;
 use App\Models\Usuario;
 use App\Notifications\ProvisionalPasswordNotification;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,7 +25,7 @@ class UserController extends Controller
     {
         Gate::authorize('viewAny', Usuario::class);
 
-        $query = Usuario::query();
+        $query = Usuario::query()->with('roles');
 
         if ($search = trim((string) $request->string('search'))) {
             $query->where(function (Builder $inner) use ($search) {
@@ -35,7 +36,7 @@ class UserController extends Controller
         }
 
         if ($role = trim((string) $request->string('role'))) {
-            $query->where('rol', $role);
+            $query->whereHas('roles', fn (Builder $inner) => $inner->where('slug', $role));
         }
 
         return UserResource::collection(
@@ -43,9 +44,9 @@ class UserController extends Controller
         )->additional(['meta' => [
             'active_count' => Usuario::query()->where('estado', true)->count(),
             'inactive_count' => Usuario::query()->where('estado', false)->count(),
-            'admin_count' => Usuario::query()->where('rol', 'administrador')->count(),
-            'teacher_count' => Usuario::query()->where('rol', 'docente')->count(),
-            'student_count' => Usuario::query()->where('rol', 'estudiante')->count(),
+            'admin_count' => Usuario::query()->whereHas('roles', fn (Builder $inner) => $inner->where('slug', 'administrador'))->count(),
+            'teacher_count' => Usuario::query()->whereHas('roles', fn (Builder $inner) => $inner->where('slug', 'docente'))->count(),
+            'student_count' => Usuario::query()->whereHas('roles', fn (Builder $inner) => $inner->where('slug', 'estudiante'))->count(),
         ]]);
     }
 
@@ -60,15 +61,18 @@ class UserController extends Controller
                 'correo' => $request->validated('email'),
                 'telefono' => $request->validated('phone'),
                 'password_hash' => Hash::make($provisionalPassword),
-                'rol' => $request->validated('role'),
                 'estado' => true,
                 'email_verified_at' => now(),
             ])->refresh();
+
+            $user->roles()->sync(Role::query()->where('slug', $request->validated('role'))->value('id'));
 
             $user->notify(new ProvisionalPasswordNotification($provisionalPassword));
 
             return $user;
         });
+
+        $user->load('roles');
 
         return response()->json([
             'data' => new UserResource($user),
@@ -83,7 +87,6 @@ class UserController extends Controller
             'name' => 'nombre',
             'email' => 'correo',
             'phone' => 'telefono',
-            'role' => 'rol',
             'password' => 'password_hash',
         ];
 
@@ -96,8 +99,12 @@ class UserController extends Controller
 
         $user->fill($attributes)->save();
 
+        if ($request->exists('role')) {
+            $user->roles()->sync(Role::query()->where('slug', $request->validated('role'))->value('id'));
+        }
+
         return response()->json([
-            'data' => new UserResource($user),
+            'data' => new UserResource($user->load('roles')),
         ]);
     }
 

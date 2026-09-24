@@ -17,7 +17,7 @@ class FacultyManagementTest extends TestCase
     {
         parent::setUp();
 
-        Sanctum::actingAs(Usuario::factory()->create(['rol' => 'administrador']));
+        Sanctum::actingAs(Usuario::factory()->withRole('administrador')->create());
     }
 
     public function test_admin_can_register_a_faculty(): void

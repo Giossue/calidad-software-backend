@@ -14,7 +14,7 @@ class CarreraPolicy
 
     public function create(Usuario $user): bool
     {
-        return $user->rol === 'administrador' && $user->estado;
+        return $user->hasRole('administrador') && $user->estado;
     }
 
     public function update(Usuario $user, Carrera $carrera): bool

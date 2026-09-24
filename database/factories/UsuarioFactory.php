@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\Role;
 use App\Models\Usuario;
 use App\Rules\CedulaEcuatoriana;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -32,13 +33,36 @@ class UsuarioFactory extends Factory
             'telefono' => fake()->unique()->numerify('09########'),
             'email_verified_at' => now(),
             'password_hash' => static::$password ??= Hash::make('password'),
-            'rol' => 'estudiante',
             'estado' => true,
             'remember_token' => Str::random(10),
             'two_factor_secret' => null,
             'two_factor_recovery_codes' => null,
             'two_factor_confirmed_at' => null,
         ];
+    }
+
+    /**
+     * Configure the model factory.
+     */
+    public function configure(): static
+    {
+        return $this->afterCreating(function (Usuario $user): void {
+            if ($user->roles()->exists()) {
+                return;
+            }
+
+            $user->roles()->attach(Role::query()->where('slug', 'estudiante')->value('id'));
+        });
+    }
+
+    /**
+     * Assign a single role to the user, replacing any role set by default.
+     */
+    public function withRole(string $slug): static
+    {
+        return $this->afterCreating(function (Usuario $user) use ($slug): void {
+            $user->roles()->sync(Role::query()->where('slug', $slug)->value('id'));
+        });
     }
 
     /**

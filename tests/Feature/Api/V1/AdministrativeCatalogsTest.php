@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api\V1;
 
+use App\Models\Role;
 use App\Models\Usuario;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -20,10 +21,29 @@ class AdministrativeCatalogsTest extends TestCase
             $table->string('nombre', 150);
             $table->string('correo', 150)->unique();
             $table->string('password_hash');
-            $table->string('rol', 40);
             $table->boolean('estado')->default(true);
             $table->timestamps();
         });
+
+        Schema::create('roles', function (Blueprint $table): void {
+            $table->id();
+            $table->string('slug', 40)->unique();
+            $table->string('name', 100);
+            $table->timestamps();
+        });
+
+        Schema::create('role_user', function (Blueprint $table): void {
+            $table->unsignedInteger('user_id');
+            $table->foreignId('role_id')->constrained('roles')->cascadeOnDelete();
+            $table->timestamp('assigned_at')->useCurrent();
+
+            $table->foreign('user_id')->references('id_usuario')->on('usuario')->cascadeOnDelete();
+            $table->primary(['user_id', 'role_id']);
+        });
+
+        foreach (['estudiante', 'docente', 'coordinador_carrera', 'coordinador_titulacion', 'administrador'] as $slug) {
+            Role::query()->create(['slug' => $slug, 'name' => $slug]);
+        }
 
         Schema::create('periodo_academico', function (Blueprint $table): void {
             $table->increments('id_periodo');
@@ -143,12 +163,15 @@ class AdministrativeCatalogsTest extends TestCase
 
     private function user(string $role): Usuario
     {
-        return Usuario::query()->create([
+        $user = Usuario::query()->create([
             'cedula' => fake()->unique()->numerify('##########'),
             'nombre' => 'Usuario de prueba',
             'correo' => fake()->unique()->safeEmail(),
             'password_hash' => 'password',
-            'rol' => $role,
         ]);
+
+        $user->roles()->attach(Role::query()->where('slug', $role)->value('id'));
+
+        return $user;
     }
 }

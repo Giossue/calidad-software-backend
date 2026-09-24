@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -20,7 +21,6 @@ use Laravel\Sanctum\HasApiTokens;
  * @property string $cedula
  * @property string $nombre
  * @property string $correo
- * @property string $rol
  * @property bool $estado
  * @property Carbon|null $email_verified_at
  * @property string $password_hash
@@ -31,7 +31,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['cedula', 'nombre', 'correo', 'telefono', 'password_hash', 'rol', 'estado', 'email_verified_at'])]
+#[Fillable(['cedula', 'nombre', 'correo', 'telefono', 'password_hash', 'estado', 'email_verified_at'])]
 #[Hidden(['password_hash', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class Usuario extends Authenticatable implements MustVerifyEmail
 {
@@ -60,6 +60,36 @@ class Usuario extends Authenticatable implements MustVerifyEmail
     public function routeNotificationForMail(): string
     {
         return $this->correo;
+    }
+
+    /**
+     * @return BelongsToMany<Role, $this>
+     */
+    public function roles(): BelongsToMany
+    {
+        return $this->belongsToMany(Role::class, 'role_user', 'user_id', 'role_id', 'id_usuario', 'id')
+            ->withPivot('assigned_at');
+    }
+
+    public function hasRole(string $slug): bool
+    {
+        return $this->roles->contains('slug', $slug);
+    }
+
+    /**
+     * @param  array<int, string>  $slugs
+     */
+    public function hasAnyRole(array $slugs): bool
+    {
+        return $this->roles->pluck('slug')->intersect($slugs)->isNotEmpty();
+    }
+
+    /**
+     * @return Collection<int, string>
+     */
+    public function roleSlugs(): Collection
+    {
+        return $this->roles->pluck('slug');
     }
 
     /**

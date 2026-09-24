@@ -19,7 +19,7 @@ class UserManagementTest extends TestCase
     {
         parent::setUp();
 
-        $this->admin = Usuario::factory()->create(['rol' => 'administrador']);
+        $this->admin = Usuario::factory()->withRole('administrador')->create(['nombre' => 'Zzz Admin']);
         Sanctum::actingAs($this->admin);
     }
 
@@ -38,7 +38,7 @@ class UserManagementTest extends TestCase
 
     public function test_non_administrator_cannot_list_users(): void
     {
-        Sanctum::actingAs(Usuario::factory()->create(['rol' => 'docente']));
+        Sanctum::actingAs(Usuario::factory()->withRole('docente')->create());
 
         $this->getJson('/api/v1/users')->assertForbidden();
     }
@@ -66,11 +66,11 @@ class UserManagementTest extends TestCase
             'cedula' => '0926687856',
             'correo' => 'luis@example.com',
             'telefono' => '0991234567',
-            'rol' => 'estudiante',
             'estado' => true,
         ]);
 
         $user = Usuario::query()->where('correo', 'luis@example.com')->firstOrFail();
+        $this->assertTrue($user->hasRole('estudiante'));
         $this->assertNotNull($user->email_verified_at);
         Notification::assertSentTo($user, ProvisionalPasswordNotification::class, function (ProvisionalPasswordNotification $notification) use ($user): bool {
             return password_verify($notification->provisionalPassword, $user->password_hash);
@@ -171,8 +171,8 @@ class UserManagementTest extends TestCase
             'nombre' => 'Nombre Actualizado',
             'correo' => 'nuevo@example.com',
             'telefono' => '0987654321',
-            'rol' => 'docente',
         ]);
+        $this->assertTrue($user->fresh()->hasRole('docente'));
     }
 
     public function test_update_without_password_keeps_the_existing_hash(): void
@@ -271,8 +271,8 @@ class UserManagementTest extends TestCase
 
     public function test_user_index_filters_by_search_and_role(): void
     {
-        Usuario::factory()->create(['nombre' => 'Laura Estudiante', 'correo' => 'laura@example.com', 'rol' => 'estudiante']);
-        Usuario::factory()->create(['nombre' => 'Marco Docente', 'correo' => 'marco@example.com', 'rol' => 'docente']);
+        Usuario::factory()->withRole('estudiante')->create(['nombre' => 'Laura Estudiante', 'correo' => 'laura@example.com']);
+        Usuario::factory()->withRole('docente')->create(['nombre' => 'Marco Docente', 'correo' => 'marco@example.com']);
 
         $bySearch = $this->getJson('/api/v1/users?search=laura');
         $names = collect($bySearch->json('data'))->pluck('name');

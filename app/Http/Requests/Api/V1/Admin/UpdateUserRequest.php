@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\V1\Admin;
 
+use App\Models\Role;
 use App\Models\Usuario;
 use App\Rules\CedulaEcuatoriana;
 use Illuminate\Contracts\Validation\ValidationRule;
@@ -35,13 +36,7 @@ class UpdateUserRequest extends FormRequest
                 Rule::unique('usuario', 'correo')->ignore($this->route('user')),
             ],
             'phone' => ['sometimes', 'digits:10'],
-            'role' => ['sometimes', Rule::in([
-                'estudiante',
-                'docente',
-                'coordinador_carrera',
-                'coordinador_titulacion',
-                'administrador',
-            ])],
+            'role' => ['sometimes', Rule::in(Role::query()->pluck('slug'))],
             'password' => ['sometimes', 'string', Password::default(), 'confirmed'],
         ];
     }

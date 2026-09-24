@@ -29,6 +29,6 @@ class FacultadPolicy
 
     public function viewAny(Usuario $user): bool
     {
-        return $user->rol === 'administrador' && $user->estado;
+        return $user->hasRole('administrador') && $user->estado;
     }
 }
