@@ -26,6 +26,9 @@ class UpdateCycleRequest extends FormRequest
         $careerId = $this->has('career_id')
             ? $this->integer('career_id')
             : $cycle?->fk_carrera;
+        $name = $this->has('name')
+            ? $this->input('name')
+            : $cycle?->nombre;
 
         return [
             'career_id' => [
@@ -41,7 +44,9 @@ class UpdateCycleRequest extends FormRequest
                 'integer',
                 'min:1',
                 Rule::unique('ciclo', 'numero')
-                    ->where(fn (Builder $query): Builder => $query->where('fk_carrera', $careerId))
+                    ->where(fn (Builder $query): Builder => $query
+                        ->where('fk_carrera', $careerId)
+                        ->where('nombre', $name))
                     ->ignore($cycle?->getKey(), $cycle?->getKeyName()),
             ],
         ];

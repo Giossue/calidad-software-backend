@@ -31,7 +31,9 @@ class StoreCycleRequest extends FormRequest
                 'integer',
                 'min:1',
                 Rule::unique('ciclo', 'numero')->where(
-                    fn (Builder $query): Builder => $query->where('fk_carrera', $this->integer('career_id')),
+                    fn (Builder $query): Builder => $query
+                        ->where('fk_carrera', $this->integer('career_id'))
+                        ->where('nombre', $this->input('name')),
                 ),
             ],
         ];

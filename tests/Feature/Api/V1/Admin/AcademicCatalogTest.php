@@ -93,7 +93,7 @@ class AcademicCatalogTest extends TestCase
             ->assertForbidden();
     }
 
-    public function test_administrator_can_manage_a_cycle_and_cycle_numbers_are_unique(): void
+    public function test_administrator_can_manage_a_cycle_and_only_rejects_exact_duplicates(): void
     {
         $this->actingAsAdministrator();
         $faculty = Facultad::query()->create([
@@ -118,11 +118,19 @@ class AcademicCatalogTest extends TestCase
 
         $cycle = Ciclo::query()->findOrFail($cycleId);
 
+        // Mismo número, mismo nombre: rechazado (sería un duplicado exacto).
         $this->postJson('/api/v1/admin/cycles', [
             'career_id' => $career->getKey(),
-            'name' => 'Otro nombre',
+            'name' => 'Primer ciclo',
             'number' => 1,
         ])->assertUnprocessable()->assertJsonValidationErrors('number');
+
+        // Mismo número, nombre distinto: permitido (paralelos del mismo ciclo, ej. A y B).
+        $this->postJson('/api/v1/admin/cycles', [
+            'career_id' => $career->getKey(),
+            'name' => 'Primer ciclo B',
+            'number' => 1,
+        ])->assertCreated()->assertJsonPath('data.number', 1);
 
         $this->patchJson('/api/v1/admin/cycles/'.$cycle->getKey(), [
             'name' => 'Ciclo inicial',
