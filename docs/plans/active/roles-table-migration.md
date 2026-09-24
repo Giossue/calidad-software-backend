@@ -9,9 +9,29 @@ lista de roles válidos en migraciones y Form Requests.
 
 ## Estado
 
-Implementado en código y cubierto por tests (`composer test` en verde). No se
-ha ejecutado `php artisan migrate` contra ninguna base persistente (ni existe
-todavía la base local `calidad_software`); falta el paso de despliegue.
+Implementado en código y cubierto por tests (`composer test` en verde).
+
+Primer intento en producción (2026-09-24): `2026_09_23_100000_create_roles_and_role_user_tables`
+corrió bien, pero `..._drop_rol_column_from_usuario_table` falló porque
+PostgreSQL tenía un trigger `validar_cambio_rol_usuario` (con su función
+`fn_validar_cambio_rol_usuario`) que no estaba versionado en ninguna
+migración de este repo — bloqueaba `UPDATE OF rol` cuando el usuario aún
+tenía registros ligados a su rol (estudiante/docente/coordinador_titulacion).
+Como Postgres ejecuta el DDL en una transacción, la migración fallida se
+revirtió sola; nada quedó roto.
+
+Ese trigger ya no protegía nada desde que el código empezó a escribir el rol
+vía `roles()->sync()` en vez de `UPDATE usuario SET rol = ...` (el trigger
+solo dispara con `UPDATE OF rol`). La migración se corrigió para trasladar la
+misma regla a un trigger `BEFORE DELETE ON role_user` (quitar una fila de
+`role_user` es el equivalente de "cambiar de rol" en el modelo anterior).
+Verificado contra una base Postgres real (no solo SQLite de los tests): la
+cadena completa de migraciones corre limpia desde cero, el trigger nuevo
+bloquea la baja de un rol con registros dependientes y la permite una vez que
+se limpian, y `migrate:rollback` de esa migración no revienta.
+
+Falta: reintentar `php artisan migrate --force` en producción con la
+migración corregida.
 
 ## Criterios de aceptación
 
