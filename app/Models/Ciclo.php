@@ -17,7 +17,7 @@ class Ciclo extends Model
 
     protected $primaryKey = 'id_ciclo';
 
-    protected $fillable = ['fk_carrera', 'nombre', 'numero', 'estado'];
+    protected $fillable = ['fk_carrera', 'nombre', 'numero', 'fk_paralelo', 'estado'];
 
     protected function casts(): array
     {
@@ -30,6 +30,14 @@ class Ciclo extends Model
     public function carrera(): BelongsTo
     {
         return $this->belongsTo(Carrera::class, 'fk_carrera');
+    }
+
+    /**
+     * @return BelongsTo<Paralelo, $this>
+     */
+    public function paralelo(): BelongsTo
+    {
+        return $this->belongsTo(Paralelo::class, 'fk_paralelo');
     }
 
     /**

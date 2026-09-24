@@ -18,6 +18,8 @@ class CycleResource extends JsonResource
             'career_name' => $this->whenLoaded('carrera', fn (): string => $this->carrera->nombre),
             'name' => $this->nombre,
             'number' => $this->numero,
+            'paralelo_id' => $this->fk_paralelo,
+            'paralelo_name' => $this->whenLoaded('paralelo', fn (): ?string => $this->paralelo?->nombre),
             'status' => $this->estado,
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),

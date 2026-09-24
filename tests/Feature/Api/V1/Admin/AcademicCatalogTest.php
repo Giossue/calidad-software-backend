@@ -6,6 +6,7 @@ use App\Models\Carrera;
 use App\Models\Ciclo;
 use App\Models\Facultad;
 use App\Models\Modalidad;
+use App\Models\Paralelo;
 use App\Models\Usuario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -118,19 +119,40 @@ class AcademicCatalogTest extends TestCase
 
         $cycle = Ciclo::query()->findOrFail($cycleId);
 
-        // Mismo número, mismo nombre: rechazado (sería un duplicado exacto).
+        // Mismo número, mismo paralelo (ninguno en este caso): rechazado, sería un duplicado exacto.
         $this->postJson('/api/v1/admin/cycles', [
             'career_id' => $career->getKey(),
             'name' => 'Primer ciclo',
             'number' => 1,
         ])->assertUnprocessable()->assertJsonValidationErrors('number');
 
-        // Mismo número, nombre distinto: permitido (paralelos del mismo ciclo, ej. A y B).
+        $sectionA = Paralelo::query()->create(['nombre' => 'Paralelo A', 'estado' => true]);
+        $sectionB = Paralelo::query()->create(['nombre' => 'Paralelo B', 'estado' => true]);
+
+        // Mismo número, paralelo distinto: permitido (dos grupos del mismo ciclo).
         $this->postJson('/api/v1/admin/cycles', [
             'career_id' => $career->getKey(),
-            'name' => 'Primer ciclo B',
+            'name' => 'Primer ciclo',
             'number' => 1,
-        ])->assertCreated()->assertJsonPath('data.number', 1);
+            'paralelo_id' => $sectionA->getKey(),
+        ])->assertCreated()
+            ->assertJsonPath('data.number', 1)
+            ->assertJsonPath('data.paralelo_name', 'Paralelo A');
+
+        $this->postJson('/api/v1/admin/cycles', [
+            'career_id' => $career->getKey(),
+            'name' => 'Primer ciclo',
+            'number' => 1,
+            'paralelo_id' => $sectionB->getKey(),
+        ])->assertCreated()->assertJsonPath('data.paralelo_name', 'Paralelo B');
+
+        // Mismo número y mismo paralelo: rechazado.
+        $this->postJson('/api/v1/admin/cycles', [
+            'career_id' => $career->getKey(),
+            'name' => 'Otro nombre',
+            'number' => 1,
+            'paralelo_id' => $sectionA->getKey(),
+        ])->assertUnprocessable()->assertJsonValidationErrors('number');
 
         $this->patchJson('/api/v1/admin/cycles/'.$cycle->getKey(), [
             'name' => 'Ciclo inicial',
@@ -320,6 +342,41 @@ class AcademicCatalogTest extends TestCase
             'name' => 'Bellas Artes',
             'modality_id' => 99999,
         ])->assertUnprocessable()->assertJsonValidationErrors('modality_id');
+    }
+
+    public function test_administrator_can_manage_sections(): void
+    {
+        $this->actingAsAdministrator();
+
+        $response = $this->postJson('/api/v1/admin/sections', ['name' => 'Paralelo A']);
+        $sectionId = $response->assertCreated()
+            ->assertJsonPath('data.name', 'Paralelo A')
+            ->assertJsonPath('data.is_active', true)
+            ->json('data.id');
+
+        $this->postJson('/api/v1/admin/sections', ['name' => 'Paralelo A'])
+            ->assertUnprocessable()->assertJsonValidationErrors('nombre');
+
+        $this->patchJson('/api/v1/admin/sections/'.$sectionId, ['name' => 'Paralelo A1'])
+            ->assertOk()->assertJsonPath('data.name', 'Paralelo A1');
+
+        $this->patchJson('/api/v1/admin/sections/'.$sectionId.'/deactivate')
+            ->assertOk()->assertJsonPath('data.is_active', false);
+
+        $this->patchJson('/api/v1/admin/sections/'.$sectionId.'/activate')
+            ->assertOk()->assertJsonPath('data.is_active', true);
+
+        $this->getJson('/api/v1/admin/sections')
+            ->assertOk()
+            ->assertJsonPath('data.0.name', 'Paralelo A1');
+    }
+
+    public function test_only_administrators_can_manage_sections(): void
+    {
+        $this->actingAs(Usuario::factory()->withRole('estudiante')->create(), 'sanctum');
+
+        $this->postJson('/api/v1/admin/sections', ['name' => 'Paralelo A'])->assertForbidden();
+        $this->getJson('/api/v1/admin/sections')->assertForbidden();
     }
 
     private function actingAsAdministrator(): Usuario

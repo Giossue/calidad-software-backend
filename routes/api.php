@@ -11,6 +11,7 @@ use App\Http\Controllers\Api\V1\Auth\RegistrationController;
 use App\Http\Controllers\Api\V1\Auth\TokenController;
 use App\Http\Controllers\Api\V1\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\Api\V1\ModalityController;
+use App\Http\Controllers\Api\V1\SectionController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
@@ -103,5 +104,12 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
                 ->middleware('can:deactivate,modality')->name('modalities.deactivate');
             Route::patch('modalities/{modality}/activate', [ModalityController::class, 'activate'])
                 ->middleware('can:activate,modality')->name('modalities.activate');
+            Route::get('sections', [SectionController::class, 'index'])->name('sections.index');
+            Route::post('sections', [SectionController::class, 'store'])->name('sections.store');
+            Route::patch('sections/{section}', [SectionController::class, 'update'])->name('sections.update');
+            Route::patch('sections/{section}/deactivate', [SectionController::class, 'deactivate'])
+                ->middleware('can:deactivate,section')->name('sections.deactivate');
+            Route::patch('sections/{section}/activate', [SectionController::class, 'activate'])
+                ->middleware('can:activate,section')->name('sections.activate');
         });
 });

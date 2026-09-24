@@ -8,6 +8,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Paralelo extends Model
 {
@@ -33,5 +34,13 @@ class Paralelo extends Model
             'fk_paralelo',
             'fk_usuario'
         )->withPivot('fecha_asignacion', 'estado')->withTimestamps();
+    }
+
+    /**
+     * @return HasMany<Ciclo, $this>
+     */
+    public function ciclos(): HasMany
+    {
+        return $this->hasMany(Ciclo::class, 'fk_paralelo');
     }
 }

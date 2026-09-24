@@ -24,7 +24,7 @@ class CycleController extends Controller
     {
         Gate::authorize('viewAny', Ciclo::class);
 
-        $query = Ciclo::query()->with('carrera');
+        $query = Ciclo::query()->with(['carrera', 'paralelo']);
         $careerId = $request->integer('career_id') ?: null;
 
         if ($careerId) {
@@ -55,14 +55,14 @@ class CycleController extends Controller
     {
         $cycle = $createCycle->handle($request->validated());
 
-        return CycleResource::make($cycle)
+        return CycleResource::make($cycle->load('paralelo'))
             ->response()
             ->setStatusCode(Response::HTTP_CREATED);
     }
 
     public function update(UpdateCycleRequest $request, Ciclo $cycle, UpdateCycle $updateCycle): CycleResource
     {
-        return CycleResource::make($updateCycle->handle($cycle, $request->validated()));
+        return CycleResource::make($updateCycle->handle($cycle, $request->validated())->load('paralelo'));
     }
 
     public function deactivate(Ciclo $cycle, DeactivateCycle $deactivateCycle): CycleResource

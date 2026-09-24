@@ -33,7 +33,14 @@ class StoreCycleRequest extends FormRequest
                 Rule::unique('ciclo', 'numero')->where(
                     fn (Builder $query): Builder => $query
                         ->where('fk_carrera', $this->integer('career_id'))
-                        ->where('nombre', $this->input('name')),
+                        ->where('fk_paralelo', $this->integer('paralelo_id') ?: null),
+                ),
+            ],
+            'paralelo_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('paralelo', 'id_paralelo')->where(
+                    fn (Builder $query): Builder => $query->where('estado', true),
                 ),
             ],
         ];
@@ -46,6 +53,7 @@ class StoreCycleRequest extends FormRequest
             'career_id' => 'carrera',
             'name' => 'nombre del ciclo',
             'number' => 'número del ciclo',
+            'paralelo_id' => 'paralelo',
         ];
     }
 }

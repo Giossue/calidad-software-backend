@@ -29,6 +29,9 @@ class UpdateCycleRequest extends FormRequest
         $name = $this->has('name')
             ? $this->input('name')
             : $cycle?->nombre;
+        $paraleloId = $this->has('paralelo_id')
+            ? ($this->integer('paralelo_id') ?: null)
+            : $cycle?->fk_paralelo;
 
         return [
             'career_id' => [
@@ -46,8 +49,16 @@ class UpdateCycleRequest extends FormRequest
                 Rule::unique('ciclo', 'numero')
                     ->where(fn (Builder $query): Builder => $query
                         ->where('fk_carrera', $careerId)
-                        ->where('nombre', $name))
+                        ->where('fk_paralelo', $paraleloId))
                     ->ignore($cycle?->getKey(), $cycle?->getKeyName()),
+            ],
+            'paralelo_id' => [
+                'sometimes',
+                'nullable',
+                'integer',
+                Rule::exists('paralelo', 'id_paralelo')->where(
+                    fn (Builder $query): Builder => $query->where('estado', true),
+                ),
             ],
         ];
     }
@@ -55,7 +66,7 @@ class UpdateCycleRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            if (! $this->hasAny(['career_id', 'name', 'number'])) {
+            if (! $this->hasAny(['career_id', 'name', 'number', 'paralelo_id'])) {
                 $validator->errors()->add('cycle', 'Debes enviar al menos un campo para actualizar.');
             }
         });
@@ -68,6 +79,7 @@ class UpdateCycleRequest extends FormRequest
             'career_id' => 'carrera',
             'name' => 'nombre del ciclo',
             'number' => 'número del ciclo',
+            'paralelo_id' => 'paralelo',
         ];
     }
 }
