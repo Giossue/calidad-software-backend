@@ -30,8 +30,10 @@ cadena completa de migraciones corre limpia desde cero, el trigger nuevo
 bloquea la baja de un rol con registros dependientes y la permite una vez que
 se limpian, y `migrate:rollback` de esa migración no revienta.
 
-Falta: reintentar `php artisan migrate --force` en producción con la
-migración corregida.
+Migración aplicada en producción el 2026-09-24 (`[6] Ran`, `migrate:status`
+confirma "Nothing to migrate"). Falta únicamente la verificación funcional
+del paso 3 de Despliegue (login, `/api/v1/users`, catálogos protegidos por
+Policies) desde el dominio real.
 
 ## Criterios de aceptación
 
