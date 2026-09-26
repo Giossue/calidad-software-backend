@@ -10,8 +10,12 @@ use App\Http\Controllers\Api\V1\Auth\PasswordController;
 use App\Http\Controllers\Api\V1\Auth\RegistrationController;
 use App\Http\Controllers\Api\V1\Auth\TokenController;
 use App\Http\Controllers\Api\V1\Auth\TwoFactorChallengeController;
+use App\Http\Controllers\Api\V1\Coordination\DegreeTopicController;
+use App\Http\Controllers\Api\V1\Coordination\PeriodSectionController;
+use App\Http\Controllers\Api\V1\Coordination\TeacherCoordinationController;
 use App\Http\Controllers\Api\V1\ModalityController;
 use App\Http\Controllers\Api\V1\SectionController;
+use App\Http\Controllers\Api\V1\Student\StudentDegreeTopicController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
@@ -55,6 +59,24 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
     });
 
     Route::middleware('auth:sanctum')->group(function (): void {
+        Route::get('academic-periods/current', [PeriodSectionController::class, 'currentPeriod'])->name('academic-periods.current');
+        Route::get('academic-periods/current/sections', [PeriodSectionController::class, 'index'])->name('academic-periods.current.sections.index');
+        Route::post('academic-periods/current/sections', [PeriodSectionController::class, 'store'])->name('academic-periods.current.sections.store');
+
+        Route::prefix('coordination')->name('coordination.')->group(function (): void {
+            Route::get('teachers', [TeacherCoordinationController::class, 'index'])->name('teachers.index');
+            Route::get('degree-topics/pending', [DegreeTopicController::class, 'indexPending'])->name('degree-topics.pending');
+            Route::get('degree-topics/{topic}', [DegreeTopicController::class, 'show'])->name('degree-topics.show');
+            Route::post('degree-topics/{topic}/approve', [DegreeTopicController::class, 'approve'])->name('degree-topics.approve');
+            Route::post('degree-topics/{topic}/reject', [DegreeTopicController::class, 'reject'])->name('degree-topics.reject');
+            Route::post('degree-topics/{topic}/observations', [DegreeTopicController::class, 'storeObservation'])->name('degree-topics.observations.store');
+            Route::get('degree-topics/{topic}/peers', [DegreeTopicController::class, 'peers'])->name('degree-topics.peers.index');
+            Route::put('degree-topics/{topic}/peers', [DegreeTopicController::class, 'updatePeers'])->name('degree-topics.peers.update');
+        });
+
+        Route::prefix('student')->name('student.')->group(function (): void {
+            Route::get('degree-topics', [StudentDegreeTopicController::class, 'index'])->name('degree-topics.index');
+        });
         Route::get('academic-periods', [AcademicPeriodController::class, 'index'])->name('academic-periods.index.legacy');
         Route::post('academic-periods', [AcademicPeriodController::class, 'store'])->name('academic-periods.store.legacy');
         Route::patch('academic-periods/{academicPeriod}', [AcademicPeriodController::class, 'update'])->name('academic-periods.update.legacy');

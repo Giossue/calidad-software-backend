@@ -43,4 +43,17 @@ class Paralelo extends Model
     {
         return $this->hasMany(Ciclo::class, 'fk_paralelo');
     }
+
+    /**
+     * @return BelongsToMany<PeriodoAcademico, $this>
+     */
+    public function periodos(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            PeriodoAcademico::class,
+            'periodo_paralelo',
+            'fk_paralelo',
+            'fk_periodo'
+        )->withPivot('estado')->withTimestamps();
+    }
 }

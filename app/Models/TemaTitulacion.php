@@ -6,11 +6,31 @@
 
 namespace App\Models;
 
+use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+/**
+ * @property int $id_tema_tit
+ * @property int $fk_id_usuario
+ * @property int $fk_periodo
+ * @property int|null $fk_coord_revisor
+ * @property string $titulo
+ * @property string|null $descripcion
+ * @property string $estado
+ * @property CarbonInterface|null $fecha_propuesta
+ * @property CarbonInterface|null $fecha_revision
+ * @property CarbonInterface|null $created_at
+ * @property CarbonInterface|null $updated_at
+ * @property-read Usuario|null $estudiante
+ * @property-read PeriodoAcademico|null $periodo
+ * @property-read Usuario|null $coordinadorRevisor
+ * @property-read Collection<int, AsignacionDocente> $asignaciones
+ * @property-read Collection<int, ObservacionTitulacion> $observaciones
+ */
 class TemaTitulacion extends Model
 {
     protected $table = 'tema_titulacion';
@@ -26,7 +46,7 @@ class TemaTitulacion extends Model
     protected function casts(): array
     {
         return [
-            'estado' => 'boolean',
+            'estado' => 'string',
             'fecha_propuesta' => 'date',
             'fecha_revision' => 'date',
         ];
