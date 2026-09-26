@@ -57,4 +57,17 @@ class PeriodoAcademico extends Model
     {
         return $this->hasMany(AsignaturaTutoria::class, 'fk_periodo');
     }
+
+    /**
+     * @return BelongsToMany<Paralelo, $this>
+     */
+    public function paralelos(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Paralelo::class,
+            'periodo_paralelo',
+            'fk_periodo',
+            'fk_paralelo'
+        )->withPivot('estado')->withTimestamps();
+    }
 }

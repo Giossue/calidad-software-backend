@@ -6,9 +6,22 @@
 
 namespace App\Models;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id_asignacion
+ * @property int $fk_tema_tit
+ * @property int $fk_id_usuario
+ * @property string $rol
+ * @property CarbonInterface|null $fecha_asignacion
+ * @property bool $estado
+ * @property CarbonInterface|null $created_at
+ * @property CarbonInterface|null $updated_at
+ * @property-read TemaTitulacion|null $temaTitulacion
+ * @property-read Usuario|null $docente
+ */
 class AsignacionDocente extends Model
 {
     protected $table = 'asignacion_docente';
