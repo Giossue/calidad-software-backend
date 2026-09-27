@@ -108,8 +108,29 @@ de demostración ni modifica credenciales.
 
 El respaldo y los resultados privados están en
 `/home/giossue/.local/state/calidad-software/deployments/degree-coordination-20260927T222205Z/`.
-Estado del código desplegado: pendiente de publicación y comprobación HTTP
-posterior; las pruebas locales no acreditan por sí solas la activación remota.
+Código publicado en `main`: backend `ab7f038` y frontend `63dea64`. La
+verificación de producción concluyó correctamente a las
+`2026-09-27T22:27:46Z`:
+
+- Once consultas HTTP 200 con las cuentas reales de coordinador de titulación,
+  estudiante, administrador y coordinador de carrera. La ruta anterior de
+  pendientes y el nuevo listado filtrado funcionan sin el error 500.
+- Chromium contra ambos dominios reales: inicio del coordinador con menú y
+  propuestas, período/paralelos, docentes, diseño móvil, consulta del estudiante
+  y acceso del administrador a titulación. Sin errores de JavaScript ni de API.
+- Se compararon los identificadores y paralelos de los diez ciclos del
+  catálogo administrativo con los expuestos al coordinador de carrera:
+  coinciden. Se conservan los datos introducidos por el equipo.
+- Producción no tenía propuestas de titulación; la interfaz muestra el estado
+  vacío correspondiente. Las mutaciones de negocio completas se verificaron
+  con datos aislados, no creando revisiones ficticias en producción.
+- Los tokens exclusivos del diagnóstico fueron revocados al concluir. No se
+  reemplazaron las sesiones del navegador del equipo.
+
+La carpeta privada del despliegue contiene `production-api-verification.json`,
+`production-ui-verification.json`, capturas de producción y los resultados de
+las pruebas locales. Los servidores y el clúster de prueba aislados se
+detuvieron tras terminar la verificación.
 
 ## Procedencia de los ciclos y paralelos de tutorías
 
