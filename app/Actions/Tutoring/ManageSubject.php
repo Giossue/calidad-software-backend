@@ -2,6 +2,7 @@
 
 namespace App\Actions\Tutoring;
 
+use App\Models\AsignaturaTutoria;
 use App\Models\Ciclo;
 use App\Models\Subject;
 use App\Models\Usuario;
@@ -43,6 +44,23 @@ class ManageSubject
         }
 
         $subject->cycles()->syncWithoutDetaching([$cycle->getKey()]);
+
+        return $subject->load('cycles', 'career');
+    }
+
+    public function unassignCycle(Subject $subject, Ciclo $cycle): Subject
+    {
+        $hasActiveTutoring = AsignaturaTutoria::query()
+            ->where('subject_id', $subject->getKey())
+            ->where('fk_ciclo', $cycle->getKey())
+            ->where('estado', true)
+            ->exists();
+
+        if ($hasActiveTutoring) {
+            throw ValidationException::withMessages(['cycle_id' => 'No puedes desasignar este ciclo: hay una tutoría activa que lo usa.']);
+        }
+
+        $subject->cycles()->detach($cycle->getKey());
 
         return $subject->load('cycles', 'career');
     }

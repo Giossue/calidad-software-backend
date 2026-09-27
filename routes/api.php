@@ -120,6 +120,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::patch('subjects/{subject}', [TutoringSubjectController::class, 'update'])->name('subjects.update');
             Route::patch('subjects/{subject}/deactivate', [TutoringSubjectController::class, 'deactivate'])->name('subjects.deactivate');
             Route::put('subjects/{subject}/cycles/{cycle}', [TutoringSubjectController::class, 'assignCycle'])->name('subjects.cycles.assign');
+            Route::delete('subjects/{subject}/cycles/{cycle}', [TutoringSubjectController::class, 'unassignCycle'])->name('subjects.cycles.unassign');
 
             Route::get('teachers', [TutoringTeacherController::class, 'index'])->name('teachers.index');
             Route::get('available-teachers', [TutoringTeacherController::class, 'available'])->name('teachers.available');

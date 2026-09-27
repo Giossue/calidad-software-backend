@@ -25,6 +25,12 @@ class SubjectController extends Controller
         if ($careerId = $request->integer('career_id')) {
             $query->where('career_id', $careerId);
         }
+        if ($cycleId = $request->integer('cycle_id')) {
+            $query->whereHas('cycles', fn (Builder $q) => $q->where('ciclo.id_ciclo', $cycleId));
+        }
+        if ($status = $request->string('status')->toString()) {
+            $query->where('is_active', $status === 'active');
+        }
         if ($search = trim((string) $request->string('search'))) {
             $query->where(fn (Builder $q) => $q->whereLike('name', "%{$search}%")->orWhereLike('code', "%{$search}%"));
         }
@@ -60,5 +66,12 @@ class SubjectController extends Controller
         Gate::authorize('update', $subject);
 
         return TutoringSubjectResource::make($action->assignCycle($subject, $cycle));
+    }
+
+    public function unassignCycle(Subject $subject, Ciclo $cycle, ManageSubject $action): TutoringSubjectResource
+    {
+        Gate::authorize('update', $subject);
+
+        return TutoringSubjectResource::make($action->unassignCycle($subject, $cycle));
     }
 }

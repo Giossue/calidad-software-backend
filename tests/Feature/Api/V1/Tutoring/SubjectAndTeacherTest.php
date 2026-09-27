@@ -34,6 +34,46 @@ class SubjectAndTeacherTest extends TutoringTestCase
         $this->assertDatabaseCount('subject_cycle', 1);
     }
 
+    public function test_coordinator_can_unassign_a_cycle_but_not_while_an_active_tutoring_uses_it(): void
+    {
+        $subject = $this->createSubject();
+        $secondCycle = $this->createCycle($this->career, number: 2);
+        Sanctum::actingAs($this->coordinator, ['*']);
+        $this->putJson(self::API.'/subjects/'.$subject->getKey().'/cycles/'.$secondCycle->getKey())->assertOk()
+            ->assertJsonPath('data.cycle_ids', [$this->cycle->getKey(), $secondCycle->getKey()]);
+
+        $tutoring = $this->createTutoring(subject: $subject->refresh());
+
+        $this->deleteJson(self::API.'/subjects/'.$subject->getKey().'/cycles/'.$this->cycle->getKey())
+            ->assertUnprocessable()->assertJsonValidationErrors('cycle_id');
+        $this->assertDatabaseHas('subject_cycle', ['subject_id' => $subject->getKey(), 'cycle_id' => $this->cycle->getKey()]);
+
+        $this->deleteJson(self::API.'/subjects/'.$subject->getKey().'/cycles/'.$secondCycle->getKey())->assertOk()
+            ->assertJsonPath('data.cycle_ids', [$this->cycle->getKey()]);
+        $this->assertDatabaseMissing('subject_cycle', ['subject_id' => $subject->getKey(), 'cycle_id' => $secondCycle->getKey()]);
+
+        $tutoring->update(['estado' => false]);
+        $this->deleteJson(self::API.'/subjects/'.$subject->getKey().'/cycles/'.$this->cycle->getKey())->assertOk()
+            ->assertJsonPath('data.cycle_ids', []);
+    }
+
+    public function test_subject_listing_filters_by_cycle_and_status(): void
+    {
+        $active = $this->createSubject(code: 'CS-101');
+        $inactive = $this->createSubject(code: 'CS-102');
+        $inactive->update(['is_active' => false]);
+        $otherCycleSubject = $this->createSubject($this->createCycle($this->career, number: 2), code: 'CS-103');
+        Sanctum::actingAs($this->coordinator, ['*']);
+
+        $this->getJson(self::API.'/subjects?cycle_id='.$this->cycle->getKey())->assertOk()->assertJsonCount(2, 'data');
+        $this->getJson(self::API.'/subjects?status=active')->assertOk()->assertJsonCount(2, 'data')
+            ->assertJsonMissing(['id' => $inactive->getKey()]);
+        $this->getJson(self::API.'/subjects?status=inactive')->assertOk()->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $inactive->getKey());
+        $this->getJson(self::API.'/subjects?cycle_id='.$this->cycle->getKey().'&status=active')->assertOk()
+            ->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $active->getKey());
+    }
+
     public function test_subject_listing_and_mutations_are_limited_to_coordinated_careers(): void
     {
         $own = $this->createSubject();
@@ -51,6 +91,7 @@ class SubjectAndTeacherTest extends TutoringTestCase
         $this->patchJson($url, ['name' => 'Otra'])->assertForbidden();
         $this->patchJson($url.'/deactivate')->assertForbidden();
         $this->putJson($url.'/cycles/'.$this->otherCycle->getKey())->assertForbidden();
+        $this->deleteJson($url.'/cycles/'.$this->otherCycle->getKey())->assertForbidden();
         $this->assertSame('Calidad de software', $foreign->refresh()->name);
     }
 
