@@ -79,7 +79,7 @@ class AcademicPeerAssignmentTest extends TestCase
             'estado' => true,
         ]);
 
-        Sanctum::actingAs($this->coordinator);
+        Sanctum::actingAs($this->coordinator, ['access-api']);
 
         $response = $this->getJson("/api/v1/coordination/degree-topics/{$this->topic->getKey()}/peers");
 
@@ -132,7 +132,7 @@ class AcademicPeerAssignmentTest extends TestCase
         $newPeer1 = Usuario::factory()->withRole('docente')->create(['nombre' => 'Nuevo Par 1']);
         $newPeer2 = Usuario::factory()->withRole('docente')->create(['nombre' => 'Nuevo Par 2']);
 
-        Sanctum::actingAs($this->coordinator);
+        Sanctum::actingAs($this->coordinator, ['access-api']);
 
         $response = $this->putJson("/api/v1/coordination/degree-topics/{$this->topic->getKey()}/peers", [
             'peer_ids' => [$newPeer1->getKey(), $newPeer2->getKey()],
@@ -141,11 +141,12 @@ class AcademicPeerAssignmentTest extends TestCase
         $response->assertOk()
             ->assertJsonCount(2, 'data');
 
-        // Verificar que el par antiguo ya no está asignado
-        $this->assertDatabaseMissing('asignacion_docente', [
+        // Conservar la asignación anterior como historial inactivo.
+        $this->assertDatabaseHas('asignacion_docente', [
             'fk_tema_tit' => $this->topic->getKey(),
             'fk_id_usuario' => $oldPeer->getKey(),
             'rol' => 'par_academico',
+            'estado' => false,
         ]);
 
         // Verificar que los nuevos pares están asignados
@@ -184,7 +185,7 @@ class AcademicPeerAssignmentTest extends TestCase
             'estado' => true,
         ]);
 
-        Sanctum::actingAs($this->coordinator);
+        Sanctum::actingAs($this->coordinator, ['access-api']);
 
         $response = $this->putJson("/api/v1/coordination/degree-topics/{$this->topic->getKey()}/peers", [
             'peer_ids' => [$tutor->getKey()],
@@ -199,7 +200,7 @@ class AcademicPeerAssignmentTest extends TestCase
         $nonTeacher = Usuario::factory()->withRole('estudiante')->create();
         $inactiveTeacher = Usuario::factory()->withRole('docente')->create(['estado' => false]);
 
-        Sanctum::actingAs($this->coordinator);
+        Sanctum::actingAs($this->coordinator, ['access-api']);
 
         $response = $this->putJson("/api/v1/coordination/degree-topics/{$this->topic->getKey()}/peers", [
             'peer_ids' => [$nonTeacher->getKey(), $inactiveTeacher->getKey()],
@@ -213,7 +214,7 @@ class AcademicPeerAssignmentTest extends TestCase
     {
         $peer = Usuario::factory()->withRole('docente')->create();
 
-        Sanctum::actingAs($this->coordinator);
+        Sanctum::actingAs($this->coordinator, ['access-api']);
 
         $response = $this->putJson("/api/v1/coordination/degree-topics/{$this->topic->getKey()}/peers", [
             'peer_ids' => [$peer->getKey(), $peer->getKey()],
@@ -228,7 +229,7 @@ class AcademicPeerAssignmentTest extends TestCase
         $student = Usuario::factory()->withRole('estudiante')->create();
         $peer = Usuario::factory()->withRole('docente')->create();
 
-        Sanctum::actingAs($student);
+        Sanctum::actingAs($student, ['access-api']);
 
         $this->getJson("/api/v1/coordination/degree-topics/{$this->topic->getKey()}/peers")
             ->assertForbidden();

@@ -62,7 +62,7 @@ class TeacherSelectionTest extends TestCase
         ]);
 
         $coordinator = Usuario::factory()->withRole('coordinador_titulacion')->create();
-        Sanctum::actingAs($coordinator);
+        Sanctum::actingAs($coordinator, ['access-api']);
 
         $response = $this->getJson('/api/v1/coordination/teachers');
 
@@ -103,7 +103,7 @@ class TeacherSelectionTest extends TestCase
         ]);
 
         $coordinator = Usuario::factory()->withRole('coordinador_titulacion')->create();
-        Sanctum::actingAs($coordinator);
+        Sanctum::actingAs($coordinator, ['access-api']);
 
         $response = $this->getJson('/api/v1/coordination/teachers');
 
@@ -118,7 +118,7 @@ class TeacherSelectionTest extends TestCase
         Usuario::factory()->withRole('docente')->create(['nombre' => 'Beatriz Salazar']);
 
         $coordinator = Usuario::factory()->withRole('coordinador_titulacion')->create();
-        Sanctum::actingAs($coordinator);
+        Sanctum::actingAs($coordinator, ['access-api']);
 
         $response = $this->getJson('/api/v1/coordination/teachers?search=Alberto');
 
@@ -130,7 +130,7 @@ class TeacherSelectionTest extends TestCase
     public function test_unauthorized_user_cannot_access_teachers_catalog(): void
     {
         $student = Usuario::factory()->withRole('estudiante')->create();
-        Sanctum::actingAs($student);
+        Sanctum::actingAs($student, ['access-api']);
 
         $this->getJson('/api/v1/coordination/teachers')->assertForbidden();
     }

@@ -8,6 +8,7 @@ use App\Actions\Coordination\StoreTopicObservation;
 use App\Actions\Coordination\UpdateAcademicPeers;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Coordination\ApproveDegreeTopicRequest;
+use App\Http\Requests\Api\V1\Coordination\ListDegreeTopicsRequest;
 use App\Http\Requests\Api\V1\Coordination\RejectDegreeTopicRequest;
 use App\Http\Requests\Api\V1\Coordination\StoreTopicObservationRequest;
 use App\Http\Requests\Api\V1\Coordination\UpdateAcademicPeersRequest;
@@ -17,21 +18,27 @@ use App\Http\Resources\Api\V1\TopicObservationResource;
 use App\Models\PeriodoAcademico;
 use App\Models\TemaTitulacion;
 use App\Models\Usuario;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Gate;
 
 class DegreeTopicController extends Controller
 {
-    /**
-     * Muestra el listado de temas de titulación pendientes de revisión con su detalle,
-     * correspondientes al período académico vigente y filtrados por el paralelo del estudiante.
-     */
-    public function indexPending(Request $request): JsonResponse|AnonymousResourceCollection
+    public function index(ListDegreeTopicsRequest $request): JsonResponse|AnonymousResourceCollection
     {
-        $this->ensureAuthorizedCoordinator($request->user());
+        return $this->listTopics($request);
+    }
 
+    public function indexPending(ListDegreeTopicsRequest $request): JsonResponse|AnonymousResourceCollection
+    {
+        return $this->listTopics($request, pendingOnly: true);
+    }
+
+    private function listTopics(ListDegreeTopicsRequest $request, bool $pendingOnly = false): JsonResponse|AnonymousResourceCollection
+    {
         $currentPeriod = PeriodoAcademico::query()->where('estado', true)->first();
 
         if (! $currentPeriod) {
@@ -40,22 +47,36 @@ class DegreeTopicController extends Controller
             ], Response::HTTP_NOT_FOUND);
         }
 
-        // Si se envía section_id explícito, se usa; de lo contrario, se toma el paralelo vinculado al período vigente
+        // The legacy pending endpoint retains its default first-section filter.
         $sectionId = $request->filled('section_id')
             ? $request->integer('section_id')
-            : $currentPeriod->paralelos()->first()?->getKey();
+            : ($pendingOnly ? $currentPeriod->paralelos()->first()?->getKey() : null);
+        $status = $pendingOnly ? 'pendiente' : $request->validated('status');
+        $search = trim($request->string('search')->value());
 
         $query = TemaTitulacion::query()
-            ->with(['estudiante.paralelos', 'periodo', 'coordinadorRevisor'])
-            ->where('fk_periodo', $currentPeriod->getKey())
-            ->where(function ($q): void {
-                $q->whereNull('fecha_revision')
-                    ->orWhere('estado', 'pendiente');
-            });
+            ->with(TemaTitulacion::REVIEW_RELATIONS)
+            ->where('fk_periodo', $currentPeriod->getKey());
 
-        if ($sectionId) {
-            $query->whereHas('estudiante.paralelos', function ($q) use ($sectionId): void {
-                $q->where('paralelo.id_paralelo', $sectionId);
+        if ($status !== null) {
+            $query->where('estado', $status);
+        }
+
+        if ($sectionId !== null) {
+            $query->whereHas('estudiante.paralelos', function (Builder $query) use ($sectionId): void {
+                $query->where('paralelo.id_paralelo', $sectionId);
+            });
+        }
+
+        if ($search !== '') {
+            $query->where(function (Builder $query) use ($search): void {
+                $query->whereLike('titulo', "%{$search}%")
+                    ->orWhereLike('descripcion', "%{$search}%")
+                    ->orWhereHas('estudiante', function (Builder $student) use ($search): void {
+                        $student->whereLike('nombre', "%{$search}%")
+                            ->orWhereLike('cedula', "%{$search}%")
+                            ->orWhereLike('correo', "%{$search}%");
+                    });
             });
         }
 
@@ -68,6 +89,7 @@ class DegreeTopicController extends Controller
                     'name' => $currentPeriod->nombre,
                 ],
                 'filter_section_id' => $sectionId,
+                'filter_status' => $status,
             ],
         ]);
     }
@@ -77,9 +99,9 @@ class DegreeTopicController extends Controller
      */
     public function show(Request $request, TemaTitulacion $topic): JsonResponse|DegreeTopicResource
     {
-        $this->ensureAuthorizedCoordinator($request->user());
+        Gate::authorize('viewAny', TemaTitulacion::class);
 
-        $topic->load(['estudiante.paralelos', 'periodo', 'coordinadorRevisor', 'asignaciones.docente']);
+        $topic->load(TemaTitulacion::REVIEW_RELATIONS);
 
         return DegreeTopicResource::make($topic);
     }
@@ -134,7 +156,7 @@ class DegreeTopicController extends Controller
      */
     public function peers(Request $request, TemaTitulacion $topic): AnonymousResourceCollection
     {
-        $this->ensureAuthorizedCoordinator($request->user());
+        Gate::authorize('viewAny', TemaTitulacion::class);
 
         $peers = $topic->asignaciones()
             ->with('docente')
@@ -153,7 +175,7 @@ class DegreeTopicController extends Controller
         TemaTitulacion $topic,
         UpdateAcademicPeers $updateAcademicPeers
     ): AnonymousResourceCollection {
-        $this->ensureAuthorizedCoordinator($request->user());
+        Gate::authorize('viewAny', TemaTitulacion::class);
 
         $peerIds = array_map('intval', (array) $request->input('peer_ids'));
         $peers = $updateAcademicPeers->handle($topic, $peerIds);
@@ -169,7 +191,7 @@ class DegreeTopicController extends Controller
         TemaTitulacion $topic,
         StoreTopicObservation $storeTopicObservation
     ): JsonResponse {
-        $this->ensureAuthorizedCoordinator($request->user());
+        Gate::authorize('viewAny', TemaTitulacion::class);
 
         /** @var Usuario $coordinator */
         $coordinator = $request->user();
@@ -183,12 +205,5 @@ class DegreeTopicController extends Controller
         return TopicObservationResource::make($observation)
             ->response()
             ->setStatusCode(Response::HTTP_CREATED);
-    }
-
-    private function ensureAuthorizedCoordinator(?Usuario $user): void
-    {
-        if (! $user || (! $user->hasRole('coordinador_titulacion') && ! $user->hasRole('administrador'))) {
-            abort(Response::HTTP_FORBIDDEN, 'No autorizado para revisar temas de titulación.');
-        }
     }
 }

@@ -38,7 +38,7 @@ class DegreeTopicApprovalTest extends TestCase
         $peer2 = Usuario::factory()->withRole('docente')->create(['nombre' => 'Ing. Par Académico 2']);
 
         $coordinator = Usuario::factory()->withRole('coordinador_titulacion')->create();
-        Sanctum::actingAs($coordinator);
+        Sanctum::actingAs($coordinator, ['access-api']);
 
         $response = $this->postJson("/api/v1/coordination/degree-topics/{$topic->getKey()}/approve", [
             'tutor_id' => $tutor->getKey(),
@@ -100,7 +100,7 @@ class DegreeTopicApprovalTest extends TestCase
 
         $teacher = Usuario::factory()->withRole('docente')->create();
         $coordinator = Usuario::factory()->withRole('coordinador_titulacion')->create();
-        Sanctum::actingAs($coordinator);
+        Sanctum::actingAs($coordinator, ['access-api']);
 
         $response = $this->postJson("/api/v1/coordination/degree-topics/{$topic->getKey()}/approve", [
             'tutor_id' => $teacher->getKey(),
@@ -131,7 +131,7 @@ class DegreeTopicApprovalTest extends TestCase
 
         $studentAsTutor = Usuario::factory()->withRole('estudiante')->create();
         $coordinator = Usuario::factory()->withRole('coordinador_titulacion')->create();
-        Sanctum::actingAs($coordinator);
+        Sanctum::actingAs($coordinator, ['access-api']);
 
         $response = $this->postJson("/api/v1/coordination/degree-topics/{$topic->getKey()}/approve", [
             'tutor_id' => $studentAsTutor->getKey(),
@@ -164,7 +164,7 @@ class DegreeTopicApprovalTest extends TestCase
         $tutor = Usuario::factory()->withRole('docente')->create();
         $peer = Usuario::factory()->withRole('docente')->create();
         $coordinator = Usuario::factory()->withRole('coordinador_titulacion')->create();
-        Sanctum::actingAs($coordinator);
+        Sanctum::actingAs($coordinator, ['access-api']);
 
         $response = $this->postJson("/api/v1/coordination/degree-topics/{$topic->getKey()}/approve", [
             'tutor_id' => $tutor->getKey(),
@@ -196,7 +196,7 @@ class DegreeTopicApprovalTest extends TestCase
         $tutor = Usuario::factory()->withRole('docente')->create();
         $peer = Usuario::factory()->withRole('docente')->create();
 
-        Sanctum::actingAs($student);
+        Sanctum::actingAs($student, ['access-api']);
 
         $response = $this->postJson("/api/v1/coordination/degree-topics/{$topic->getKey()}/approve", [
             'tutor_id' => $tutor->getKey(),

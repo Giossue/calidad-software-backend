@@ -8,10 +8,12 @@ use App\Http\Resources\Api\V1\AcademicPeriodResource;
 use App\Http\Resources\Api\V1\SectionResource;
 use App\Models\Paralelo;
 use App\Models\PeriodoAcademico;
+use App\Models\TemaTitulacion;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Gate;
 
 class PeriodSectionController extends Controller
 {
@@ -20,6 +22,8 @@ class PeriodSectionController extends Controller
      */
     public function currentPeriod(): JsonResponse|AcademicPeriodResource
     {
+        Gate::authorize('viewAny', TemaTitulacion::class);
+
         $currentPeriod = PeriodoAcademico::query()->where('estado', true)->first();
 
         if (! $currentPeriod) {
@@ -36,6 +40,8 @@ class PeriodSectionController extends Controller
      */
     public function index(Request $request): JsonResponse|AnonymousResourceCollection
     {
+        Gate::authorize('viewAny', TemaTitulacion::class);
+
         $currentPeriod = PeriodoAcademico::query()->where('estado', true)->first();
 
         if (! $currentPeriod) {
@@ -54,6 +60,8 @@ class PeriodSectionController extends Controller
      */
     public function store(RegisterPeriodSectionRequest $request): JsonResponse
     {
+        Gate::authorize('viewAny', TemaTitulacion::class);
+
         $currentPeriod = PeriodoAcademico::query()->where('estado', true)->first();
 
         if (! $currentPeriod) {

@@ -105,6 +105,40 @@ despliegue están en
   `calidad_software-before-tutoring-20260927T212946Z.dump` y registro sanitizado
   `migration-execution-20260927T213639Z.log`.
 - La activación del módulo requiere **desplegar versiones compatibles del
-  backend y frontend**. El estado de ese despliegue no está verificado; aplicar
-  el esquema o enviar commits a los repositorios no acredita su activación en
-  producción.
+  backend y frontend**. La verificación HTTP de producción posterior a la
+  corrección de permisos se registra en la siguiente sección; no identifica
+  por sí sola el commit desplegado ni sustituye una prueba visual del frontend.
+
+## Incidencia de permisos en producción — 2026-09-27
+
+El inicio de sesión del coordinador responde correctamente, pero las consultas
+HTTP de carreras, ciclos, asignaturas y tutorías devuelven 500. Los catálogos de
+períodos y modalidades responden 200. Las cuatro consultas fallidas acceden a
+`career_coordinator` para limitar las carreras visibles.
+
+La inspección de la base objetivo confirma que las cinco tablas creadas por
+las migraciones pertenecen al rol administrativo, mientras las tablas previas
+pertenecen al rol de la aplicación. Este último carece de permisos de lectura
+y escritura sobre `periodo_paralelo`, `subjects`, `subject_cycle`,
+`career_coordinator` y `career_teacher`, y de acceso a sus cinco secuencias.
+Una consulta de solo lectura bajo ese rol reproduce SQLSTATE `42501`.
+Las comprobaciones anteriores se ejecutaron como administrador y no detectaron
+la falta de privilegios del rol de ejecución.
+
+Corrección **aplicada en producción a las 22:05 UTC**: se concedieron
+exclusivamente `SELECT`, `INSERT`, `UPDATE` y `DELETE` sobre esas cinco tablas,
+y `USAGE`, `SELECT` sobre sus secuencias al rol existente de la aplicación,
+dentro de una transacción. Se verificaron los 30 privilegios y las lecturas
+bajo ese rol antes de confirmar la transacción. Los datos académicos, las
+cuentas y los propietarios de los objetos permanecen sin cambios.
+
+La API desplegada en `https://api.calidad.devs-ueb.tech` se probó con la cuenta
+de coordinador: inicio de sesión 200 y 11 consultas 200, con los datos esperados
+en carreras, ciclos, períodos, modalidades, asignaturas, tutorías, docentes,
+docentes disponibles, horarios, asistencia e informes. El cierre de sesión
+respondió 204 y revocó el token exclusivo del diagnóstico.
+
+La evidencia operativa se conserva fuera del repositorio, en
+`/home/giossue/.local/state/calidad-software/incidents/20260927-tutoring-permissions/`:
+`privileges-before.json`, `repair.sql`, `repair-result.json` y `http-after.json`.
+No se incluyen credenciales en este documento ni en esos resultados.

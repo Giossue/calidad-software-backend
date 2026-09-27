@@ -45,7 +45,7 @@ class DegreeTopicResource extends JsonResource
                 'name' => $reviewer->nombre,
                 'email' => $reviewer->correo,
             ] : null,
-            'assignments' => $this->asignaciones->map(fn ($assignment) => [
+            'assignments' => $this->activeAssignments->map(fn ($assignment) => [
                 'id' => $assignment->getKey(),
                 'role' => $assignment->rol,
                 'assigned_at' => $assignment->fecha_asignacion?->toDateString(),

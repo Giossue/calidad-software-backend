@@ -23,6 +23,7 @@ use App\Http\Controllers\Api\V1\Tutoring\SubjectController as TutoringSubjectCon
 use App\Http\Controllers\Api\V1\Tutoring\SupervisionController as TutoringSupervisionController;
 use App\Http\Controllers\Api\V1\Tutoring\TeacherController as TutoringTeacherController;
 use App\Http\Controllers\Api\V1\Tutoring\TutoringController;
+use App\Http\Middleware\EnsureActiveAccount;
 use Illuminate\Support\Facades\Route;
 use Laravel\Sanctum\Http\Middleware\CheckAbilities;
 
@@ -66,13 +67,14 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         });
     });
 
-    Route::middleware('auth:sanctum')->group(function (): void {
+    Route::middleware(['auth:sanctum', 'verified', CheckAbilities::class.':access-api', EnsureActiveAccount::class])->group(function (): void {
         Route::get('academic-periods/current', [PeriodSectionController::class, 'currentPeriod'])->name('academic-periods.current');
         Route::get('academic-periods/current/sections', [PeriodSectionController::class, 'index'])->name('academic-periods.current.sections.index');
         Route::post('academic-periods/current/sections', [PeriodSectionController::class, 'store'])->name('academic-periods.current.sections.store');
 
         Route::prefix('coordination')->name('coordination.')->group(function (): void {
             Route::get('teachers', [TeacherCoordinationController::class, 'index'])->name('teachers.index');
+            Route::get('degree-topics', [DegreeTopicController::class, 'index'])->name('degree-topics.index');
             Route::get('degree-topics/pending', [DegreeTopicController::class, 'indexPending'])->name('degree-topics.pending');
             Route::get('degree-topics/{topic}', [DegreeTopicController::class, 'show'])->name('degree-topics.show');
             Route::post('degree-topics/{topic}/approve', [DegreeTopicController::class, 'approve'])->name('degree-topics.approve');
@@ -85,6 +87,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::prefix('student')->name('student.')->group(function (): void {
             Route::get('degree-topics', [StudentDegreeTopicController::class, 'index'])->name('degree-topics.index');
         });
+    });
+
+    Route::middleware('auth:sanctum')->group(function (): void {
         Route::get('academic-periods', [AcademicPeriodController::class, 'index'])->name('academic-periods.index.legacy');
         Route::post('academic-periods', [AcademicPeriodController::class, 'store'])->name('academic-periods.store.legacy');
         Route::patch('academic-periods/{academicPeriod}', [AcademicPeriodController::class, 'update'])->name('academic-periods.update.legacy');

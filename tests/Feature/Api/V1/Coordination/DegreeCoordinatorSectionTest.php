@@ -23,7 +23,7 @@ class DegreeCoordinatorSectionTest extends TestCase
         ]);
 
         $coordinator = Usuario::factory()->withRole('coordinador_titulacion')->create();
-        Sanctum::actingAs($coordinator);
+        Sanctum::actingAs($coordinator, ['access-api']);
 
         $response = $this->getJson('/api/v1/academic-periods/current');
 
@@ -43,7 +43,7 @@ class DegreeCoordinatorSectionTest extends TestCase
         ]);
 
         $coordinator = Usuario::factory()->withRole('coordinador_titulacion')->create();
-        Sanctum::actingAs($coordinator);
+        Sanctum::actingAs($coordinator, ['access-api']);
 
         $response = $this->getJson('/api/v1/academic-periods/current');
 
@@ -61,7 +61,7 @@ class DegreeCoordinatorSectionTest extends TestCase
         ]);
 
         $coordinator = Usuario::factory()->withRole('coordinador_titulacion')->create();
-        Sanctum::actingAs($coordinator);
+        Sanctum::actingAs($coordinator, ['access-api']);
 
         $response = $this->postJson('/api/v1/academic-periods/current/sections', [
             'name' => 'A',
@@ -94,7 +94,7 @@ class DegreeCoordinatorSectionTest extends TestCase
     public function test_registering_a_section_fails_when_no_active_academic_period_exists(): void
     {
         $coordinator = Usuario::factory()->withRole('coordinador_titulacion')->create();
-        Sanctum::actingAs($coordinator);
+        Sanctum::actingAs($coordinator, ['access-api']);
 
         $response = $this->postJson('/api/v1/academic-periods/current/sections', [
             'name' => 'B',
@@ -114,7 +114,7 @@ class DegreeCoordinatorSectionTest extends TestCase
         ]);
 
         $student = Usuario::factory()->withRole('estudiante')->create();
-        Sanctum::actingAs($student);
+        Sanctum::actingAs($student, ['access-api']);
 
         $response = $this->postJson('/api/v1/academic-periods/current/sections', [
             'name' => 'C',

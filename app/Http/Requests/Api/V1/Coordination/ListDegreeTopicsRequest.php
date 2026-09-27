@@ -4,8 +4,9 @@ namespace App\Http\Requests\Api\V1\Coordination;
 
 use App\Models\TemaTitulacion;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
-class StoreTopicObservationRequest extends FormRequest
+class ListDegreeTopicsRequest extends FormRequest
 {
     public function authorize(): bool
     {
@@ -16,15 +17,9 @@ class StoreTopicObservationRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'observation' => ['bail', 'required', 'string', 'min:3', 'max:1000'],
-        ];
-    }
-
-    /** @return array<string, string> */
-    public function attributes(): array
-    {
-        return [
-            'observation' => 'observación',
+            'status' => ['nullable', Rule::in(['pendiente', 'aprobado', 'rechazado'])],
+            'section_id' => ['nullable', 'integer', 'exists:paralelo,id_paralelo'],
+            'search' => ['nullable', 'string', 'max:255'],
         ];
     }
 }

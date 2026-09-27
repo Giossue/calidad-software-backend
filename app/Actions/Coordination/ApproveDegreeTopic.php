@@ -10,55 +10,42 @@ use Illuminate\Validation\ValidationException;
 
 class ApproveDegreeTopic
 {
-    /**
-     * @param  array<int, int>  $peerIds
-     */
+    public function __construct(
+        private readonly ValidateDegreeTopicTeachers $validateTeachers,
+        private readonly SyncAcademicPeers $syncPeers,
+    ) {}
+
+    /** @param array<int, int> $peerIds */
     public function handle(TemaTitulacion $topic, Usuario $coordinator, int $tutorId, array $peerIds): TemaTitulacion
     {
-        if ($topic->estado === 'aprobado') {
-            throw ValidationException::withMessages([
-                'topic' => ['Esta propuesta de tema ya fue aprobada previamente.'],
-            ]);
-        }
-
         return DB::transaction(function () use ($topic, $coordinator, $tutorId, $peerIds): TemaTitulacion {
+            $topic = TemaTitulacion::query()->whereKey($topic->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($topic->estado !== 'pendiente') {
+                throw ValidationException::withMessages([
+                    'topic' => ['Solo se pueden aprobar propuestas pendientes de revisión.'],
+                ]);
+            }
+
+            $this->validateTeachers->handle($tutorId, $peerIds);
+
             $topic->update([
                 'estado' => 'aprobado',
                 'fecha_revision' => now()->toDateString(),
                 'fk_coord_revisor' => $coordinator->getKey(),
             ]);
 
-            // Asignación de Docente Tutor
+            $topic->asignaciones()->where('rol', 'tutor')->where('estado', true)
+                ->update(['estado' => false]);
+
             AsignacionDocente::query()->updateOrCreate(
-                [
-                    'fk_tema_tit' => $topic->getKey(),
-                    'rol' => 'tutor',
-                ],
-                [
-                    'fk_id_usuario' => $tutorId,
-                    'fecha_asignacion' => now()->toDateString(),
-                    'estado' => true,
-                ]
+                ['fk_tema_tit' => $topic->getKey(), 'fk_id_usuario' => $tutorId, 'rol' => 'tutor'],
+                ['fecha_asignacion' => now()->toDateString(), 'estado' => true]
             );
 
-            // Asignación de Pares Académicos
-            AsignacionDocente::query()
-                ->where('fk_tema_tit', $topic->getKey())
-                ->where('rol', 'par_academico')
-                ->delete();
+            $this->syncPeers->handle($topic, $peerIds);
 
-            foreach ($peerIds as $peerId) {
-                AsignacionDocente::query()->create([
-                    'fk_tema_tit' => $topic->getKey(),
-                    'fk_id_usuario' => $peerId,
-                    'rol' => 'par_academico',
-                    'fecha_asignacion' => now()->toDateString(),
-                    'estado' => true,
-                ]);
-            }
-
-            /** @var TemaTitulacion */
-            return $topic->fresh(['estudiante.paralelos', 'periodo', 'coordinadorRevisor', 'asignaciones.docente']);
+            return $topic->load(TemaTitulacion::REVIEW_RELATIONS);
         });
     }
 }
