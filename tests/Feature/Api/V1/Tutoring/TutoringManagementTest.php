@@ -97,6 +97,24 @@ class TutoringManagementTest extends TutoringTestCase
         $this->assertNull($foreign->refresh()->fk_docente);
     }
 
+    public function test_tutoring_listing_filters_by_cycle_and_status(): void
+    {
+        $active = $this->createTutoring();
+        $secondCycle = $this->createCycle($this->career, number: 2);
+        $inactive = $this->createTutoring($secondCycle, $this->createSubject($secondCycle, 'CS-102'));
+        $inactive->update(['estado' => false]);
+        Sanctum::actingAs($this->coordinator, ['*']);
+
+        $this->getJson(self::API.'/tutorings?cycle_id='.$this->cycle->getKey())->assertOk()->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $active->getKey());
+        $this->getJson(self::API.'/tutorings?status=active')->assertOk()->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $active->getKey());
+        $this->getJson(self::API.'/tutorings?status=inactive')->assertOk()->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $inactive->getKey());
+        $this->getJson(self::API.'/tutorings?cycle_id='.$secondCycle->getKey().'&status=active')->assertOk()
+            ->assertJsonCount(0, 'data');
+    }
+
     public function test_cycle_reassignment_requires_the_same_career_and_subject_link(): void
     {
         $tutoring = $this->createTutoring();

@@ -157,6 +157,20 @@ class SubjectAndTeacherTest extends TutoringTestCase
         $this->postJson(self::API.'/teachers', $this->teacherPayload($this->otherCareer))->assertForbidden();
     }
 
+    public function test_teacher_listing_filters_by_status(): void
+    {
+        $active = Usuario::factory()->withRole('docente')->create();
+        $active->teachingCareers()->attach($this->career);
+        $inactive = Usuario::factory()->withRole('docente')->create(['estado' => false]);
+        $inactive->teachingCareers()->attach($this->career);
+        Sanctum::actingAs($this->coordinator, ['*']);
+
+        $this->getJson(self::API.'/teachers?status=active')->assertOk()->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $active->getKey());
+        $this->getJson(self::API.'/teachers?status=inactive')->assertOk()->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $inactive->getKey());
+    }
+
     public function test_teacher_input_rejects_invalid_identity_email_and_role_escalation(): void
     {
         Notification::fake();

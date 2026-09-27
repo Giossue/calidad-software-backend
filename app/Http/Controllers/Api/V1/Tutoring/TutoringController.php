@@ -31,6 +31,12 @@ class TutoringController extends Controller
         if ($careerId = $request->integer('career_id')) {
             $query->whereHas('ciclo', fn (Builder $q) => $q->where('fk_carrera', $careerId));
         }
+        if ($cycleId = $request->integer('cycle_id')) {
+            $query->where('fk_ciclo', $cycleId);
+        }
+        if ($status = $request->string('status')->toString()) {
+            $query->where('estado', $status === 'active');
+        }
         if ($search = trim((string) $request->string('search'))) {
             $query->whereLike('nombre', "%{$search}%");
         }

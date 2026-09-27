@@ -30,6 +30,9 @@ class TeacherController extends Controller
         if ($careerId = $request->integer('career_id')) {
             $query->whereHas('teachingCareers', fn (Builder $q) => $q->where('carrera.id_carrera', $careerId));
         }
+        if ($status = $request->string('status')->toString()) {
+            $query->where('estado', $status === 'active');
+        }
         if ($search = trim((string) $request->string('search'))) {
             $query->where(fn (Builder $q) => $q->whereLike('nombre', "%{$search}%")->orWhereLike('correo', "%{$search}%"));
         }
