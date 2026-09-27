@@ -71,6 +71,20 @@ class Usuario extends Authenticatable implements MustVerifyEmail
             ->withPivot('assigned_at');
     }
 
+    /** @return BelongsToMany<Carrera, $this> */
+    public function coordinatedCareers(): BelongsToMany
+    {
+        return $this->belongsToMany(Carrera::class, 'career_coordinator', 'user_id', 'career_id')
+            ->withPivot('assigned_at');
+    }
+
+    /** @return BelongsToMany<Carrera, $this> */
+    public function teachingCareers(): BelongsToMany
+    {
+        return $this->belongsToMany(Carrera::class, 'career_teacher', 'user_id', 'career_id')
+            ->withPivot('assigned_at');
+    }
+
     public function hasRole(string $slug): bool
     {
         return $this->roles->contains('slug', $slug);

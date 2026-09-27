@@ -60,4 +60,11 @@ class Ciclo extends Model
     {
         return $this->hasMany(AsignaturaTutoria::class, 'fk_ciclo');
     }
+
+    /** @return BelongsToMany<Subject, $this> */
+    public function subjects(): BelongsToMany
+    {
+        return $this->belongsToMany(Subject::class, 'subject_cycle', 'cycle_id', 'subject_id')
+            ->withTimestamps();
+    }
 }

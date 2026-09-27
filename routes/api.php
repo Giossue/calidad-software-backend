@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\V1\AcademicPeriodController;
 use App\Http\Controllers\Api\V1\Admin\CareerController;
+use App\Http\Controllers\Api\V1\Admin\CoordinatorCareerAssignmentController;
 use App\Http\Controllers\Api\V1\Admin\CycleController;
 use App\Http\Controllers\Api\V1\Admin\FacultyController;
 use App\Http\Controllers\Api\V1\Admin\UserController;
@@ -16,7 +17,14 @@ use App\Http\Controllers\Api\V1\Coordination\TeacherCoordinationController;
 use App\Http\Controllers\Api\V1\ModalityController;
 use App\Http\Controllers\Api\V1\SectionController;
 use App\Http\Controllers\Api\V1\Student\StudentDegreeTopicController;
+use App\Http\Controllers\Api\V1\Tutoring\CatalogController as TutoringCatalogController;
+use App\Http\Controllers\Api\V1\Tutoring\ScheduleController as TutoringScheduleController;
+use App\Http\Controllers\Api\V1\Tutoring\SubjectController as TutoringSubjectController;
+use App\Http\Controllers\Api\V1\Tutoring\SupervisionController as TutoringSupervisionController;
+use App\Http\Controllers\Api\V1\Tutoring\TeacherController as TutoringTeacherController;
+use App\Http\Controllers\Api\V1\Tutoring\TutoringController;
 use Illuminate\Support\Facades\Route;
+use Laravel\Sanctum\Http\Middleware\CheckAbilities;
 
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
     Route::prefix('auth')->name('auth.')->group(function (): void {
@@ -93,10 +101,47 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             ->middleware('can:activate,modality')->name('modalities.activate.legacy');
     });
 
+    Route::middleware(['auth:sanctum', 'verified', CheckAbilities::class.':access-api'])
+        ->prefix('tutoring-coordination')
+        ->name('tutoring-coordination.')
+        ->group(function (): void {
+            Route::get('careers', [TutoringCatalogController::class, 'careers'])->name('careers.index');
+            Route::get('cycles', [TutoringCatalogController::class, 'cycles'])->name('cycles.index');
+            Route::get('periods', [TutoringCatalogController::class, 'periods'])->name('periods.index');
+            Route::get('modalities', [TutoringCatalogController::class, 'modalities'])->name('modalities.index');
+
+            Route::get('subjects', [TutoringSubjectController::class, 'index'])->name('subjects.index');
+            Route::post('subjects', [TutoringSubjectController::class, 'store'])->name('subjects.store');
+            Route::patch('subjects/{subject}', [TutoringSubjectController::class, 'update'])->name('subjects.update');
+            Route::patch('subjects/{subject}/deactivate', [TutoringSubjectController::class, 'deactivate'])->name('subjects.deactivate');
+            Route::put('subjects/{subject}/cycles/{cycle}', [TutoringSubjectController::class, 'assignCycle'])->name('subjects.cycles.assign');
+
+            Route::get('teachers', [TutoringTeacherController::class, 'index'])->name('teachers.index');
+            Route::get('available-teachers', [TutoringTeacherController::class, 'available'])->name('teachers.available');
+            Route::post('teachers', [TutoringTeacherController::class, 'store'])->name('teachers.store');
+            Route::patch('teachers/{teacher}', [TutoringTeacherController::class, 'update'])->name('teachers.update');
+            Route::patch('teachers/{teacher}/deactivate', [TutoringTeacherController::class, 'deactivate'])->name('teachers.deactivate');
+
+            Route::get('tutorings', [TutoringController::class, 'index'])->name('tutorings.index');
+            Route::post('tutorings', [TutoringController::class, 'store'])->name('tutorings.store');
+            Route::patch('tutorings/{tutoring}', [TutoringController::class, 'update'])->name('tutorings.update');
+            Route::patch('tutorings/{tutoring}/deactivate', [TutoringController::class, 'deactivate'])->name('tutorings.deactivate');
+            Route::put('tutorings/{tutoring}/cycle', [TutoringController::class, 'assignCycle'])->name('tutorings.cycle.assign');
+            Route::put('tutorings/{tutoring}/teacher', [TutoringController::class, 'assignTeacher'])->name('tutorings.teacher.assign');
+            Route::get('tutorings/{tutoring}/schedules', [TutoringScheduleController::class, 'index'])->name('schedules.index');
+            Route::post('tutorings/{tutoring}/schedules', [TutoringScheduleController::class, 'store'])->name('schedules.store');
+            Route::patch('tutorings/{tutoring}/schedules/{schedule}', [TutoringScheduleController::class, 'update'])->name('schedules.update');
+            Route::patch('tutorings/{tutoring}/schedules/{schedule}/deactivate', [TutoringScheduleController::class, 'deactivate'])->name('schedules.deactivate');
+            Route::get('tutorings/{tutoring}/attendance', [TutoringSupervisionController::class, 'attendance'])->name('tutorings.attendance');
+            Route::get('tutorings/{tutoring}/reports', [TutoringSupervisionController::class, 'reports'])->name('tutorings.reports');
+        });
+
     Route::middleware(['auth:sanctum', 'verified'])
         ->prefix('admin')
         ->name('admin.')
         ->group(function (): void {
+            Route::put('users/{user}/careers', [CoordinatorCareerAssignmentController::class, 'update'])
+                ->middleware(CheckAbilities::class.':access-api')->name('users.careers.update');
             Route::get('faculties', [FacultyController::class, 'index'])->name('faculties.index');
             Route::get('careers', [CareerController::class, 'index'])->name('careers.index');
             Route::post('careers', [CareerController::class, 'store'])->name('careers.store');

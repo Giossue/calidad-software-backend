@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /** @mixin Usuario */
-class UserResource extends JsonResource
+class TutoringTeacherResource extends JsonResource
 {
     /** @return array<string, mixed> */
     public function toArray(Request $request): array
@@ -18,11 +18,9 @@ class UserResource extends JsonResource
             'name' => $this->nombre,
             'email' => $this->correo,
             'phone' => $this->telefono,
-            'role' => $this->roles->first()?->slug,
-            'coordinated_career_ids' => $this->whenLoaded('coordinatedCareers', fn () => $this->coordinatedCareers->pluck('id_carrera')->all()),
             'is_active' => $this->estado,
-            'email_verified_at' => $this->email_verified_at?->toISOString(),
-            'has_two_factor' => $this->two_factor_confirmed_at !== null,
+            'can_manage' => $request->user()->can('updateTutoringTeacher', $this->resource),
+            'career_ids' => $this->whenLoaded('teachingCareers', fn () => $this->teachingCareers->pluck('id_carrera')->all()),
         ];
     }
 }
