@@ -100,6 +100,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::match(['put', 'patch'], 'degree-topics/{topic}', [StudentDegreeTopicController::class, 'update'])->name('degree-topics.update');
             Route::get('degree-topics/{topic}/assignments', [StudentDegreeTopicController::class, 'topicAssignments'])->name('degree-topics.topic-assignments');
             Route::get('tutoring', [StudentTutoringController::class, 'index'])->name('tutoring.index');
+            Route::get('tutoring/grades', [StudentTutoringController::class, 'allGrades'])->name('tutoring.grades.all');
+            Route::get('tutoring/{tutoring}/grades', [StudentTutoringController::class, 'grades'])->name('tutoring.grades');
         });
 
         Route::prefix('teacher')->name('teacher.')->group(function (): void {
