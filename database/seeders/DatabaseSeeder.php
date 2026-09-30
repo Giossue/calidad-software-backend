@@ -60,7 +60,22 @@ class DatabaseSeeder extends Seeder
         );
         $coordTitulacion->roles()->syncWithoutDetaching([$coordRole->id]);
 
-        // 4. Período Académico Vigente
+        // 4. Estudiante de Titulación
+        $studentRole = Role::firstOrCreate(['slug' => 'estudiante'], ['name' => 'Estudiante']);
+        $estudiante = Usuario::firstOrCreate(
+            ['correo' => 'estudiante@mail.com'],
+            [
+                'cedula' => '0201999999',
+                'nombre' => 'Carlos Estudiante de Prueba',
+                'telefono' => '0981112233',
+                'password_hash' => Hash::make('password123'),
+                'estado' => true,
+                'email_verified_at' => now(),
+            ]
+        );
+        $estudiante->roles()->syncWithoutDetaching([$studentRole->id]);
+
+        // 5. Período Académico Vigente
         PeriodoAcademico::firstOrCreate(
             ['nombre' => 'PAO 2026-1'],
             [

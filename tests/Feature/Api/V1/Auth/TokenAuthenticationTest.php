@@ -157,4 +157,109 @@ class TokenAuthenticationTest extends TestCase
         $this->app['auth']->forgetGuards();
         $this->withHeaders($headers)->getJson('/api/v1/auth/user')->assertUnauthorized();
     }
+
+    public function test_student_can_login_with_valid_credentials_and_receive_student_role(): void
+    {
+        $student = Usuario::factory()
+            ->withRole('estudiante')
+            ->create([
+                'password_hash' => 'password123',
+                'estado' => true,
+            ]);
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'email' => $student->correo,
+            'password' => 'password123',
+            'device_name' => 'estudiante-web',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.token_type', 'Bearer')
+            ->assertJsonPath('data.user.role', 'estudiante')
+            ->assertJsonPath('data.user.email', $student->correo)
+            ->assertJsonStructure(['data' => ['access_token', 'expires_at']]);
+
+        $this->assertDatabaseHas('personal_access_tokens', [
+            'tokenable_id' => $student->getKey(),
+            'name' => 'estudiante-web',
+        ]);
+    }
+
+    public function test_student_receives_generic_error_on_invalid_credentials(): void
+    {
+        $student = Usuario::factory()
+            ->withRole('estudiante')
+            ->create([
+                'password_hash' => 'password123',
+                'estado' => true,
+            ]);
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'email' => $student->correo,
+            'password' => 'clave_erronea',
+            'device_name' => 'estudiante-web',
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['email'])
+            ->assertJsonPath('errors.email.0', 'Las credenciales proporcionadas no son correctas.');
+
+        $this->assertDatabaseCount('personal_access_tokens', 0);
+    }
+
+    public function test_inactive_student_cannot_login(): void
+    {
+        $student = Usuario::factory()
+            ->withRole('estudiante')
+            ->create([
+                'password_hash' => 'password123',
+                'estado' => false,
+            ]);
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'email' => $student->correo,
+            'password' => 'password123',
+            'device_name' => 'estudiante-web',
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['email'])
+            ->assertJsonPath('errors.email.0', 'Las credenciales proporcionadas no son correctas.');
+
+        $this->assertDatabaseCount('personal_access_tokens', 0);
+    }
+
+    public function test_student_can_logout_and_token_is_invalidated(): void
+    {
+        $student = Usuario::factory()
+            ->withRole('estudiante')
+            ->create(['estado' => true]);
+
+        $token = $student->createToken('estudiante-web')->plainTextToken;
+        $headers = ['Authorization' => 'Bearer '.$token];
+
+        $response = $this->withHeaders($headers)->deleteJson('/api/v1/auth/logout');
+        $response->assertNoContent();
+
+        $this->assertDatabaseMissing('personal_access_tokens', [
+            'tokenable_id' => $student->getKey(),
+        ]);
+        $this->assertNull(PersonalAccessToken::findToken($token));
+
+        $this->app['auth']->forgetGuards();
+        $this->withHeaders($headers)->getJson('/api/v1/auth/user')->assertUnauthorized();
+    }
+
+    public function test_student_can_access_student_degree_topics_endpoint(): void
+    {
+        $student = Usuario::factory()
+            ->withRole('estudiante')
+            ->create(['estado' => true]);
+
+        $token = $student->createToken('estudiante-web')->plainTextToken;
+        $headers = ['Authorization' => 'Bearer '.$token];
+
+        $response = $this->withHeaders($headers)->getJson('/api/v1/student/degree-topics');
+        $response->assertOk()->assertJsonStructure(['data']);
+    }
 }
