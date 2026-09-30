@@ -36,6 +36,10 @@ class CareerController extends Controller
             });
         }
 
+        if ($request->filled('faculty_id')) {
+            $query->where('fk_facultad', $request->integer('faculty_id'));
+        }
+
         if ($request->boolean('all')) {
             return CareerResource::collection(
                 (clone $query)->where('estado', true)->orderBy('nombre')->get(),

@@ -52,6 +52,46 @@ class AcademicCatalogTest extends TestCase
         $this->assertTrue($career->fresh()->estado);
     }
 
+    public function test_creating_a_career_generates_eight_cycles_in_parallel_a(): void
+    {
+        $this->actingAsAdministrator();
+        $faculty = Facultad::query()->create(['nombre' => 'Facultad de Ingeniería', 'estado' => true]);
+
+        $careerId = $this->postJson('/api/v1/admin/careers', [
+            'faculty_id' => $faculty->getKey(),
+            'name' => 'Ingeniería de Software',
+        ])->assertCreated()->json('data.id');
+
+        $parallel = Paralelo::query()->where('nombre', 'A')->firstOrFail();
+        $cycles = Ciclo::query()->where('fk_carrera', $careerId)->orderBy('numero')->get();
+
+        $this->assertSame(range(1, 8), $cycles->pluck('numero')->all());
+        $this->assertCount(8, $cycles->where('fk_paralelo', $parallel->getKey()));
+        $this->assertCount(8, $cycles->where('estado', true));
+        $this->assertSame('Primer ciclo', $cycles->first()->nombre);
+        $this->assertSame('Octavo ciclo', $cycles->last()->nombre);
+    }
+
+    public function test_career_can_be_created_with_a_custom_number_of_cycles(): void
+    {
+        $this->actingAsAdministrator();
+        $faculty = Facultad::query()->create(['nombre' => 'Facultad de Ingeniería', 'estado' => true]);
+
+        $careerId = $this->postJson('/api/v1/admin/careers', [
+            'faculty_id' => $faculty->getKey(),
+            'name' => 'Tecnología Superior',
+            'cycles_count' => 4,
+        ])->assertCreated()->json('data.id');
+
+        $this->assertSame(4, Ciclo::query()->where('fk_carrera', $careerId)->count());
+
+        $this->postJson('/api/v1/admin/careers', [
+            'faculty_id' => $faculty->getKey(),
+            'name' => 'Sin ciclos',
+            'cycles_count' => 13,
+        ])->assertUnprocessable()->assertJsonValidationErrors('cycles_count');
+    }
+
     public function test_career_name_is_unique_inside_a_faculty(): void
     {
         $this->actingAsAdministrator();

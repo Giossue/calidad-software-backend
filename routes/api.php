@@ -118,7 +118,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::post('tutorings/{tutoring}/students', [EnrollmentController::class, 'store'])->name('students.store');
             Route::patch('tutorings/{tutoring}/students/{enrollment}', [EnrollmentController::class, 'update'])->name('students.update');
             Route::patch('tutorings/{tutoring}/students/{enrollment}/deactivate', [EnrollmentController::class, 'deactivate'])->name('students.deactivate');
-            Route::put('tutorings/{tutoring}/students/{enrollment}/grades/{type}', [GradeController::class, 'store'])->whereIn('type', ['diagnostic', 'partial'])->name('grades.store');
+            Route::put('tutorings/{tutoring}/students/{enrollment}/grades/{type}', [GradeController::class, 'store'])->whereIn('type', ['diagnostic', 'partial', 'partial_two'])->name('grades.store');
+            Route::put('tutorings/{tutoring}/grades', [GradeController::class, 'bulk'])->name('grades.bulk');
 
             Route::get('tutorings/{tutoring}/topics', [TeacherContentController::class, 'index'])->name('topics.index');
             Route::post('tutorings/{tutoring}/topics', [TeacherContentController::class, 'storeTopic'])->name('topics.store');
@@ -175,6 +176,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::get('teachers', [TutoringTeacherController::class, 'index'])->name('teachers.index');
             Route::get('available-teachers', [TutoringTeacherController::class, 'available'])->name('teachers.available');
             Route::post('teachers', [TutoringTeacherController::class, 'store'])->name('teachers.store');
+            Route::post('teachers/{teacher}/careers', [TutoringTeacherController::class, 'linkCareer'])->name('teachers.careers.link');
+            Route::delete('teachers/{teacher}/careers/{career}', [TutoringTeacherController::class, 'unlinkCareer'])->name('teachers.careers.unlink');
             Route::patch('teachers/{teacher}', [TutoringTeacherController::class, 'update'])->name('teachers.update');
             Route::patch('teachers/{teacher}/deactivate', [TutoringTeacherController::class, 'deactivate'])->name('teachers.deactivate');
 

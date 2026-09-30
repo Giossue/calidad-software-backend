@@ -47,6 +47,14 @@ class StoreCycleRequest extends FormRequest
     }
 
     /** @return array<string, string> */
+    public function messages(): array
+    {
+        return [
+            'number.unique' => 'Ya existe un ciclo con ese número en el mismo paralelo de esta carrera. Elige otro número u otro paralelo.',
+        ];
+    }
+
+    /** @return array<string, string> */
     public function attributes(): array
     {
         return [

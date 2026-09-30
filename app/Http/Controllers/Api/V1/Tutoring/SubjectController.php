@@ -44,6 +44,7 @@ class SubjectController extends Controller
             'career_id' => $request->integer('career_id'),
             'code' => $request->string('code')->toString(),
             'name' => $request->string('name')->toString(),
+            'cycle_id' => $request->integer('cycle_id') ?: null,
         ])->load('career', 'cycles'))
             ->response()->setStatusCode(Response::HTTP_CREATED);
     }

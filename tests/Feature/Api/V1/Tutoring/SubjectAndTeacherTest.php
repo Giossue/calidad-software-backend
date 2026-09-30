@@ -108,6 +108,19 @@ class SubjectAndTeacherTest extends TutoringTestCase
         $this->postJson(self::API.'/subjects', array_replace($payload, ['career_id' => $this->otherCareer->getKey()]))->assertCreated();
     }
 
+    public function test_subject_can_be_created_with_its_cycle_in_one_step(): void
+    {
+        Sanctum::actingAs($this->coordinator, ['*']);
+        $payload = ['career_id' => $this->career->getKey(), 'code' => 'SW-001', 'name' => 'Algoritmos', 'cycle_id' => $this->cycle->getKey()];
+
+        $this->postJson(self::API.'/subjects', $payload)->assertCreated()
+            ->assertJsonPath('data.cycle_ids', [$this->cycle->getKey()]);
+
+        $this->postJson(self::API.'/subjects', array_replace($payload, ['code' => 'SW-002', 'cycle_id' => $this->otherCycle->getKey()]))
+            ->assertUnprocessable()->assertJsonValidationErrors('cycle_id');
+        $this->assertDatabaseMissing('subjects', ['code' => 'SW-002']);
+    }
+
     public function test_subject_assignment_rejects_inactive_and_incompatible_cycles(): void
     {
         $subject = $this->createSubject();
@@ -119,6 +132,58 @@ class SubjectAndTeacherTest extends TutoringTestCase
         $this->cycle->update(['estado' => true]);
         $subject->update(['is_active' => false]);
         $this->putJson($url.$this->cycle->getKey())->assertUnprocessable();
+    }
+
+    public function test_coordinator_can_link_an_existing_teacher_to_their_careers_only(): void
+    {
+        $teacher = Usuario::factory()->withRole('docente')->create();
+        $inactive = Usuario::factory()->withRole('docente')->create(['estado' => false]);
+        $student = Usuario::factory()->withRole('estudiante')->create();
+        Sanctum::actingAs($this->coordinator, ['*']);
+
+        $this->getJson(self::API.'/available-teachers?exclude_career_id='.$this->career->getKey())
+            ->assertOk()->assertJsonFragment(['id' => $teacher->getKey()]);
+
+        $teacher->update(['nombre' => 'Ana Torres']);
+        $this->getJson(self::API.'/available-teachers?search=torres+ana')
+            ->assertOk()->assertJsonFragment(['id' => $teacher->getKey()]);
+        $this->getJson(self::API.'/available-teachers?search=torres+pedro')
+            ->assertOk()->assertJsonCount(0, 'data');
+
+        $url = self::API.'/teachers/'.$teacher->getKey().'/careers';
+        $this->postJson($url, ['career_id' => $this->career->getKey()])
+            ->assertOk()->assertJsonPath('data.career_ids', [$this->career->getKey()]);
+        $this->postJson($url, ['career_id' => $this->career->getKey()])->assertOk();
+        $this->assertSame(1, $teacher->teachingCareers()->count());
+
+        $this->getJson(self::API.'/available-teachers?exclude_career_id='.$this->career->getKey())
+            ->assertOk()->assertJsonMissing(['id' => $teacher->getKey()]);
+
+        $this->postJson($url, ['career_id' => $this->otherCareer->getKey()])->assertForbidden();
+        $this->postJson(self::API.'/teachers/'.$inactive->getKey().'/careers', ['career_id' => $this->career->getKey()])->assertUnprocessable();
+        $this->postJson(self::API.'/teachers/'.$student->getKey().'/careers', ['career_id' => $this->career->getKey()])->assertUnprocessable();
+
+        $this->coordinator->coordinatedCareers()->attach($this->otherCareer);
+        $this->postJson($url, ['career_id' => $this->otherCareer->getKey()])
+            ->assertOk()->assertJsonCount(2, 'data.career_ids');
+    }
+
+    public function test_coordinator_can_unlink_a_teacher_from_a_career_unless_it_has_active_tutorings(): void
+    {
+        $teacher = Usuario::factory()->withRole('docente')->create();
+        $teacher->teachingCareers()->attach([$this->career->getKey(), $this->otherCareer->getKey()]);
+        $tutoring = $this->createTutoring();
+        $tutoring->update(['fk_docente' => $teacher->getKey()]);
+        Sanctum::actingAs($this->coordinator, ['*']);
+        $url = self::API.'/teachers/'.$teacher->getKey().'/careers/';
+
+        $this->deleteJson($url.$this->career->getKey())->assertUnprocessable()->assertJsonValidationErrors('career');
+
+        $tutoring->update(['estado' => false]);
+        $this->deleteJson($url.$this->otherCareer->getKey())->assertForbidden();
+        $this->deleteJson($url.$this->career->getKey())
+            ->assertOk()->assertJsonPath('data.career_ids', [$this->otherCareer->getKey()]);
+        $this->assertSame(1, $teacher->teachingCareers()->count());
     }
 
     public function test_coordinator_can_create_and_edit_a_teacher_with_a_provisional_password_notification(): void

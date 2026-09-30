@@ -7,23 +7,32 @@ use App\Models\Ciclo;
 use App\Models\Subject;
 use App\Models\Usuario;
 use App\Support\TutoringCoordinatorAccess;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class ManageSubject
 {
     public function __construct(private TutoringCoordinatorAccess $access) {}
 
-    /** @param array{career_id: int, code: string, name: string} $data */
+    /** @param array{career_id: int, code: string, name: string, cycle_id?: int|null} $data */
     public function create(Usuario $user, array $data): Subject
     {
         $this->access->authorizeCareer($user, $data['career_id']);
 
-        return Subject::query()->create([
-            'career_id' => $data['career_id'],
-            'code' => trim($data['code']),
-            'name' => trim($data['name']),
-            'is_active' => true,
-        ]);
+        return DB::transaction(function () use ($data): Subject {
+            $subject = Subject::query()->create([
+                'career_id' => $data['career_id'],
+                'code' => trim($data['code']),
+                'name' => trim($data['name']),
+                'is_active' => true,
+            ]);
+
+            if (! empty($data['cycle_id'])) {
+                $this->assignCycle($subject, Ciclo::query()->findOrFail($data['cycle_id']));
+            }
+
+            return $subject;
+        });
     }
 
     /** @param array{code?: string, name?: string} $data */

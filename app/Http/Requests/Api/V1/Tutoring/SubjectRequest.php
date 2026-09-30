@@ -30,6 +30,9 @@ class SubjectRequest extends FormRequest
                 Rule::unique('subjects', 'code')
                     ->where('career_id', $careerId)
                     ->ignore($this->route('subject'))],
+            'cycle_id' => $creating
+                ? ['nullable', 'integer', Rule::exists('ciclo', 'id_ciclo')->where('estado', true)->where('fk_carrera', $careerId)]
+                : ['prohibited'],
             'name' => [($creating ? 'required' : 'sometimes'), 'string', 'max:150'],
         ];
     }

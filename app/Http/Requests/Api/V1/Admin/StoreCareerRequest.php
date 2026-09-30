@@ -33,6 +33,7 @@ class StoreCareerRequest extends FormRequest
                     fn (Builder $query): Builder => $query->where('fk_facultad', $this->integer('faculty_id')),
                 ),
             ],
+            'cycles_count' => ['nullable', 'integer', 'min:0', 'max:12'],
             'modality_id' => [
                 'nullable',
                 'integer',
@@ -50,6 +51,7 @@ class StoreCareerRequest extends FormRequest
             'faculty_id' => 'facultad',
             'name' => 'nombre de la carrera',
             'modality_id' => 'modalidad',
+            'cycles_count' => 'cantidad de ciclos',
         ];
     }
 }
