@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Student;
 use App\Actions\Student\SubmitDegreeTopic;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Student\StoreStudentDegreeTopicRequest;
+use App\Http\Requests\Api\V1\Student\UpdateStudentDegreeTopicRequest;
 use App\Http\Resources\Api\V1\DegreeTopicResource;
 use App\Models\TemaTitulacion;
 use App\Models\Usuario;
@@ -45,8 +46,36 @@ class StudentDegreeTopicController extends Controller
     }
 
     /**
+     * Muestra el detalle de una propuesta específica perteneciente al estudiante.
+     */
+    public function show(Request $request, TemaTitulacion $topic): JsonResponse
+    {
+        /** @var Usuario|null $user */
+        $user = $request->user();
+
+        if (! $user || (! $user->hasRole('estudiante') && ! $user->hasRole('administrador'))) {
+            abort(Response::HTTP_FORBIDDEN, 'Solo los estudiantes pueden consultar sus propuestas de titulación.');
+        }
+
+        if (! $user->hasRole('administrador') && (int) $topic->fk_id_usuario !== (int) $user->getKey()) {
+            abort(Response::HTTP_FORBIDDEN, 'No tienes permiso para consultar este tema de titulación.');
+        }
+
+        return (new DegreeTopicResource($topic->load([
+            'estudiante.paralelos',
+            'periodo',
+            'coordinadorRevisor',
+            'asignaciones.docente',
+            'observaciones.coordinador',
+        ])))
+            ->response()
+            ->setStatusCode(Response::HTTP_OK);
+    }
+
+    /**
      * Registra una nueva propuesta de tema de titulación para el estudiante autenticado,
-     * iniciando el proceso de revisión y aprobación con la Coordinación de Titulación.
+     * garantizando que quede automáticamente asignado a un paralelo e iniciando el
+     * proceso de revisión y aprobación con la Coordinación de Titulación.
      */
     public function store(
         StoreStudentDegreeTopicRequest $request,
@@ -61,6 +90,7 @@ class StudentDegreeTopicController extends Controller
             description: $request->resolvedDescription(),
             periodId: $request->resolvedPeriodId(),
             sectionId: $request->filled('section_id') ? $request->integer('section_id') : null,
+            replacePending: $request->wantsToReplacePending(),
         );
 
         return (new DegreeTopicResource($topic->load([
@@ -72,5 +102,31 @@ class StudentDegreeTopicController extends Controller
         ])))
             ->response()
             ->setStatusCode(Response::HTTP_CREATED);
+    }
+
+    /**
+     * Modifica una propuesta de titulación pendiente para el estudiante ("cambiarla").
+     */
+    public function update(
+        UpdateStudentDegreeTopicRequest $request,
+        TemaTitulacion $topic,
+        SubmitDegreeTopic $submitDegreeTopic,
+    ): JsonResponse {
+        $updatedTopic = $submitDegreeTopic->update(
+            topic: $topic,
+            title: $request->resolvedTitle(),
+            description: $request->resolvedDescription(),
+            sectionId: $request->filled('section_id') ? $request->integer('section_id') : null,
+        );
+
+        return (new DegreeTopicResource($updatedTopic->load([
+            'estudiante.paralelos',
+            'periodo',
+            'coordinadorRevisor',
+            'asignaciones.docente',
+            'observaciones.coordinador',
+        ])))
+            ->response()
+            ->setStatusCode(Response::HTTP_OK);
     }
 }

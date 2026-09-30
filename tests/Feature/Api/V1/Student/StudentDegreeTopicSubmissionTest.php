@@ -136,7 +136,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
 
         $response->assertUnprocessable()
             ->assertJsonValidationErrors(['title'])
-            ->assertJsonPath('errors.title.0', 'Ya cuentas con una propuesta de tema de titulación pendiente de revisión en este período académico.');
+            ->assertJsonPath('errors.title.0', 'Ya cuentas con una propuesta de tema de titulación pendiente de revisión en este período académico. Puedes cambiarla directamente o enviar "replace_pending": true para registrar una alternativa.');
     }
 
     public function test_student_cannot_submit_when_already_has_approved_proposal(): void
@@ -219,6 +219,140 @@ class StudentDegreeTopicSubmissionTest extends TestCase
 
         $this->postJson('/api/v1/student/degree-topics', [
             'title' => 'Propuesta Enviada por Docente',
+        ])->assertForbidden();
+    }
+
+    public function test_student_without_section_is_automatically_assigned_to_section_when_submitting_proposal(): void
+    {
+        $student = Usuario::factory()->withRole('estudiante')->create();
+        // Verificar que el estudiante arranca sin paralelos
+        $this->assertDatabaseMissing('usuario_paralelo', [
+            'fk_usuario' => $student->getKey(),
+        ]);
+
+        Sanctum::actingAs($student);
+
+        $response = $this->postJson('/api/v1/student/degree-topics', [
+            'title' => 'Propuesta de Titulación con Asignación Automática',
+            'description' => 'Debe asignar el paralelo automáticamente.',
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.section.id', $this->section->getKey())
+            ->assertJsonPath('data.section.name', 'A');
+
+        $this->assertDatabaseHas('usuario_paralelo', [
+            'fk_usuario' => $student->getKey(),
+            'fk_paralelo' => $this->section->getKey(),
+        ]);
+    }
+
+    public function test_student_can_replace_pending_proposal_with_alternative_using_replace_pending_flag(): void
+    {
+        $student = Usuario::factory()->withRole('estudiante')->create();
+        Sanctum::actingAs($student);
+
+        // Primer propuesta
+        $first = $this->postJson('/api/v1/student/degree-topics', [
+            'title' => 'Primera Propuesta que Quiero Cambiar',
+            'description' => 'Idea inicial.',
+        ])->assertCreated()->json('data.id');
+
+        // Envía una nueva alternativa con replace_pending: true
+        $response = $this->postJson('/api/v1/student/degree-topics', [
+            'title' => 'Nueva Alternativa de Titulación Reemplazante',
+            'description' => 'Nueva formulación de investigación.',
+            'replace_pending' => true,
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.title', 'Nueva Alternativa de Titulación Reemplazante')
+            ->assertJsonPath('data.status', 'pendiente');
+
+        // La primera propuesta queda marcada como descartada
+        $this->assertDatabaseHas('tema_titulacion', [
+            'id_tema_tit' => $first,
+            'estado' => 'descartado',
+        ]);
+    }
+
+    public function test_student_can_modify_pending_degree_topic_proposal_directly(): void
+    {
+        $student = Usuario::factory()->withRole('estudiante')->create();
+        Sanctum::actingAs($student);
+
+        $topic = $this->postJson('/api/v1/student/degree-topics', [
+            'title' => 'Propuesta Original Pendiente',
+            'description' => 'Descripción inicial.',
+        ])->assertCreated()->json('data.id');
+
+        $response = $this->patchJson('/api/v1/student/degree-topics/'.$topic, [
+            'title' => 'Propuesta Modificada y Mejorada',
+            'description' => 'Descripción actualizada y corregida.',
+        ]);
+
+        $response->assertOk()
+            ->assertJsonPath('data.id', $topic)
+            ->assertJsonPath('data.title', 'Propuesta Modificada y Mejorada')
+            ->assertJsonPath('data.description', 'Descripción actualizada y corregida.')
+            ->assertJsonPath('data.status', 'pendiente');
+
+        $this->assertDatabaseHas('tema_titulacion', [
+            'id_tema_tit' => $topic,
+            'titulo' => 'Propuesta Modificada y Mejorada',
+        ]);
+    }
+
+    public function test_student_cannot_modify_approved_or_rejected_topic_via_patch(): void
+    {
+        $student = Usuario::factory()->withRole('estudiante')->create();
+
+        $approvedTopic = TemaTitulacion::query()->create([
+            'fk_id_usuario' => $student->getKey(),
+            'fk_periodo' => $this->period->getKey(),
+            'titulo' => 'Tema Aprobado Previamente',
+            'estado' => 'aprobado',
+            'fecha_propuesta' => now()->toDateString(),
+            'fecha_revision' => now()->toDateString(),
+        ]);
+
+        $rejectedTopic = TemaTitulacion::query()->create([
+            'fk_id_usuario' => $student->getKey(),
+            'fk_periodo' => $this->period->getKey(),
+            'titulo' => 'Tema Rechazado Previamente',
+            'estado' => 'rechazado',
+            'fecha_propuesta' => now()->toDateString(),
+            'fecha_revision' => now()->toDateString(),
+        ]);
+
+        Sanctum::actingAs($student);
+
+        $this->patchJson('/api/v1/student/degree-topics/'.$approvedTopic->getKey(), [
+            'title' => 'Intento de Modificar Tema Aprobado',
+        ])->assertUnprocessable()->assertJsonValidationErrors(['title']);
+
+        $this->patchJson('/api/v1/student/degree-topics/'.$rejectedTopic->getKey(), [
+            'title' => 'Intento de Modificar Tema Rechazado',
+        ])->assertUnprocessable()->assertJsonValidationErrors(['title']);
+    }
+
+    public function test_student_cannot_modify_topic_belonging_to_another_student(): void
+    {
+        $studentA = Usuario::factory()->withRole('estudiante')->create();
+        $studentB = Usuario::factory()->withRole('estudiante')->create();
+
+        $topicA = TemaTitulacion::query()->create([
+            'fk_id_usuario' => $studentA->getKey(),
+            'fk_periodo' => $this->period->getKey(),
+            'titulo' => 'Tema del Estudiante A',
+            'estado' => 'pendiente',
+            'fecha_propuesta' => now()->toDateString(),
+        ]);
+
+        Sanctum::actingAs($studentB);
+
+        $this->patchJson('/api/v1/student/degree-topics/'.$topicA->getKey(), [
+            'title' => 'Estudiante B intentando usurpar tema de A',
         ])->assertForbidden();
     }
 }

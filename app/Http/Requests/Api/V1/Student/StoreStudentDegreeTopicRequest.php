@@ -28,6 +28,8 @@ class StoreStudentDegreeTopicRequest extends FormRequest
             'descripcion' => ['bail', 'nullable', 'string', 'max:2000'],
             'academic_period_id' => ['bail', 'nullable', 'integer', 'exists:periodo_academico,id_periodo'],
             'section_id' => ['bail', 'nullable', 'integer', 'exists:paralelo,id_paralelo'],
+            'replace_pending' => ['bail', 'nullable', 'boolean'],
+            'reemplazar_pendiente' => ['bail', 'nullable', 'boolean'],
         ];
     }
 
@@ -41,6 +43,8 @@ class StoreStudentDegreeTopicRequest extends FormRequest
             'descripcion' => 'descripción',
             'academic_period_id' => 'período académico',
             'section_id' => 'paralelo',
+            'replace_pending' => 'reemplazar propuesta pendiente',
+            'reemplazar_pendiente' => 'reemplazar propuesta pendiente',
         ];
     }
 
@@ -81,20 +85,27 @@ class StoreStudentDegreeTopicRequest extends FormRequest
                 );
             }
 
-            // Validar que el estudiante no tenga ya una propuesta pendiente de revisión
+            // Validar que el estudiante no tenga ya una propuesta pendiente de revisión (a menos que indique reemplazarla)
             $hasPending = TemaTitulacion::query()
                 ->where('fk_id_usuario', $user->getKey())
                 ->where('fk_periodo', $periodId)
                 ->where('estado', 'pendiente')
                 ->exists();
 
-            if ($hasPending) {
+            $wantsToReplace = $this->boolean('replace_pending') || $this->boolean('reemplazar_pendiente');
+
+            if ($hasPending && ! $wantsToReplace) {
                 $validator->errors()->add(
                     'title',
-                    'Ya cuentas con una propuesta de tema de titulación pendiente de revisión en este período académico.',
+                    'Ya cuentas con una propuesta de tema de titulación pendiente de revisión en este período académico. Puedes cambiarla directamente o enviar "replace_pending": true para registrar una alternativa.',
                 );
             }
         });
+    }
+
+    public function wantsToReplacePending(): bool
+    {
+        return $this->boolean('replace_pending') || $this->boolean('reemplazar_pendiente');
     }
 
     public function resolvedTitle(): string
