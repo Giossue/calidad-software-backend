@@ -77,6 +77,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
         Route::prefix('student')->name('student.')->group(function (): void {
             Route::get('degree-topics', [StudentDegreeTopicController::class, 'index'])->name('degree-topics.index');
+            Route::post('degree-topics', [StudentDegreeTopicController::class, 'store'])->name('degree-topics.store');
             Route::get('tutoring', [StudentTutoringController::class, 'index'])->name('tutoring.index');
         });
         Route::get('academic-periods', [AcademicPeriodController::class, 'index'])->name('academic-periods.index.legacy');
