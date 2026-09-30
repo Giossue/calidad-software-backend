@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\V1\Coordination\TeacherCoordinationController;
 use App\Http\Controllers\Api\V1\ModalityController;
 use App\Http\Controllers\Api\V1\SectionController;
 use App\Http\Controllers\Api\V1\Student\StudentDegreeTopicController;
+use App\Http\Controllers\Api\V1\Student\StudentTutoringController;
 use App\Http\Controllers\Api\V1\Teacher\ContentController as TeacherContentController;
 use App\Http\Controllers\Api\V1\Teacher\DegreeAssignmentController;
 use App\Http\Controllers\Api\V1\Teacher\EnrollmentController;
@@ -93,6 +94,18 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
         Route::prefix('student')->name('student.')->group(function (): void {
             Route::get('degree-topics', [StudentDegreeTopicController::class, 'index'])->name('degree-topics.index');
+            Route::post('degree-topics', [StudentDegreeTopicController::class, 'store'])->name('degree-topics.store');
+            Route::get('degree-topics/assignments', [StudentDegreeTopicController::class, 'assignments'])->name('degree-topics.assignments');
+            Route::get('degree-topics/{topic}', [StudentDegreeTopicController::class, 'show'])->name('degree-topics.show');
+            Route::match(['put', 'patch'], 'degree-topics/{topic}', [StudentDegreeTopicController::class, 'update'])->name('degree-topics.update');
+            Route::get('degree-topics/{topic}/assignments', [StudentDegreeTopicController::class, 'topicAssignments'])->name('degree-topics.topic-assignments');
+            Route::get('tutoring', [StudentTutoringController::class, 'index'])->name('tutoring.index');
+            Route::get('tutoring/grades', [StudentTutoringController::class, 'allGrades'])->name('tutoring.grades.all');
+            Route::get('tutoring/{tutoring}/grades', [StudentTutoringController::class, 'grades'])->name('tutoring.grades');
+            Route::get('tutoring/attendance', [StudentTutoringController::class, 'allAttendance'])->name('tutoring.attendance.all');
+            Route::get('tutoring/{tutoring}/attendance', [StudentTutoringController::class, 'attendance'])->name('tutoring.attendance');
+            Route::get('tutoring/{tutoring}/topics', [StudentTutoringController::class, 'topics'])->name('tutoring.topics');
+            Route::get('tutoring/{tutoring}/topics/{topic}', [StudentTutoringController::class, 'topicDetail'])->name('tutoring.topics.show');
         });
 
         Route::prefix('teacher')->name('teacher.')->group(function (): void {
