@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Student\StoreStudentDegreeTopicRequest;
 use App\Http\Requests\Api\V1\Student\UpdateStudentDegreeTopicRequest;
 use App\Http\Resources\Api\V1\DegreeTopicResource;
+use App\Http\Resources\Api\V1\StudentDegreeAssignmentResource;
 use App\Models\TemaTitulacion;
 use App\Models\Usuario;
 use Illuminate\Http\JsonResponse;
@@ -125,6 +126,105 @@ class StudentDegreeTopicController extends Controller
             'coordinadorRevisor',
             'asignaciones.docente',
             'observaciones.coordinador',
+        ])))
+            ->response()
+            ->setStatusCode(Response::HTTP_OK);
+    }
+
+    /**
+     * Consulta el docente tutor y pares académicos asignados al proceso de titulación del estudiante.
+     * Solo lectura; disponible tras la aprobación del tema.
+     */
+    public function assignments(Request $request): JsonResponse
+    {
+        /** @var Usuario|null $user */
+        $user = $request->user();
+
+        if (! $user || (! $user->hasRole('estudiante') && ! $user->hasRole('administrador'))) {
+            abort(Response::HTTP_FORBIDDEN, 'Solo los estudiantes pueden consultar su tutor y pares asignados.');
+        }
+
+        $query = TemaTitulacion::query()
+            ->with([
+                'estudiante.paralelos',
+                'periodo',
+                'coordinadorRevisor',
+                'asignaciones.docente',
+            ])
+            ->where('fk_id_usuario', $user->getKey());
+
+        if ($request->filled('topic_id')) {
+            $topic = $query->find($request->integer('topic_id'));
+
+            if (! $topic) {
+                return response()->json([
+                    'message' => 'No se encontró la propuesta de titulación solicitada.',
+                    'code' => 'topic_not_found',
+                ], Response::HTTP_NOT_FOUND);
+            }
+        } else {
+            $topic = $query->where('estado', 'aprobado')->first();
+
+            if (! $topic) {
+                $anyTopic = TemaTitulacion::query()->where('fk_id_usuario', $user->getKey())->first();
+
+                if ($anyTopic) {
+                    return response()->json([
+                        'message' => 'La asignación de tutor y pares académicos solo está disponible tras la aprobación del tema de titulación.',
+                        'code' => 'topic_not_approved',
+                        'topic_status' => $anyTopic->estado,
+                    ], Response::HTTP_UNPROCESSABLE_ENTITY);
+                }
+
+                return response()->json([
+                    'message' => 'No cuentas con un tema de titulación registrado.',
+                    'code' => 'no_topic',
+                ], Response::HTTP_NOT_FOUND);
+            }
+        }
+
+        if ($topic->estado !== 'aprobado') {
+            return response()->json([
+                'message' => 'La asignación de tutor y pares académicos solo está disponible tras la aprobación del tema de titulación.',
+                'code' => 'topic_not_approved',
+                'topic_status' => $topic->estado,
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        return (new StudentDegreeAssignmentResource($topic))
+            ->response()
+            ->setStatusCode(Response::HTTP_OK);
+    }
+
+    /**
+     * Consulta el tutor y pares asignados a un tema específico del estudiante tras su aprobación.
+     */
+    public function topicAssignments(Request $request, TemaTitulacion $topic): JsonResponse
+    {
+        /** @var Usuario|null $user */
+        $user = $request->user();
+
+        if (! $user || (! $user->hasRole('estudiante') && ! $user->hasRole('administrador'))) {
+            abort(Response::HTTP_FORBIDDEN, 'Solo los estudiantes pueden consultar su tutor y pares asignados.');
+        }
+
+        if (! $user->hasRole('administrador') && (int) $topic->fk_id_usuario !== (int) $user->getKey()) {
+            abort(Response::HTTP_FORBIDDEN, 'No tienes permiso para consultar las asignaciones de este tema de titulación.');
+        }
+
+        if ($topic->estado !== 'aprobado') {
+            return response()->json([
+                'message' => 'La asignación de tutor y pares académicos solo está disponible tras la aprobación del tema de titulación.',
+                'code' => 'topic_not_approved',
+                'topic_status' => $topic->estado,
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        return (new StudentDegreeAssignmentResource($topic->load([
+            'estudiante.paralelos',
+            'periodo',
+            'coordinadorRevisor',
+            'asignaciones.docente',
         ])))
             ->response()
             ->setStatusCode(Response::HTTP_OK);
