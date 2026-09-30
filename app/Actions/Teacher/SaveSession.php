@@ -26,6 +26,9 @@ class SaveSession
             }
             $session = TutoringSession::query()->where('tutoring_id', $tutoring->getKey())->whereDate('date', $data['date'])->first()
                 ?? new TutoringSession(['tutoring_id' => $tutoring->getKey(), 'date' => $data['date']]);
+            if ($session->exists && $session->date->toDateString() < today()->toDateString()) {
+                throw ValidationException::withMessages(['date' => 'Las sesiones de fechas anteriores son de solo consulta y ya no se pueden modificar.']);
+            }
             $oldTopics = $session->exists ? $session->topics()->pluck('id_tema')->all() : [];
             $topicIds = $data['topics_covered'] ? ($data['topic_ids'] ?? []) : [];
             $topics = $tutoring->temas()->whereIn('id_tema', $topicIds)->get();

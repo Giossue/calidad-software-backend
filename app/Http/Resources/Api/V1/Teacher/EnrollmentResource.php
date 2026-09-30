@@ -23,9 +23,9 @@ class EnrollmentResource extends JsonResource
             'can_edit_profile' => $student->hasRole('estudiante') && $student->roleSlugs()->count() === 1,
             'diagnostic_grade' => $grades->firstWhere('tipo', 'diagnostic')?->valor,
             'partial_grade' => $grades->firstWhere('tipo', 'partial')?->valor,
+            'second_partial_grade' => $grades->firstWhere('tipo', 'partial_two')?->valor,
             'knowledge_group' => $this->knowledgeMetric?->descripcion,
             'knowledge_group_key' => $this->knowledgeMetric?->rango,
-            'grade_history' => GradeResource::collection($grades->values()),
         ];
     }
 }

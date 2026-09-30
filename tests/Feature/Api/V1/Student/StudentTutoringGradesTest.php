@@ -142,7 +142,7 @@ class StudentTutoringGradesTest extends TestCase
             ->assertJsonPath('data.knowledge_metric.max_score', 10)
             ->assertJsonPath('data.scale_settings.minimum', 0)
             ->assertJsonPath('data.scale_settings.maximum', 10)
-            ->assertJsonCount(2, 'data.grades.history');
+            ->assertJsonMissingPath('data.grades.history');
     }
 
     public function test_student_receives_null_grades_when_teacher_has_not_evaluated_yet(): void
@@ -159,7 +159,7 @@ class StudentTutoringGradesTest extends TestCase
             ->assertJsonPath('data.grades.diagnostic', null)
             ->assertJsonPath('data.grades.partial', null)
             ->assertJsonPath('data.knowledge_metric', null)
-            ->assertJsonCount(0, 'data.grades.history');
+            ->assertJsonMissingPath('data.grades.history');
     }
 
     public function test_student_can_consult_all_enrolled_tutorings_grades_summary(): void

@@ -34,6 +34,7 @@ class SendTutoringReport
                 'covered_topic_count' => $tutoring->temas()->where('visto', true)->count(),
                 'diagnostic_count' => (clone $grades)->where('tipo', 'diagnostic')->distinct()->count('fk_inscripcion'),
                 'partial_count' => (clone $grades)->where('tipo', 'partial')->distinct()->count('fk_inscripcion'),
+                'second_partial_count' => (clone $grades)->where('tipo', 'partial_two')->distinct()->count('fk_inscripcion'),
                 'knowledge_groups' => $enrollments->filter(fn (InscripcionTutoria $enrollment) => $enrollment->knowledgeMetric !== null)
                     ->groupBy(fn (InscripcionTutoria $enrollment) => $enrollment->knowledgeMetric->descripcion)
                     ->map->count()->all(),
@@ -46,7 +47,7 @@ class SendTutoringReport
                 'Sesiones registradas: '.$summary['session_count'],
                 'Asistencias: '.$summary['present_count'].' presentes; '.$summary['absent_count'].' ausentes',
                 'Temas vistos: '.$summary['covered_topic_count'].' de '.$summary['topic_count'],
-                'Estudiantes con diagnóstico: '.$summary['diagnostic_count'].'; con parcial: '.$summary['partial_count'],
+                'Estudiantes con diagnóstico: '.$summary['diagnostic_count'].'; con parcial 1: '.$summary['partial_count'].'; con parcial 2: '.$summary['second_partial_count'],
                 'Grupos de conocimiento: '.collect($summary['knowledge_groups'])->map(fn ($count, $name) => "{$name}: {$count}")->implode(', '),
                 '', 'Observaciones: '.($observations !== '' ? $observations : 'Sin observaciones.'),
             ]);

@@ -29,7 +29,9 @@ class EnrollmentController extends Controller
             $query->where('estado', $request->input('status') === 'active');
         }
 
-        return EnrollmentResource::collection($query->orderByDesc('estado')->orderBy('id_inscripcion')->paginate($request->integer('per_page', 15)));
+        return EnrollmentResource::collection($query->orderByDesc('estado')
+            ->orderBy(Usuario::query()->select('nombre')->whereColumn('usuario.id_usuario', 'inscripcion_tutoria.fk_id_usuario'))
+            ->orderBy('id_inscripcion')->paginate($request->integer('per_page', 15)));
     }
 
     public function available(TeacherListRequest $request, AsignaturaTutoria $tutoring): AnonymousResourceCollection

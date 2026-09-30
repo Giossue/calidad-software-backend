@@ -3,7 +3,6 @@
 namespace App\Http\Resources\Api\V1;
 
 use App\Models\InscripcionTutoria;
-use App\Models\Nota;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -23,6 +22,7 @@ class StudentTutoringGradeResource extends JsonResource
 
         $diagnosticGrade = $grades->firstWhere('tipo', 'diagnostic');
         $partialGrade = $grades->firstWhere('tipo', 'partial');
+        $secondPartialGrade = $grades->firstWhere('tipo', 'partial_two');
 
         return [
             'enrollment_id' => $this->getKey(),
@@ -66,13 +66,12 @@ class StudentTutoringGradeResource extends JsonResource
                     'formatted_value' => number_format((float) $partialGrade->valor, 2),
                     'registered_at' => $partialGrade->fecha_registro?->toDateString(),
                 ] : null,
-                'history' => $grades->values()->map(fn (Nota $nota) => [
-                    'id' => $nota->getKey(),
-                    'type' => $nota->tipo,
-                    'value' => (float) $nota->valor,
-                    'formatted_value' => number_format((float) $nota->valor, 2),
-                    'registered_at' => $nota->fecha_registro?->toDateString(),
-                ]),
+                'second_partial' => $secondPartialGrade ? [
+                    'id' => $secondPartialGrade->getKey(),
+                    'value' => (float) $secondPartialGrade->valor,
+                    'formatted_value' => number_format((float) $secondPartialGrade->valor, 2),
+                    'registered_at' => $secondPartialGrade->fecha_registro?->toDateString(),
+                ] : null,
             ],
             'knowledge_metric' => $metric ? [
                 'id' => $metric->getKey(),

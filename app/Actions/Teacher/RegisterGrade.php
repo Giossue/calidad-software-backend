@@ -23,10 +23,12 @@ class RegisterGrade
             if (! $locked->estado || ! $locked->estudiante->estado || ! $locked->estudiante->hasRole('estudiante')) {
                 throw ValidationException::withMessages(['value' => 'Solo puedes registrar notas de estudiantes con inscripción y cuenta activas.']);
             }
-            $previous = $locked->notas()->where('tipo', $type)->orderByDesc('id_nota')->first();
-            // Keep grade history. An identical retry does not insert another grade.
-            if (! $previous || (float) $previous->valor !== (float) $value) {
+            // Una sola nota por etapa: al corregirla se actualiza el valor, no se acumula un historial.
+            $current = $locked->notas()->where('tipo', $type)->orderByDesc('id_nota')->first();
+            if (! $current) {
                 Nota::query()->create(['fk_inscripcion' => $locked->getKey(), 'tipo' => $type, 'valor' => $value, 'fecha_registro' => today()]);
+            } elseif ((float) $current->valor !== (float) $value) {
+                $current->update(['valor' => $value, 'fecha_registro' => today()]);
             }
             if ($type === 'diagnostic') {
                 $group = collect(Config::array('teaching.groups'))->first(fn (array $item) => (float) $value >= $item['min'] && (float) $value <= $item['max']);

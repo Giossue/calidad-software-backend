@@ -59,16 +59,18 @@ class EnrollmentAndGradeTest extends TeacherTestCase
         $this->assertDatabaseCount('inscripcion_tutoria', 1);
     }
 
-    public function test_diagnostic_boundaries_classify_and_preserve_grade_history(): void
+    public function test_diagnostic_boundaries_classify_and_a_correction_replaces_the_grade(): void
     {
         $enrollment = $this->enrollment();
         foreach ([[0, 'Bajo'], [3.99, 'Bajo'], [4, 'Medio'], [6.99, 'Medio'], [7, 'Alto'], [10, 'Alto']] as [$value, $group]) {
             $this->putJson($this->path('/students/'.$enrollment->getKey().'/grades/diagnostic'), ['value' => $value])->assertOk()->assertJsonPath('data.knowledge_group', $group);
         }
-        $this->assertDatabaseCount('nota', 6);
+        // Una sola nota por etapa: las correcciones reemplazan el valor, no crean historial.
+        $this->assertDatabaseCount('nota', 1);
+        $this->assertDatabaseHas('nota', ['tipo' => 'diagnostic', 'valor' => '10.00']);
         $this->assertDatabaseCount('metrica_conocimiento', 1);
         $this->putJson($this->path('/students/'.$enrollment->getKey().'/grades/diagnostic'), ['value' => '10.00'])->assertOk();
-        $this->assertDatabaseCount('nota', 6);
+        $this->assertDatabaseCount('nota', 1);
         $this->putJson($this->path('/students/'.$enrollment->getKey().'/grades/partial'), ['value' => 5])->assertOk()->assertJsonPath('data.partial_grade', '5.00')->assertJsonPath('data.knowledge_group', 'Alto');
     }
 
@@ -106,5 +108,46 @@ class EnrollmentAndGradeTest extends TeacherTestCase
         $enrollment->estudiante->roles()->attach(Role::query()->where('slug', 'administrador')->first());
         $this->patchJson($this->path('/students/'.$enrollment->getKey()), ['name' => 'Cuenta modificada'])->assertForbidden();
         $this->assertDatabaseCount('nota', 0);
+    }
+
+    public function test_grades_for_many_students_are_saved_atomically_with_a_second_partial(): void
+    {
+        $first = $this->enrollment();
+        $second = $this->enrollment();
+        $payload = ['grades' => [
+            ['enrollment_id' => $first->getKey(), 'diagnostic' => '8.25', 'partial' => '9.42', 'partial_two' => '7'],
+            ['enrollment_id' => $second->getKey(), 'diagnostic' => '3.5', 'partial' => '6', 'partial_two' => '10'],
+        ]];
+
+        $this->putJson($this->path('/grades'), $payload)->assertOk()->assertJsonCount(2, 'data')
+            ->assertJsonPath('data.0.diagnostic_grade', '8.25')->assertJsonPath('data.0.partial_grade', '9.42')
+            ->assertJsonPath('data.0.second_partial_grade', '7.00')->assertJsonPath('data.0.knowledge_group', 'Alto')
+            ->assertJsonPath('data.1.knowledge_group', 'Bajo');
+
+        // Reenviar lo mismo, o corregir, no acumula notas: queda una por etapa.
+        $this->putJson($this->path('/grades'), $payload)->assertOk();
+        $this->assertDatabaseCount('nota', 6);
+
+        // Un valor inválido rechaza todo el lote: no se guarda ninguna nota.
+        $invalid = ['grades' => [
+            ['enrollment_id' => $first->getKey(), 'partial' => '5'],
+            ['enrollment_id' => $second->getKey(), 'partial' => '10.5'],
+        ]];
+        $this->putJson($this->path('/grades'), $invalid)->assertUnprocessable()->assertJsonValidationErrors('grades.1.partial');
+        $this->putJson($this->path('/grades'), ['grades' => [['enrollment_id' => $first->getKey(), 'partial' => '5.123']]])->assertUnprocessable();
+        $this->assertDatabaseCount('nota', 6);
+    }
+
+    public function test_enrolled_students_are_listed_in_alphabetical_order(): void
+    {
+        $zeta = $this->enrollment();
+        $zeta->estudiante->update(['nombre' => 'Zambrano Luis']);
+        $alpha = $this->enrollment();
+        $alpha->estudiante->update(['nombre' => 'Andrade Sofía']);
+        $middle = $this->enrollment();
+        $middle->estudiante->update(['nombre' => 'Loor Mateo']);
+
+        $this->getJson($this->path('/students'))->assertOk()
+            ->assertJsonPath('data.0.name', 'Andrade Sofía')->assertJsonPath('data.1.name', 'Loor Mateo')->assertJsonPath('data.2.name', 'Zambrano Luis');
     }
 }

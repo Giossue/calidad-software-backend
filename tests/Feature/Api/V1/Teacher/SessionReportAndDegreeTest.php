@@ -30,6 +30,18 @@ class SessionReportAndDegreeTest extends TeacherTestCase
         $this->getJson(self::API.'/tutorings/'.$this->tutoring->getKey().'/attendance')->assertOk()->assertJsonPath('data.0.present', false)->assertJsonPath('data.0.topics_covered', false);
     }
 
+    public function test_sessions_from_previous_dates_are_read_only(): void
+    {
+        $enrollment = $this->enrollment();
+        $past = '2026-05-04';
+        $payload = ['date' => $past, 'topics_covered' => false, 'attendance' => [['enrollment_id' => $enrollment->getKey(), 'present' => true]]];
+
+        $this->putJson($this->path('/sessions'), $payload)->assertOk();
+        $this->putJson($this->path('/sessions'), [...$payload, 'attendance' => [['enrollment_id' => $enrollment->getKey(), 'present' => false]]])
+            ->assertUnprocessable()->assertJsonValidationErrors('date');
+        $this->assertTrue((bool) Asistencia::query()->where('fk_inscripcion', $enrollment->getKey())->value('estado_asistencia'));
+    }
+
     public function test_dates_duplicates_foreign_and_inactive_students_are_rejected_atomically(): void
     {
         $enrollment = $this->enrollment();
@@ -61,10 +73,14 @@ class SessionReportAndDegreeTest extends TeacherTestCase
         $enrollment = $this->enrollment();
         $topic = Tema::query()->create(['fk_asig_tutoria' => $this->tutoring->getKey(), 'nombre' => 'Pruebas', 'estado' => true]);
         $data = ['date' => '2026-09-28', 'topics_covered' => true, 'topic_ids' => [$topic->getKey()], 'attendance' => [['enrollment_id' => $enrollment->getKey(), 'present' => true]]];
+        // Cada sesión se guarda el mismo día que ocurre: las de fechas anteriores son de solo consulta.
+        $this->travelTo('2026-09-28 10:00:00');
         $this->putJson($this->path('/sessions'), $data)->assertOk();
+        $this->travelTo('2026-09-29 10:00:00');
         $this->putJson($this->path('/sessions'), [...$data, 'date' => '2026-09-29'])->assertOk();
-        $this->putJson($this->path('/sessions'), [...$data, 'topics_covered' => false])->assertOk();
+        $this->putJson($this->path('/sessions'), [...$data, 'date' => '2026-09-29', 'topics_covered' => false])->assertOk();
         $this->assertTrue($topic->refresh()->visto);
+        $this->putJson($this->path('/sessions'), [...$data, 'date' => '2026-09-29'])->assertOk();
         $topic->update(['estado' => false]);
         $this->putJson($this->path('/sessions'), [...$data, 'date' => '2026-09-29'])->assertOk();
         $this->putJson($this->path('/sessions'), [...$data, 'date' => '2026-09-27'])->assertUnprocessable()->assertJsonValidationErrors('topic_ids');
