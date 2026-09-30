@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\V1\Coordination\TeacherCoordinationController;
 use App\Http\Controllers\Api\V1\ModalityController;
 use App\Http\Controllers\Api\V1\SectionController;
 use App\Http\Controllers\Api\V1\Student\StudentDegreeTopicController;
+use App\Http\Controllers\Api\V1\Student\StudentTutoringController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
@@ -76,6 +77,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
         Route::prefix('student')->name('student.')->group(function (): void {
             Route::get('degree-topics', [StudentDegreeTopicController::class, 'index'])->name('degree-topics.index');
+            Route::get('tutoring', [StudentTutoringController::class, 'index'])->name('tutoring.index');
         });
         Route::get('academic-periods', [AcademicPeriodController::class, 'index'])->name('academic-periods.index.legacy');
         Route::post('academic-periods', [AcademicPeriodController::class, 'store'])->name('academic-periods.store.legacy');
