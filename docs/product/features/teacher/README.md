@@ -167,13 +167,25 @@ historial de notas, `metrica_conocimiento.enrollment_id` único y nullable,
 `reporte.summary` nullable. Conserva los registros existentes; no asigna una
 inscripción a las métricas históricas ni inventa sesiones o resúmenes anteriores.
 
-El código y la migración están preparados. **Este trabajo no despliega ni aplica
-migraciones en producción.** Para activar el módulo, seguir
-[`docs/deployment/dokploy.md`](../../../deployment/dokploy.md): verificar la
-conexión efectiva del contenedor a `calidad_software`, comprobar respaldo y estado
-de migraciones, aplicar las pendientes desde Dokploy y publicar versiones
-compatibles de backend y frontend. La configuración de correo debe permitir la
-notificación de contraseña provisional al registrar cuentas.
+La migración se aplicó a producción el **2026-09-29**, en el **lote 11**, por
+petición posterior del usuario. La conexión a `calidad_software` y el respaldo se
+verificaron antes de la escritura. El usuario indicó usar `.pgpass` directamente
+como excepción autorizada al contenedor Dokploy: Artisan se autenticó con la
+cuenta administrativa y ejecutó el cambio como `calidad_software_app`, propietario
+de las tablas existentes y nuevas. Esta excepción corresponde a esa operación.
+
+El estado final tiene **23 migraciones aplicadas y ninguna pendiente**.
+Las **37 comprobaciones posteriores** verificaron esquema, constraints,
+conservación de registros y privilegios del rol de la aplicación. `/up` respondió
+HTTP 200 después. El registro y la ubicación privada del respaldo están en
+[`migracion-docente-remota.md`](../../../plans/completed/migracion-docente-remota.md).
+
+La activación del módulo requiere versiones compatibles de backend y frontend;
+esta operación de esquema no acredita su publicación ni la comprobación
+autenticada de las pantallas desplegadas. Para publicaciones y migraciones
+futuras, seguir [`docs/deployment/dokploy.md`](../../../deployment/dokploy.md).
+La configuración de correo debe permitir la notificación de contraseña provisional
+al registrar cuentas.
 
 El rollback de esta migración tiene una limitación conocida en SQLite: no
 retira explícitamente los índices de `asistencia.session_id` y

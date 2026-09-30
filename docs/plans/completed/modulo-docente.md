@@ -59,3 +59,12 @@ API y la SPA, siguiendo los módulos de coordinación existentes.
 - Manual, aceptación, permisos, contratos y decisiones:
   `docs/product/features/teacher/README.md`.
 - Despliegue y migración de producción fuera del alcance de esta implementación.
+
+## Aplicación posterior de esquema
+
+Por petición posterior del usuario, la migración docente se aplicó en producción
+el 2026-09-29, lote 11, con 23 migraciones aplicadas y ninguna pendiente.
+Las 37 comprobaciones posteriores fueron correctas. Véase
+[Aplicación remota de la migración docente](migracion-docente-remota.md).
+La publicación y la comprobación autenticada del código desplegado se verifican
+separadamente de esta aplicación de esquema.
