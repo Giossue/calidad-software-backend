@@ -11,6 +11,12 @@ Use this directory as the project knowledge base.
 - `security/`: security principles, hardening controls, and threat model.
 - `generated/`: generated or derived references.
 
+## Feature modules
+
+- [Coordinación de tutorías](product/features/tutoring-coordination/README.md).
+- [Coordinación de titulación](product/features/degree-coordination/README.md).
+- [Módulo Docente](product/features/teacher/README.md).
+
 ## Maintenance Rule
 
 When code changes behavior, update the relevant document in the same pull request.
