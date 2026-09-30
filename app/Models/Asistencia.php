@@ -19,7 +19,7 @@ class Asistencia extends Model
 
     protected $fillable = [
         'fk_inscripcion', 'fk_id_usuario',
-        'fecha', 'estado_asistencia',
+        'fecha', 'estado_asistencia', 'session_id',
     ];
 
     protected function casts(): array
@@ -44,5 +44,11 @@ class Asistencia extends Model
     public function estudiante(): BelongsTo
     {
         return $this->belongsTo(Usuario::class, 'fk_id_usuario');
+    }
+
+    /** @return BelongsTo<TutoringSession, $this> */
+    public function session(): BelongsTo
+    {
+        return $this->belongsTo(TutoringSession::class, 'session_id');
     }
 }

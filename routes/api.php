@@ -17,6 +17,13 @@ use App\Http\Controllers\Api\V1\Coordination\TeacherCoordinationController;
 use App\Http\Controllers\Api\V1\ModalityController;
 use App\Http\Controllers\Api\V1\SectionController;
 use App\Http\Controllers\Api\V1\Student\StudentDegreeTopicController;
+use App\Http\Controllers\Api\V1\Teacher\ContentController as TeacherContentController;
+use App\Http\Controllers\Api\V1\Teacher\DegreeAssignmentController;
+use App\Http\Controllers\Api\V1\Teacher\EnrollmentController;
+use App\Http\Controllers\Api\V1\Teacher\GradeController;
+use App\Http\Controllers\Api\V1\Teacher\ReportController as TeacherReportController;
+use App\Http\Controllers\Api\V1\Teacher\SessionController;
+use App\Http\Controllers\Api\V1\Teacher\TutoringController as TeacherTutoringController;
 use App\Http\Controllers\Api\V1\Tutoring\CatalogController as TutoringCatalogController;
 use App\Http\Controllers\Api\V1\Tutoring\ScheduleController as TutoringScheduleController;
 use App\Http\Controllers\Api\V1\Tutoring\SubjectController as TutoringSubjectController;
@@ -86,6 +93,36 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
         Route::prefix('student')->name('student.')->group(function (): void {
             Route::get('degree-topics', [StudentDegreeTopicController::class, 'index'])->name('degree-topics.index');
+        });
+
+        Route::prefix('teacher')->name('teacher.')->group(function (): void {
+            Route::get('tutorings', [TeacherTutoringController::class, 'index'])->name('tutorings.index');
+            Route::get('grade-settings', [TeacherTutoringController::class, 'gradeSettings'])->name('grade-settings');
+            Route::get('degree-assignments', [DegreeAssignmentController::class, 'index'])->name('degree-assignments.index');
+
+            Route::get('tutorings/{tutoring}/students', [EnrollmentController::class, 'index'])->name('students.index');
+            Route::get('tutorings/{tutoring}/available-students', [EnrollmentController::class, 'available'])->name('students.available');
+            Route::post('tutorings/{tutoring}/students', [EnrollmentController::class, 'store'])->name('students.store');
+            Route::patch('tutorings/{tutoring}/students/{enrollment}', [EnrollmentController::class, 'update'])->name('students.update');
+            Route::patch('tutorings/{tutoring}/students/{enrollment}/deactivate', [EnrollmentController::class, 'deactivate'])->name('students.deactivate');
+            Route::put('tutorings/{tutoring}/students/{enrollment}/grades/{type}', [GradeController::class, 'store'])->whereIn('type', ['diagnostic', 'partial'])->name('grades.store');
+
+            Route::get('tutorings/{tutoring}/topics', [TeacherContentController::class, 'index'])->name('topics.index');
+            Route::post('tutorings/{tutoring}/topics', [TeacherContentController::class, 'storeTopic'])->name('topics.store');
+            Route::patch('tutorings/{tutoring}/topics/{topic}', [TeacherContentController::class, 'updateTopic'])->name('topics.update');
+            Route::patch('tutorings/{tutoring}/topics/{topic}/deactivate', [TeacherContentController::class, 'deactivateTopic'])->name('topics.deactivate');
+            Route::post('tutorings/{tutoring}/topics/{topic}/activities', [TeacherContentController::class, 'storeActivity'])->name('activities.store');
+            Route::patch('tutorings/{tutoring}/topics/{topic}/activities/{activity}', [TeacherContentController::class, 'updateActivity'])->name('activities.update');
+            Route::patch('tutorings/{tutoring}/topics/{topic}/activities/{activity}/deactivate', [TeacherContentController::class, 'deactivateActivity'])->name('activities.deactivate');
+            Route::post('tutorings/{tutoring}/topics/{topic}/activities/{activity}/methodologies', [TeacherContentController::class, 'storeMethodology'])->name('methodologies.store');
+            Route::patch('tutorings/{tutoring}/topics/{topic}/activities/{activity}/methodologies/{methodology}', [TeacherContentController::class, 'updateMethodology'])->name('methodologies.update');
+            Route::patch('tutorings/{tutoring}/topics/{topic}/activities/{activity}/methodologies/{methodology}/deactivate', [TeacherContentController::class, 'deactivateMethodology'])->name('methodologies.deactivate');
+
+            Route::get('tutorings/{tutoring}/sessions', [SessionController::class, 'index'])->name('sessions.index');
+            Route::get('tutorings/{tutoring}/attendance', [SessionController::class, 'attendance'])->name('attendance.index');
+            Route::put('tutorings/{tutoring}/sessions', [SessionController::class, 'store'])->name('sessions.store');
+            Route::get('tutorings/{tutoring}/reports', [TeacherReportController::class, 'index'])->name('reports.index');
+            Route::post('tutorings/{tutoring}/reports', [TeacherReportController::class, 'store'])->name('reports.store');
         });
     });
 

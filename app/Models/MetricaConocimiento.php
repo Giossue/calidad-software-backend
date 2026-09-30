@@ -18,7 +18,7 @@ class MetricaConocimiento extends Model
 
     protected $fillable = [
         'fk_id_usuario', 'descripcion', 'rango',
-        'nota_minima', 'nota_maxima', 'estado',
+        'nota_minima', 'nota_maxima', 'estado', 'enrollment_id',
     ];
 
     protected function casts(): array

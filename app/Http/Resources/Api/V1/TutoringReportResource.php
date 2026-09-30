@@ -19,6 +19,7 @@ class TutoringReportResource extends JsonResource
             'author_name' => $this->whenLoaded('generadoPor', fn () => $this->generadoPor->nombre),
             'generated_at' => $this->fecha_generacion->toISOString(),
             'content' => $this->content,
+            'summary' => $this->summary,
         ];
     }
 }

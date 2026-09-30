@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * @property string|null $content
  * @property CarbonInterface $fecha_generacion
+ * @property array<string, mixed>|null $summary
  */
 class Reporte extends Model
 {
@@ -22,12 +23,12 @@ class Reporte extends Model
 
     protected $fillable = [
         'fk_asig_tutoria', 'tipo_reporte',
-        'fk_id_usuario', 'fecha_generacion', 'content',
+        'fk_id_usuario', 'fecha_generacion', 'content', 'summary',
     ];
 
     protected function casts(): array
     {
-        return ['fecha_generacion' => 'datetime'];
+        return ['fecha_generacion' => 'datetime', 'summary' => 'array'];
     }
 
     /**

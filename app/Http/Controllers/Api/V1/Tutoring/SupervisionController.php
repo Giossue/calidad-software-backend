@@ -21,7 +21,7 @@ class SupervisionController extends Controller
 
         return TutoringAttendanceResource::collection(Asistencia::query()
             ->whereHas('inscripcion', fn (Builder $q) => $q->where('fk_asig_tutoria', $tutoring->getKey()))
-            ->with('estudiante')->orderByDesc('fecha')->paginate(min(max($request->integer('per_page', 20), 1), 100)));
+            ->with('estudiante', 'session')->orderByDesc('fecha')->paginate(min(max($request->integer('per_page', 20), 1), 100)));
     }
 
     public function reports(Request $request, AsignaturaTutoria $tutoring): AnonymousResourceCollection

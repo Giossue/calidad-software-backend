@@ -19,6 +19,7 @@ class TutoringAttendanceResource extends JsonResource
             'student_name' => $this->whenLoaded('estudiante', fn () => $this->estudiante->nombre),
             'date' => $this->fecha->toDateString(),
             'present' => $this->estado_asistencia,
+            'topics_covered' => $this->whenLoaded('session', fn () => $this->session?->topics_covered),
         ];
     }
 }

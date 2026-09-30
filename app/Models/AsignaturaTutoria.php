@@ -10,7 +10,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-/** @property int|null $subject_id */
+/**
+ * @property int|null $subject_id
+ * @property int $active_enrollment_count
+ */
 class AsignaturaTutoria extends Model
 {
     protected $table = 'asignatura_tutoria';
