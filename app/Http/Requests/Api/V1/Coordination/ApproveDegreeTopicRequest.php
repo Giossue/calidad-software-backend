@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\V1\Coordination;
 
+use App\Models\TemaTitulacion;
 use App\Models\Usuario;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Validator;
@@ -10,9 +11,7 @@ class ApproveDegreeTopicRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        $user = $this->user();
-
-        return $user !== null && ($user->hasRole('coordinador_titulacion') || $user->hasRole('administrador'));
+        return $this->user()?->can('viewAny', TemaTitulacion::class) ?? false;
     }
 
     /** @return array<string, mixed> */
@@ -54,7 +53,7 @@ class ApproveDegreeTopicRequest extends FormRequest
     {
         $validator->after(function (Validator $validator): void {
             $tutorId = $this->input('tutor_id');
-            if ($tutorId) {
+            if ($tutorId && ! $validator->errors()->has('tutor_id')) {
                 /** @var Usuario|null $tutor */
                 $tutor = Usuario::query()->find($tutorId);
                 if (! $tutor || ! $tutor->hasRole('docente') || ! $tutor->estado) {
@@ -62,8 +61,15 @@ class ApproveDegreeTopicRequest extends FormRequest
                 }
             }
 
+            if ($validator->errors()->has('peer_ids')) {
+                return;
+            }
+
             $peerIds = (array) $this->input('peer_ids', []);
             foreach ($peerIds as $index => $peerId) {
+                if ($validator->errors()->has("peer_ids.{$index}")) {
+                    continue;
+                }
                 /** @var Usuario|null $peer */
                 $peer = Usuario::query()->find($peerId);
                 if (! $peer || ! $peer->hasRole('docente') || ! $peer->estado) {

@@ -91,7 +91,7 @@ class StudentTutoringTest extends TestCase
             'estado' => true,
         ]);
 
-        Sanctum::actingAs($student);
+        Sanctum::actingAs($student, ['access-api']);
 
         $response = $this->getJson('/api/v1/student/tutoring');
 
@@ -142,12 +142,12 @@ class StudentTutoringTest extends TestCase
         ]);
 
         // Estudiante A consulta y no debe ver la inscripción del estudiante B
-        Sanctum::actingAs($studentA);
+        Sanctum::actingAs($studentA, ['access-api']);
         $responseA = $this->getJson('/api/v1/student/tutoring');
         $responseA->assertOk()->assertJsonCount(0, 'data');
 
         // Estudiante B consulta y sí ve su inscripción
-        Sanctum::actingAs($studentB);
+        Sanctum::actingAs($studentB, ['access-api']);
         $responseB = $this->getJson('/api/v1/student/tutoring');
         $responseB->assertOk()->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.subject.name', 'Bases de Datos Avanzadas');
@@ -156,7 +156,7 @@ class StudentTutoringTest extends TestCase
     public function test_student_without_tutorings_receives_empty_array(): void
     {
         $student = Usuario::factory()->withRole('estudiante')->create();
-        Sanctum::actingAs($student);
+        Sanctum::actingAs($student, ['access-api']);
 
         $response = $this->getJson('/api/v1/student/tutoring');
 
@@ -173,7 +173,7 @@ class StudentTutoringTest extends TestCase
     public function test_user_without_student_role_cannot_access_student_tutoring(): void
     {
         $teacher = Usuario::factory()->withRole('docente')->create();
-        Sanctum::actingAs($teacher);
+        Sanctum::actingAs($teacher, ['access-api']);
 
         $this->getJson('/api/v1/student/tutoring')
             ->assertForbidden();

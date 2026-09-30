@@ -28,11 +28,20 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read Usuario|null $estudiante
  * @property-read PeriodoAcademico|null $periodo
  * @property-read Usuario|null $coordinadorRevisor
+ * @property-read Collection<int, AsignacionDocente> $activeAssignments
  * @property-read Collection<int, AsignacionDocente> $asignaciones
  * @property-read Collection<int, ObservacionTitulacion> $observaciones
  */
 class TemaTitulacion extends Model
 {
+    public const REVIEW_RELATIONS = [
+        'estudiante.paralelos',
+        'periodo',
+        'coordinadorRevisor',
+        'activeAssignments.docente',
+        'observaciones.coordinador',
+    ];
+
     protected $table = 'tema_titulacion';
 
     protected $primaryKey = 'id_tema_tit';
@@ -84,6 +93,12 @@ class TemaTitulacion extends Model
         return $this->hasMany(AsignacionDocente::class, 'fk_tema_tit');
     }
 
+    /** @return HasMany<AsignacionDocente, $this> */
+    public function activeAssignments(): HasMany
+    {
+        return $this->asignaciones()->where('estado', true)->orderBy('id_asignacion');
+    }
+
     /**
      * @return HasOne<FichaSeguimiento, $this>
      */
@@ -105,6 +120,7 @@ class TemaTitulacion extends Model
      */
     public function observaciones(): HasMany
     {
-        return $this->hasMany(ObservacionTitulacion::class, 'fk_tema_tit');
+        return $this->hasMany(ObservacionTitulacion::class, 'fk_tema_tit')
+            ->orderBy('fecha_registro')->orderBy('id_obs_tit');
     }
 }

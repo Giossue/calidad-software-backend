@@ -10,9 +10,7 @@ class RejectDegreeTopicRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        $user = $this->user();
-
-        return $user !== null && ($user->hasRole('coordinador_titulacion') || $user->hasRole('administrador'));
+        return $this->user()?->can('viewAny', TemaTitulacion::class) ?? false;
     }
 
     /** @return array<string, mixed> */

@@ -67,7 +67,7 @@ class DegreeTopicReviewTest extends TestCase
         ]);
 
         $coordinator = Usuario::factory()->withRole('coordinador_titulacion')->create();
-        Sanctum::actingAs($coordinator);
+        Sanctum::actingAs($coordinator, ['access-api']);
 
         $response = $this->getJson('/api/v1/coordination/degree-topics/pending?section_id='.$sectionA->getKey());
 
@@ -113,7 +113,7 @@ class DegreeTopicReviewTest extends TestCase
             'fecha_revision' => '2026-06-10',
         ]);
 
-        Sanctum::actingAs($coordinator);
+        Sanctum::actingAs($coordinator, ['access-api']);
 
         $response = $this->getJson('/api/v1/coordination/degree-topics/pending?section_id='.$section->getKey());
 
@@ -143,7 +143,7 @@ class DegreeTopicReviewTest extends TestCase
         ]);
 
         $coordinator = Usuario::factory()->withRole('coordinador_titulacion')->create();
-        Sanctum::actingAs($coordinator);
+        Sanctum::actingAs($coordinator, ['access-api']);
 
         $response = $this->getJson('/api/v1/coordination/degree-topics/'.$topic->getKey());
 
@@ -156,7 +156,7 @@ class DegreeTopicReviewTest extends TestCase
     public function test_unauthorized_roles_cannot_review_degree_topics(): void
     {
         $student = Usuario::factory()->withRole('estudiante')->create();
-        Sanctum::actingAs($student);
+        Sanctum::actingAs($student, ['access-api']);
 
         $this->getJson('/api/v1/coordination/degree-topics/pending')->assertForbidden();
     }

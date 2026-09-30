@@ -77,6 +77,12 @@ PostgreSQL. Mientras no exista un worker de colas administrado, usa `sync`.
 No uses `migrate:fresh`, `db:wipe`, seeders de demostración ni rollback automático
 en producción.
 
+Ejecuta las migraciones con la conexión y el rol PostgreSQL configurados para
+la aplicación. Si una operación excepcional autorizada usa un rol
+administrativo distinto, comprueba después los permisos del rol de la API
+sobre las tablas y secuencias nuevas. Un `migrate:status` correcto no acredita
+que ese rol pueda leer o escribir los objetos creados por otro propietario.
+
 ## Comprobación
 
 ```bash
@@ -85,3 +91,11 @@ curl --fail https://api.example.com/up
 
 Prueba además login, registro, recuperación, verificación de correo y 2FA desde
 el dominio real del frontend para validar CORS y los enlaces generados.
+
+Ante un HTTP 500, identifica la ruta fallida en **Network** del navegador y
+consulta **Logs** de la aplicación backend en Dokploy. Con `LOG_CHANNEL=stderr`,
+Laravel envía allí la excepción. Por ejemplo, SQLSTATE `42501` indica falta de
+privilegios en PostgreSQL; revisa el objeto indicado y el rol de la conexión.
+Conserva `APP_DEBUG=false`: la respuesta pública genérica no contiene el
+diagnóstico interno. Tras corregir la causa, repite las peticiones con una
+cuenta del rol afectado contra el dominio desplegado.

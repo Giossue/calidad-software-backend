@@ -6,10 +6,13 @@
 
 namespace App\Models;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
+/** @property CarbonInterface $fecha_inscripcion */
 class InscripcionTutoria extends Model
 {
     protected $table = 'inscripcion_tutoria';
@@ -59,5 +62,11 @@ class InscripcionTutoria extends Model
     public function asistencias(): HasMany
     {
         return $this->hasMany(Asistencia::class, 'fk_inscripcion');
+    }
+
+    /** @return HasOne<MetricaConocimiento, $this> */
+    public function knowledgeMetric(): HasOne
+    {
+        return $this->hasOne(MetricaConocimiento::class, 'enrollment_id');
     }
 }

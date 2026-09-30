@@ -9,6 +9,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/** @property string|null $room */
 class Horario extends Model
 {
     protected $table = 'horario';
@@ -17,7 +18,7 @@ class Horario extends Model
 
     protected $fillable = [
         'fk_asig_tutoria', 'dia_semana',
-        'hora_inicio', 'hora_fin', 'estado',
+        'hora_inicio', 'hora_fin', 'room', 'estado',
     ];
 
     protected function casts(): array

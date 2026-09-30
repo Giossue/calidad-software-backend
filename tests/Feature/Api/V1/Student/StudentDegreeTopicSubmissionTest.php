@@ -45,7 +45,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
         ]);
         $student->paralelos()->attach($this->section->getKey(), ['fecha_asignacion' => now()]);
 
-        Sanctum::actingAs($student);
+        Sanctum::actingAs($student, ['access-api']);
 
         $response = $this->postJson('/api/v1/student/degree-topics', [
             'title' => 'Sistema Inteligente de Evaluación de Calidad de Software',
@@ -75,7 +75,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
     public function test_student_can_submit_proposal_specifying_section_explicitly(): void
     {
         $student = Usuario::factory()->withRole('estudiante')->create();
-        Sanctum::actingAs($student);
+        Sanctum::actingAs($student, ['access-api']);
 
         $response = $this->postJson('/api/v1/student/degree-topics', [
             'title' => 'Auditoría de Seguridad en Aplicaciones Web Universitarias',
@@ -98,7 +98,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
         $student = Usuario::factory()->withRole('estudiante')->create();
         $student->paralelos()->attach($this->section->getKey(), ['fecha_asignacion' => now()]);
 
-        Sanctum::actingAs($student);
+        Sanctum::actingAs($student, ['access-api']);
         $this->postJson('/api/v1/student/degree-topics', [
             'title' => 'Herramienta de Métricas de Calidad de Software',
             'description' => 'Integración con CI/CD.',
@@ -106,7 +106,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
 
         // El Coordinador de Titulación consulta los temas pendientes
         $coordinator = Usuario::factory()->withRole('coordinador_titulacion')->create();
-        Sanctum::actingAs($coordinator);
+        Sanctum::actingAs($coordinator, ['access-api']);
 
         $response = $this->getJson('/api/v1/coordination/degree-topics/pending?section_id='.$this->section->getKey());
 
@@ -120,7 +120,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
     public function test_student_cannot_submit_when_already_has_pending_proposal(): void
     {
         $student = Usuario::factory()->withRole('estudiante')->create();
-        Sanctum::actingAs($student);
+        Sanctum::actingAs($student, ['access-api']);
 
         // Primer propuesta
         $this->postJson('/api/v1/student/degree-topics', [
@@ -154,7 +154,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
             'fecha_revision' => now()->toDateString(),
         ]);
 
-        Sanctum::actingAs($student);
+        Sanctum::actingAs($student, ['access-api']);
 
         $response = $this->postJson('/api/v1/student/degree-topics', [
             'title' => 'Intento de Nuevo Tema Teniendo Aprobado',
@@ -180,7 +180,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
             'fecha_revision' => now()->subDays(5)->toDateString(),
         ]);
 
-        Sanctum::actingAs($student);
+        Sanctum::actingAs($student, ['access-api']);
 
         // Puede enviar una nueva propuesta mejorada
         $response = $this->postJson('/api/v1/student/degree-topics', [
@@ -196,7 +196,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
     public function test_validation_fails_with_invalid_or_missing_title(): void
     {
         $student = Usuario::factory()->withRole('estudiante')->create();
-        Sanctum::actingAs($student);
+        Sanctum::actingAs($student, ['access-api']);
 
         $response = $this->postJson('/api/v1/student/degree-topics', [
             'title' => 'abc', // menor a 5 caracteres
@@ -215,7 +215,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
 
         // Rol docente no autorizado
         $teacher = Usuario::factory()->withRole('docente')->create();
-        Sanctum::actingAs($teacher);
+        Sanctum::actingAs($teacher, ['access-api']);
 
         $this->postJson('/api/v1/student/degree-topics', [
             'title' => 'Propuesta Enviada por Docente',
@@ -230,7 +230,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
             'fk_usuario' => $student->getKey(),
         ]);
 
-        Sanctum::actingAs($student);
+        Sanctum::actingAs($student, ['access-api']);
 
         $response = $this->postJson('/api/v1/student/degree-topics', [
             'title' => 'Propuesta de Titulación con Asignación Automática',
@@ -250,7 +250,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
     public function test_student_can_replace_pending_proposal_with_alternative_using_replace_pending_flag(): void
     {
         $student = Usuario::factory()->withRole('estudiante')->create();
-        Sanctum::actingAs($student);
+        Sanctum::actingAs($student, ['access-api']);
 
         // Primer propuesta
         $first = $this->postJson('/api/v1/student/degree-topics', [
@@ -279,7 +279,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
     public function test_student_can_modify_pending_degree_topic_proposal_directly(): void
     {
         $student = Usuario::factory()->withRole('estudiante')->create();
-        Sanctum::actingAs($student);
+        Sanctum::actingAs($student, ['access-api']);
 
         $topic = $this->postJson('/api/v1/student/degree-topics', [
             'title' => 'Propuesta Original Pendiente',
@@ -325,7 +325,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
             'fecha_revision' => now()->toDateString(),
         ]);
 
-        Sanctum::actingAs($student);
+        Sanctum::actingAs($student, ['access-api']);
 
         $this->patchJson('/api/v1/student/degree-topics/'.$approvedTopic->getKey(), [
             'title' => 'Intento de Modificar Tema Aprobado',
@@ -349,7 +349,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
             'fecha_propuesta' => now()->toDateString(),
         ]);
 
-        Sanctum::actingAs($studentB);
+        Sanctum::actingAs($studentB, ['access-api']);
 
         $this->patchJson('/api/v1/student/degree-topics/'.$topicA->getKey(), [
             'title' => 'Estudiante B intentando usurpar tema de A',

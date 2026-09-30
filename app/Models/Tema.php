@@ -8,6 +8,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Tema extends Model
@@ -40,5 +41,11 @@ class Tema extends Model
     public function actividades(): HasMany
     {
         return $this->hasMany(Actividad::class, 'fk_tema');
+    }
+
+    /** @return BelongsToMany<TutoringSession, $this> */
+    public function sessions(): BelongsToMany
+    {
+        return $this->belongsToMany(TutoringSession::class, 'tutoring_session_topic', 'topic_id', 'session_id');
     }
 }

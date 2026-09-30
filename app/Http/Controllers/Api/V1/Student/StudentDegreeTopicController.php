@@ -14,6 +14,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Gate;
 
 class StudentDegreeTopicController extends Controller
 {
@@ -23,21 +24,13 @@ class StudentDegreeTopicController extends Controller
      */
     public function index(Request $request): AnonymousResourceCollection
     {
-        /** @var Usuario|null $user */
+        /** @var Usuario $user */
         $user = $request->user();
 
-        if (! $user || (! $user->hasRole('estudiante') && ! $user->hasRole('administrador'))) {
-            abort(Response::HTTP_FORBIDDEN, 'Solo los estudiantes pueden consultar sus propuestas de titulación.');
-        }
+        Gate::authorize('viewOwn', TemaTitulacion::class);
 
         $topics = TemaTitulacion::query()
-            ->with([
-                'estudiante.paralelos',
-                'periodo',
-                'coordinadorRevisor',
-                'asignaciones.docente',
-                'observaciones.coordinador',
-            ])
+            ->with(TemaTitulacion::REVIEW_RELATIONS)
             ->where('fk_id_usuario', $user->getKey())
             ->orderByDesc('fecha_propuesta')
             ->orderByDesc('id_tema_tit')

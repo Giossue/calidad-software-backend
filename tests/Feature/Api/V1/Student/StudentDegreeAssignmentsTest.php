@@ -104,7 +104,7 @@ class StudentDegreeAssignmentsTest extends TestCase
             'estado' => true,
         ]);
 
-        Sanctum::actingAs($student);
+        Sanctum::actingAs($student, ['access-api']);
 
         // 1. Consulta general para su proceso aprobado
         $response = $this->getJson('/api/v1/student/degree-topics/assignments');
@@ -148,7 +148,7 @@ class StudentDegreeAssignmentsTest extends TestCase
             'fecha_propuesta' => now()->toDateString(),
         ]);
 
-        Sanctum::actingAs($student);
+        Sanctum::actingAs($student, ['access-api']);
 
         $response = $this->getJson('/api/v1/student/degree-topics/assignments');
 
@@ -171,7 +171,7 @@ class StudentDegreeAssignmentsTest extends TestCase
             'fecha_revision' => now()->toDateString(),
         ]);
 
-        Sanctum::actingAs($student);
+        Sanctum::actingAs($student, ['access-api']);
 
         $response = $this->getJson('/api/v1/student/degree-topics/assignments');
 
@@ -182,7 +182,7 @@ class StudentDegreeAssignmentsTest extends TestCase
     public function test_assignments_endpoint_returns_404_if_student_has_no_topics(): void
     {
         $student = Usuario::factory()->withRole('estudiante')->create();
-        Sanctum::actingAs($student);
+        Sanctum::actingAs($student, ['access-api']);
 
         $response = $this->getJson('/api/v1/student/degree-topics/assignments');
 
@@ -204,7 +204,7 @@ class StudentDegreeAssignmentsTest extends TestCase
             'fecha_revision' => now()->toDateString(),
         ]);
 
-        Sanctum::actingAs($studentB);
+        Sanctum::actingAs($studentB, ['access-api']);
 
         // Estudiante B no puede consultar las asignaciones del tema de A
         $response = $this->getJson('/api/v1/student/degree-topics/'.$topicA->getKey().'/assignments');
@@ -220,7 +220,7 @@ class StudentDegreeAssignmentsTest extends TestCase
     public function test_non_student_cannot_access_student_assignments(): void
     {
         $teacher = Usuario::factory()->withRole('docente')->create();
-        Sanctum::actingAs($teacher);
+        Sanctum::actingAs($teacher, ['access-api']);
 
         $this->getJson('/api/v1/student/degree-topics/assignments')
             ->assertForbidden();

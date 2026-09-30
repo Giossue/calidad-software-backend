@@ -19,6 +19,7 @@ class UserResource extends JsonResource
             'email' => $this->correo,
             'phone' => $this->telefono,
             'role' => $this->roles->first()?->slug,
+            'coordinated_career_ids' => $this->whenLoaded('coordinatedCareers', fn () => $this->coordinatedCareers->pluck('id_carrera')->all()),
             'is_active' => $this->estado,
             'email_verified_at' => $this->email_verified_at?->toISOString(),
             'has_two_factor' => $this->two_factor_confirmed_at !== null,

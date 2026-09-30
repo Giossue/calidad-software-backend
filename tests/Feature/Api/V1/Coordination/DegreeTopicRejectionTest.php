@@ -48,7 +48,7 @@ class DegreeTopicRejectionTest extends TestCase
 
     public function test_coordinador_titulacion_can_reject_pending_degree_topic_with_optional_observation(): void
     {
-        Sanctum::actingAs($this->coordinator);
+        Sanctum::actingAs($this->coordinator, ['access-api']);
 
         $observation = 'El alcance propuesto carece de fundamentación metodológica y delimitación técnica.';
 
@@ -80,7 +80,7 @@ class DegreeTopicRejectionTest extends TestCase
 
     public function test_coordinador_titulacion_can_reject_degree_topic_without_observation(): void
     {
-        Sanctum::actingAs($this->coordinator);
+        Sanctum::actingAs($this->coordinator, ['access-api']);
 
         $response = $this->postJson("/api/v1/coordination/degree-topics/{$this->topic->getKey()}/reject", []);
 
@@ -103,7 +103,7 @@ class DegreeTopicRejectionTest extends TestCase
 
     public function test_coordinador_titulacion_can_add_standalone_observation_to_degree_topic(): void
     {
-        Sanctum::actingAs($this->coordinator);
+        Sanctum::actingAs($this->coordinator, ['access-api']);
 
         $comment = 'Revisar antecedentes investigativos en el repositorio institucional de la universidad.';
 
@@ -126,14 +126,14 @@ class DegreeTopicRejectionTest extends TestCase
     public function test_student_can_view_rejected_degree_topic_and_observations(): void
     {
         // El coordinador rechaza la propuesta dejando observación
-        Sanctum::actingAs($this->coordinator);
+        Sanctum::actingAs($this->coordinator, ['access-api']);
         $reason = 'Favor de replantear los objetivos específicos y justificar la metodología ágil.';
         $this->postJson("/api/v1/coordination/degree-topics/{$this->topic->getKey()}/reject", [
             'reason' => $reason,
         ])->assertOk();
 
         // El estudiante autenticado consulta sus temas
-        Sanctum::actingAs($this->student);
+        Sanctum::actingAs($this->student, ['access-api']);
 
         $response = $this->getJson('/api/v1/student/degree-topics');
 
@@ -146,7 +146,7 @@ class DegreeTopicRejectionTest extends TestCase
 
         // Otro estudiante no debe ver los temas de este estudiante
         $otherStudent = Usuario::factory()->withRole('estudiante')->create();
-        Sanctum::actingAs($otherStudent);
+        Sanctum::actingAs($otherStudent, ['access-api']);
 
         $this->getJson('/api/v1/student/degree-topics')
             ->assertOk()
@@ -161,7 +161,7 @@ class DegreeTopicRejectionTest extends TestCase
             'fk_coord_revisor' => $this->coordinator->getKey(),
         ]);
 
-        Sanctum::actingAs($this->coordinator);
+        Sanctum::actingAs($this->coordinator, ['access-api']);
 
         $response = $this->postJson("/api/v1/coordination/degree-topics/{$this->topic->getKey()}/reject", [
             'observation' => 'Intento de rechazar un tema ya aprobado.',
@@ -179,7 +179,7 @@ class DegreeTopicRejectionTest extends TestCase
             'fk_coord_revisor' => $this->coordinator->getKey(),
         ]);
 
-        Sanctum::actingAs($this->coordinator);
+        Sanctum::actingAs($this->coordinator, ['access-api']);
 
         $response = $this->postJson("/api/v1/coordination/degree-topics/{$this->topic->getKey()}/reject", [
             'observation' => 'Intento de rechazar nuevamente un tema rechazado.',
@@ -191,7 +191,7 @@ class DegreeTopicRejectionTest extends TestCase
 
     public function test_rejection_observation_length_validation(): void
     {
-        Sanctum::actingAs($this->coordinator);
+        Sanctum::actingAs($this->coordinator, ['access-api']);
 
         $longObservation = str_repeat('A', 1001);
 
@@ -203,7 +203,7 @@ class DegreeTopicRejectionTest extends TestCase
 
     public function test_unauthorized_user_cannot_reject_degree_topic(): void
     {
-        Sanctum::actingAs($this->student);
+        Sanctum::actingAs($this->student, ['access-api']);
 
         $this->postJson("/api/v1/coordination/degree-topics/{$this->topic->getKey()}/reject", [
             'observation' => 'Un estudiante no tiene permisos de rechazo.',

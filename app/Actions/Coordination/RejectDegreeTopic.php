@@ -12,19 +12,15 @@ class RejectDegreeTopic
 {
     public function handle(TemaTitulacion $topic, Usuario $coordinator, ?string $observation = null): TemaTitulacion
     {
-        if ($topic->estado === 'aprobado') {
-            throw ValidationException::withMessages([
-                'topic' => ['El tema de titulación ya fue aprobado previamente y no puede ser rechazado.'],
-            ]);
-        }
-
-        if ($topic->estado === 'rechazado') {
-            throw ValidationException::withMessages([
-                'topic' => ['El tema de titulación ya fue rechazado previamente.'],
-            ]);
-        }
-
         return DB::transaction(function () use ($topic, $coordinator, $observation): TemaTitulacion {
+            $topic = TemaTitulacion::query()->whereKey($topic->getKey())->lockForUpdate()->firstOrFail();
+
+            if ($topic->estado !== 'pendiente') {
+                throw ValidationException::withMessages([
+                    'topic' => ['Solo se pueden rechazar propuestas pendientes de revisión.'],
+                ]);
+            }
+
             $topic->update([
                 'estado' => 'rechazado',
                 'fecha_revision' => now()->toDateString(),
@@ -40,14 +36,9 @@ class RejectDegreeTopic
                 ]);
             }
 
-            /** @var TemaTitulacion */
-            return $topic->fresh([
-                'estudiante.paralelos',
-                'periodo',
-                'coordinadorRevisor',
-                'asignaciones.docente',
-                'observaciones.coordinador',
-            ]);
+            $topic->asignaciones()->where('estado', true)->update(['estado' => false]);
+
+            return $topic->load(TemaTitulacion::REVIEW_RELATIONS);
         });
     }
 }

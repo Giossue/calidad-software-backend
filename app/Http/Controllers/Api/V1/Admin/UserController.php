@@ -25,7 +25,7 @@ class UserController extends Controller
     {
         Gate::authorize('viewAny', Usuario::class);
 
-        $query = Usuario::query()->with('roles');
+        $query = Usuario::query()->with('roles', 'coordinatedCareers');
 
         if ($search = trim((string) $request->string('search'))) {
             $query->where(function (Builder $inner) use ($search) {

@@ -10,6 +10,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int|null $subject_id
+ * @property int $active_enrollment_count
+ */
 class AsignaturaTutoria extends Model
 {
     protected $table = 'asignatura_tutoria';
@@ -18,7 +22,7 @@ class AsignaturaTutoria extends Model
 
     protected $fillable = [
         'fk_ciclo', 'fk_periodo', 'fk_modalidad',
-        'fk_paralelo', 'fk_docente', 'nombre', 'estado',
+        'fk_paralelo', 'fk_docente', 'subject_id', 'nombre', 'estado',
     ];
 
     protected function casts(): array
@@ -64,6 +68,12 @@ class AsignaturaTutoria extends Model
     public function docente(): BelongsTo
     {
         return $this->belongsTo(Usuario::class, 'fk_docente');
+    }
+
+    /** @return BelongsTo<Subject, $this> */
+    public function subject(): BelongsTo
+    {
+        return $this->belongsTo(Subject::class, 'subject_id');
     }
 
     /**

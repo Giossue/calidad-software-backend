@@ -6,9 +6,11 @@
 
 namespace App\Models;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/** @property CarbonInterface $fecha_registro */
 class Nota extends Model
 {
     protected $table = 'nota';

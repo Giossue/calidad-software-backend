@@ -11,9 +11,7 @@ class UpdateAcademicPeersRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        $user = $this->user();
-
-        return $user !== null && ($user->hasRole('coordinador_titulacion') || $user->hasRole('administrador'));
+        return $this->user()?->can('viewAny', TemaTitulacion::class) ?? false;
     }
 
     /** @return array<string, mixed> */
@@ -43,6 +41,10 @@ class UpdateAcademicPeersRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
+            if ($validator->errors()->isNotEmpty()) {
+                return;
+            }
+
             $topic = $this->route('topic');
             $tutorId = null;
 
