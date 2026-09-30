@@ -25,7 +25,7 @@ class TeacherWorkspace
     public function write(Usuario $user, AsignaturaTutoria $tutoring, callable $operation): mixed
     {
         return DB::transaction(function () use ($user, $tutoring, $operation) {
-            $locked = AsignaturaTutoria::query()->lockForUpdate()->findOrFail($tutoring->getKey());
+            $locked = AsignaturaTutoria::query()->whereKey($tutoring->getKey())->lockForUpdate()->firstOrFail();
             Gate::forUser($user)->authorize('teach', $locked);
 
             return $operation($locked);

@@ -3,10 +3,9 @@
 namespace Tests\Feature\Api\V1\Teacher;
 
 use App\Models\Asistencia;
-use App\Models\InscripcionTutoria;
 use App\Models\MetricaConocimiento;
-use App\Models\Nota;
 use App\Models\Paralelo;
+use App\Models\Role;
 use App\Models\Usuario;
 
 class EnrollmentAndGradeTest extends TeacherTestCase
@@ -104,7 +103,7 @@ class EnrollmentAndGradeTest extends TeacherTestCase
         $enrollment = $this->enrollment();
         $enrollment->estudiante->update(['estado' => false]);
         $this->putJson($this->path('/students/'.$enrollment->getKey().'/grades/diagnostic'), ['value' => 8])->assertUnprocessable();
-        $enrollment->estudiante->roles()->attach(\App\Models\Role::query()->where('slug', 'administrador')->first());
+        $enrollment->estudiante->roles()->attach(Role::query()->where('slug', 'administrador')->first());
         $this->patchJson($this->path('/students/'.$enrollment->getKey()), ['name' => 'Cuenta modificada'])->assertForbidden();
         $this->assertDatabaseCount('nota', 0);
     }
