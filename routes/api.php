@@ -104,6 +104,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::get('tutoring/{tutoring}/grades', [StudentTutoringController::class, 'grades'])->name('tutoring.grades');
             Route::get('tutoring/attendance', [StudentTutoringController::class, 'allAttendance'])->name('tutoring.attendance.all');
             Route::get('tutoring/{tutoring}/attendance', [StudentTutoringController::class, 'attendance'])->name('tutoring.attendance');
+            Route::get('tutoring/{tutoring}/topics', [StudentTutoringController::class, 'topics'])->name('tutoring.topics');
+            Route::get('tutoring/{tutoring}/topics/{topic}', [StudentTutoringController::class, 'topicDetail'])->name('tutoring.topics.show');
         });
 
         Route::prefix('teacher')->name('teacher.')->group(function (): void {

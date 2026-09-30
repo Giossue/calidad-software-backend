@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\StudentTutoringAttendanceResource;
 use App\Http\Resources\Api\V1\StudentTutoringGradeResource;
 use App\Http\Resources\Api\V1\StudentTutoringResource;
+use App\Http\Resources\Api\V1\StudentTutoringTopicResource;
 use App\Models\AsignaturaTutoria;
 use App\Models\InscripcionTutoria;
+use App\Models\Tema;
 use App\Models\Usuario;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
@@ -165,5 +168,104 @@ class StudentTutoringController extends Controller
         }
 
         return StudentTutoringAttendanceResource::make($enrollment);
+    }
+
+    /**
+     * Muestra el plan didáctico, progreso de temas abordados, actividades y metodologías de una tutoría.
+     */
+    public function topics(Request $request, AsignaturaTutoria $tutoring): JsonResponse
+    {
+        /** @var Usuario|null $user */
+        $user = $request->user();
+
+        if (! $user || (! $user->hasRole('estudiante') && ! $user->hasRole('administrador'))) {
+            abort(Response::HTTP_FORBIDDEN, 'Solo los estudiantes pueden consultar los temas de tutoría.');
+        }
+
+        $isEnrolled = InscripcionTutoria::query()
+            ->where('fk_id_usuario', $user->getKey())
+            ->where('fk_asig_tutoria', $tutoring->getKey())
+            ->exists();
+
+        if (! $isEnrolled) {
+            abort(Response::HTTP_FORBIDDEN, 'No estás inscrito en esta asignatura de tutoría.');
+        }
+
+        $topics = $tutoring->temas()
+            ->with(['actividades' => fn ($query) => $query->where('estado', true)->orderBy('id_actividad'), 'actividades.metodologias'])
+            ->where('estado', true)
+            ->orderBy('id_tema')
+            ->get();
+
+        $totalTopics = $topics->count();
+        $coveredTopics = $topics->where('visto', true)->count();
+        $pendingTopics = $totalTopics - $coveredTopics;
+        $progress = $totalTopics > 0 ? round(($coveredTopics / $totalTopics) * 100, 2) : 0.0;
+
+        $subject = $tutoring->loadMissing(['periodo', 'ciclo', 'paralelo', 'docente']);
+
+        return response()->json([
+            'data' => [
+                'tutoring' => [
+                    'id' => $subject->getKey(),
+                    'name' => $subject->nombre,
+                    'is_active' => (bool) $subject->estado,
+                    'academic_period' => $subject->periodo ? [
+                        'id' => $subject->periodo->getKey(),
+                        'name' => $subject->periodo->nombre,
+                    ] : null,
+                    'section' => $subject->paralelo ? [
+                        'id' => $subject->paralelo->getKey(),
+                        'name' => $subject->paralelo->nombre,
+                    ] : null,
+                    'cycle' => $subject->ciclo ? [
+                        'id' => $subject->ciclo->getKey(),
+                        'name' => $subject->ciclo->nombre,
+                    ] : null,
+                    'teacher' => $subject->docente ? [
+                        'id' => $subject->docente->getKey(),
+                        'name' => $subject->docente->nombre,
+                        'email' => $subject->docente->correo,
+                    ] : null,
+                ],
+                'progress' => [
+                    'total_topics' => $totalTopics,
+                    'covered_topics' => $coveredTopics,
+                    'pending_topics' => $pendingTopics,
+                    'progress_percentage' => $progress,
+                ],
+                'topics' => StudentTutoringTopicResource::collection($topics),
+            ],
+        ]);
+    }
+
+    /**
+     * Muestra el detalle específico de un tema con sus actividades y metodologías.
+     */
+    public function topicDetail(Request $request, AsignaturaTutoria $tutoring, Tema $topic): StudentTutoringTopicResource
+    {
+        /** @var Usuario|null $user */
+        $user = $request->user();
+
+        if (! $user || (! $user->hasRole('estudiante') && ! $user->hasRole('administrador'))) {
+            abort(Response::HTTP_FORBIDDEN, 'Solo los estudiantes pueden consultar los temas de tutoría.');
+        }
+
+        $isEnrolled = InscripcionTutoria::query()
+            ->where('fk_id_usuario', $user->getKey())
+            ->where('fk_asig_tutoria', $tutoring->getKey())
+            ->exists();
+
+        if (! $isEnrolled) {
+            abort(Response::HTTP_FORBIDDEN, 'No estás inscrito en esta asignatura de tutoría.');
+        }
+
+        if ($topic->fk_asig_tutoria !== $tutoring->getKey()) {
+            abort(Response::HTTP_NOT_FOUND, 'El tema no pertenece a la tutoría especificada.');
+        }
+
+        return StudentTutoringTopicResource::make(
+            $topic->load(['actividades' => fn ($query) => $query->where('estado', true), 'actividades.metodologias'])
+        );
     }
 }
