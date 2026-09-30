@@ -77,6 +77,13 @@ class TutoringController extends Controller
         return TutoringResource::make($tutoring->refresh()->load(self::RELATIONS));
     }
 
+    public function activate(AsignaturaTutoria $tutoring, ManageTutoring $action): TutoringResource
+    {
+        Gate::authorize('update', $tutoring);
+
+        return TutoringResource::make($action->activate($tutoring)->load(self::RELATIONS));
+    }
+
     public function assignCycle(AssignTutoringCycleRequest $request, AsignaturaTutoria $tutoring, ManageTutoring $action): TutoringResource
     {
         $cycle = Ciclo::query()->findOrFail($request->integer('cycle_id'));

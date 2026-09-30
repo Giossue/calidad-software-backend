@@ -96,6 +96,29 @@ class ManageTutoring
         });
     }
 
+    /**
+     * Rehabilita una tutoría deshabilitada. Conserva docente, inscripciones e
+     * historial; solo exige que su período, ciclo y carrera sigan vigentes.
+     */
+    public function activate(AsignaturaTutoria $tutoring): AsignaturaTutoria
+    {
+        return DB::transaction(function () use ($tutoring): AsignaturaTutoria {
+            $tutoring = AsignaturaTutoria::query()->whereKey($tutoring->getKey())->lockForUpdate()->firstOrFail();
+            if ($tutoring->estado) {
+                return $tutoring;
+            }
+            if (! $tutoring->periodo?->estado) {
+                throw ValidationException::withMessages(['period_id' => 'El período de la tutoría está inactivo; no puede habilitarse.']);
+            }
+            if (! $tutoring->ciclo?->estado || ! $tutoring->ciclo->carrera?->estado) {
+                throw ValidationException::withMessages(['cycle_id' => 'El ciclo o la carrera de la tutoría están inactivos; no puede habilitarse.']);
+            }
+            $tutoring->update(['estado' => true]);
+
+            return $tutoring->refresh();
+        });
+    }
+
     private function assertActive(AsignaturaTutoria $tutoring): void
     {
         if (! $tutoring->estado) {

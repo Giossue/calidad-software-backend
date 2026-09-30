@@ -80,6 +80,37 @@ class TutoringManagementTest extends TutoringTestCase
         $this->assertDatabaseCount('asignatura_tutoria', 1);
     }
 
+    public function test_coordinator_can_reactivate_a_tutoring_keeping_teacher_and_enrollments(): void
+    {
+        $tutoring = $this->createTutoring();
+        $teacher = Usuario::factory()->withRole('docente')->create();
+        $tutoring->update(['fk_docente' => $teacher->getKey()]);
+        $student = Usuario::factory()->withRole('estudiante')->create();
+        InscripcionTutoria::query()->create(['fk_asig_tutoria' => $tutoring->getKey(), 'fk_id_usuario' => $student->getKey(), 'fecha_inscripcion' => now()->toDateString(), 'estado' => true]);
+        Sanctum::actingAs($this->coordinator, ['*']);
+        $url = self::API.'/tutorings/'.$tutoring->getKey();
+
+        $this->patchJson($url.'/deactivate')->assertOk()->assertJsonPath('data.is_active', false);
+        $this->patchJson($url.'/activate')->assertOk()->assertJsonPath('data.is_active', true)->assertJsonPath('data.teacher_id', $teacher->getKey());
+        $this->patchJson($url.'/activate')->assertOk()->assertJsonPath('data.is_active', true);
+        $this->assertDatabaseHas('inscripcion_tutoria', ['fk_asig_tutoria' => $tutoring->getKey(), 'fk_id_usuario' => $student->getKey(), 'estado' => true]);
+    }
+
+    public function test_tutoring_cannot_be_reactivated_with_inactive_period_or_cycle(): void
+    {
+        $tutoring = $this->createTutoring();
+        $tutoring->update(['estado' => false]);
+        Sanctum::actingAs($this->coordinator, ['*']);
+        $url = self::API.'/tutorings/'.$tutoring->getKey().'/activate';
+
+        $this->period->update(['estado' => false]);
+        $this->patchJson($url)->assertUnprocessable()->assertJsonValidationErrors('period_id');
+        $this->period->update(['estado' => true]);
+        $this->cycle->update(['estado' => false]);
+        $this->patchJson($url)->assertUnprocessable()->assertJsonValidationErrors('cycle_id');
+        $this->assertFalse($tutoring->refresh()->estado);
+    }
+
     public function test_tutoring_listing_and_mutations_are_limited_to_coordinated_careers(): void
     {
         $own = $this->createTutoring();
@@ -91,6 +122,7 @@ class TutoringManagementTest extends TutoringTestCase
         $url = self::API.'/tutorings/'.$foreign->getKey();
         $this->patchJson($url, ['modality_id' => $this->modality->getKey()])->assertForbidden();
         $this->patchJson($url.'/deactivate')->assertForbidden();
+        $this->patchJson($url.'/activate')->assertForbidden();
         $this->putJson($url.'/cycle', ['cycle_id' => $this->cycle->getKey()])->assertForbidden();
         $teacher = Usuario::factory()->withRole('docente')->create();
         $this->putJson($url.'/teacher', ['teacher_id' => $teacher->getKey()])->assertForbidden();
