@@ -336,6 +336,30 @@ class StudentDegreeTopicSubmissionTest extends TestCase
         ])->assertUnprocessable()->assertJsonValidationErrors(['title']);
     }
 
+    public function test_student_cannot_modify_discarded_topic_via_patch(): void
+    {
+        $student = Usuario::factory()->withRole('estudiante')->create();
+
+        $discardedTopic = TemaTitulacion::query()->create([
+            'fk_id_usuario' => $student->getKey(),
+            'fk_periodo' => $this->period->getKey(),
+            'titulo' => 'Tema Reemplazado Previamente',
+            'estado' => 'descartado',
+            'fecha_propuesta' => now()->toDateString(),
+        ]);
+
+        Sanctum::actingAs($student, ['access-api']);
+
+        $this->patchJson('/api/v1/student/degree-topics/'.$discardedTopic->getKey(), [
+            'title' => 'Intento de Modificar Tema Reemplazado',
+        ])->assertUnprocessable()->assertJsonValidationErrors(['title']);
+
+        $this->assertDatabaseHas('tema_titulacion', [
+            'id_tema_tit' => $discardedTopic->getKey(),
+            'titulo' => 'Tema Reemplazado Previamente',
+        ]);
+    }
+
     public function test_student_cannot_modify_topic_belonging_to_another_student(): void
     {
         $studentA = Usuario::factory()->withRole('estudiante')->create();

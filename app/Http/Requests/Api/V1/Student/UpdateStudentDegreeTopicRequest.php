@@ -68,6 +68,11 @@ class UpdateStudentDegreeTopicRequest extends FormRequest
                         'title',
                         'Este tema de titulación fue rechazado. Para presentar una alternativa, debes registrar una nueva propuesta.',
                     );
+                } elseif ($topic->estado !== 'pendiente') {
+                    $validator->errors()->add(
+                        'title',
+                        'Esta propuesta fue reemplazada por otra y ya no puede modificarse. Modifica tu propuesta vigente.',
+                    );
                 }
             }
         });
