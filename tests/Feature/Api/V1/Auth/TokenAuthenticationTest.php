@@ -262,4 +262,28 @@ class TokenAuthenticationTest extends TestCase
         $response = $this->withHeaders($headers)->getJson('/api/v1/student/degree-topics');
         $response->assertOk()->assertJsonStructure(['data']);
     }
+
+    public function test_student_cannot_access_administrative_endpoints(): void
+    {
+        $student = Usuario::factory()
+            ->withRole('estudiante')
+            ->create(['estado' => true]);
+
+        $token = $student->createToken('estudiante-web')->plainTextToken;
+        $headers = ['Authorization' => 'Bearer '.$token];
+
+        $this->withHeaders($headers)->getJson('/api/v1/users')->assertForbidden();
+    }
+
+    public function test_student_cannot_access_coordination_endpoints(): void
+    {
+        $student = Usuario::factory()
+            ->withRole('estudiante')
+            ->create(['estado' => true]);
+
+        $token = $student->createToken('estudiante-web')->plainTextToken;
+        $headers = ['Authorization' => 'Bearer '.$token];
+
+        $this->withHeaders($headers)->getJson('/api/v1/coordination/teachers')->assertForbidden();
+    }
 }
