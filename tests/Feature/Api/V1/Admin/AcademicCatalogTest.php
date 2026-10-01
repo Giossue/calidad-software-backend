@@ -92,6 +92,29 @@ class AcademicCatalogTest extends TestCase
         ])->assertUnprocessable()->assertJsonValidationErrors('cycles_count');
     }
 
+    public function test_editing_a_career_can_add_cycles_but_never_remove_them(): void
+    {
+        $this->actingAsAdministrator();
+        $faculty = Facultad::query()->create(['nombre' => 'Facultad de Ingeniería', 'estado' => true]);
+        $careerId = $this->postJson('/api/v1/admin/careers', ['faculty_id' => $faculty->getKey(), 'name' => 'Software', 'cycles_count' => 4])
+            ->assertCreated()->json('data.id');
+
+        $this->getJson('/api/v1/admin/careers')->assertOk()->assertJsonPath('data.0.cycle_levels', 4);
+
+        $this->patchJson('/api/v1/admin/careers/'.$careerId, ['cycles_count' => 6])->assertOk();
+        $this->assertSame(range(1, 6), Ciclo::query()->where('fk_carrera', $careerId)->orderBy('numero')->pluck('numero')->all());
+        $this->assertSame('Sexto ciclo', Ciclo::query()->where('fk_carrera', $careerId)->where('numero', 6)->value('nombre'));
+
+        // Repetir el mismo valor no duplica ciclos.
+        $this->patchJson('/api/v1/admin/careers/'.$careerId, ['cycles_count' => 6])->assertOk();
+        $this->assertSame(6, Ciclo::query()->where('fk_carrera', $careerId)->count());
+
+        // Bajar la cantidad o pasar el máximo se rechaza.
+        $this->patchJson('/api/v1/admin/careers/'.$careerId, ['cycles_count' => 3])->assertUnprocessable()->assertJsonValidationErrors('cycles_count');
+        $this->patchJson('/api/v1/admin/careers/'.$careerId, ['cycles_count' => 13])->assertUnprocessable()->assertJsonValidationErrors('cycles_count');
+        $this->assertSame(6, Ciclo::query()->where('fk_carrera', $careerId)->count());
+    }
+
     public function test_career_name_is_unique_inside_a_faculty(): void
     {
         $this->actingAsAdministrator();

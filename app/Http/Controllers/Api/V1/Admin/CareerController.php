@@ -27,7 +27,7 @@ class CareerController extends Controller
         $query = Carrera::query()->with(['facultad', 'modalidad'])->withCount([
             'ciclos',
             'ciclos as active_cycles_count' => fn (Builder $q) => $q->where('estado', true),
-        ]);
+        ])->withMax('ciclos as max_cycle_number', 'numero');
 
         if ($search = trim((string) $request->string('search'))) {
             $query->where(function (Builder $inner) use ($search) {

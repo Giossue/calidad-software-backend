@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\V1\Admin;
 
+use App\Actions\Academic\GenerateCareerCycles;
 use App\Models\Carrera;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
@@ -27,7 +28,10 @@ class UpdateCareerRequest extends FormRequest
             ? $this->integer('faculty_id')
             : $career?->fk_facultad;
 
+        $currentCycles = (int) ($career?->ciclos()->max('numero') ?? 0);
+
         return [
+            'cycles_count' => ['sometimes', 'integer', 'min:'.$currentCycles, 'max:'.GenerateCareerCycles::MAX_CYCLES],
             'faculty_id' => [
                 'sometimes',
                 'integer',
@@ -57,7 +61,7 @@ class UpdateCareerRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            if (! $this->hasAny(['faculty_id', 'name', 'modality_id'])) {
+            if (! $this->hasAny(['faculty_id', 'name', 'modality_id', 'cycles_count'])) {
                 $validator->errors()->add('career', 'Debes enviar al menos un campo para actualizar.');
             }
         });
@@ -70,6 +74,15 @@ class UpdateCareerRequest extends FormRequest
             'faculty_id' => 'facultad',
             'name' => 'nombre de la carrera',
             'modality_id' => 'modalidad',
+            'cycles_count' => 'cantidad de ciclos',
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function messages(): array
+    {
+        return [
+            'cycles_count.min' => 'No se pueden quitar ciclos desde aquí: la carrera ya tiene :min. Si no usas alguno, desactívalo.',
         ];
     }
 }

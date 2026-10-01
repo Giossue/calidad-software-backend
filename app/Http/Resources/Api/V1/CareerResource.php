@@ -22,6 +22,8 @@ class CareerResource extends JsonResource
             'status' => $this->estado,
             'cycles_count' => (int) ($this->ciclos_count ?? 0),
             'active_cycles_count' => (int) ($this->active_cycles_count ?? 0),
+            // Cantidad de ciclos (niveles) de la carrera: el número de ciclo más alto.
+            'cycle_levels' => (int) ($this->max_cycle_number ?? 0),
             'created_at' => $this->created_at?->toISOString(),
             'updated_at' => $this->updated_at?->toISOString(),
         ];

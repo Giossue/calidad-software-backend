@@ -3,9 +3,12 @@
 namespace App\Actions\Academic;
 
 use App\Models\Carrera;
+use Illuminate\Support\Facades\DB;
 
 class UpdateCareer
 {
+    public function __construct(private GenerateCareerCycles $cycles) {}
+
     /** @param array<string, mixed> $attributes */
     public function handle(Carrera $career, array $attributes): Carrera
     {
@@ -23,8 +26,15 @@ class UpdateCareer
             $changes['fk_modalidad'] = $attributes['modality_id'] !== null ? (int) $attributes['modality_id'] : null;
         }
 
-        $career->fill($changes)->save();
+        return DB::transaction(function () use ($career, $changes, $attributes): Carrera {
+            $career->fill($changes)->save();
 
-        return $career;
+            // Subir la cantidad de ciclos agrega los que faltan; nunca se quitan desde aquí.
+            if (isset($attributes['cycles_count'])) {
+                $this->cycles->handle($career, (int) $attributes['cycles_count']);
+            }
+
+            return $career;
+        });
     }
 }
