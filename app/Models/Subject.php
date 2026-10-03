@@ -10,13 +10,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @property int $id
  * @property int $career_id
- * @property string $code
+ * @property string|null $code
  * @property string $name
+ * @property int|null $modality_id
  * @property bool $is_active
  */
 class Subject extends Model
 {
-    protected $fillable = ['career_id', 'code', 'name', 'is_active'];
+    protected $fillable = ['career_id', 'code', 'name', 'modality_id', 'is_active'];
 
     /** @return array<string, string> */
     protected function casts(): array
@@ -28,6 +29,12 @@ class Subject extends Model
     public function career(): BelongsTo
     {
         return $this->belongsTo(Carrera::class, 'career_id');
+    }
+
+    /** @return BelongsTo<Modalidad, $this> */
+    public function modality(): BelongsTo
+    {
+        return $this->belongsTo(Modalidad::class, 'modality_id');
     }
 
     /** @return BelongsToMany<Ciclo, $this> */

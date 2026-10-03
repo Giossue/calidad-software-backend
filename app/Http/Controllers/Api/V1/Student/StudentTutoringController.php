@@ -235,7 +235,103 @@ class StudentTutoringController extends Controller
                     'progress_percentage' => $progress,
                 ],
                 'topics' => StudentTutoringTopicResource::collection($topics),
+                'sessions' => \App\Models\TutoringSession::query()
+                    ->where('tutoring_id', $tutoring->getKey())
+                    ->with([
+                        'topics' => fn ($q) => $q->where('estado', true),
+                        'topics.actividades' => fn ($q) => $q->where('estado', true)->orderBy('id_actividad'),
+                        'topics.actividades.metodologias' => fn ($q) => $q->where('estado', true),
+                    ])
+                    ->orderByDesc('date')
+                    ->get()
+                    ->map(function (\App\Models\TutoringSession $session) use ($tutoring) {
+                        $sessionTopics = $session->topics;
+                        if ($sessionTopics->isEmpty() && $session->topics_covered) {
+                            $sessionDate = $session->date->toDateString();
+                            $sessionTopics = $tutoring->temas()
+                                ->where('estado', true)
+                                ->where(function ($q) use ($sessionDate) {
+                                    $q->whereDate('created_at', $sessionDate)
+                                        ->orWhereDate('updated_at', $sessionDate)
+                                        ->orWhere('visto', true);
+                                })
+                                ->with([
+                                    'actividades' => fn ($q) => $q->where('estado', true)->orderBy('id_actividad'),
+                                    'actividades.metodologias' => fn ($q) => $q->where('estado', true),
+                                ])
+                                ->get();
+                        }
+
+                        return [
+                            'id' => $session->getKey(),
+                            'tutoring_id' => $session->tutoring_id,
+                            'date' => $session->date->toDateString(),
+                            'topics_covered' => (bool) $session->topics_covered,
+                            'topics' => StudentTutoringTopicResource::collection($sessionTopics),
+                        ];
+                    }),
             ],
+        ]);
+    }
+
+    /**
+     * Muestra las sesiones de clase de una tutoría, permitiendo ver los temas y actividades abordados por fecha.
+     */
+    public function sessions(Request $request, AsignaturaTutoria $tutoring): JsonResponse
+    {
+        /** @var Usuario|null $user */
+        $user = $request->user();
+
+        if (! $user || (! $user->hasRole('estudiante') && ! $user->hasRole('administrador'))) {
+            abort(Response::HTTP_FORBIDDEN, 'Solo los estudiantes pueden consultar las sesiones de tutoría.');
+        }
+
+        $isEnrolled = InscripcionTutoria::query()
+            ->where('fk_id_usuario', $user->getKey())
+            ->where('fk_asig_tutoria', $tutoring->getKey())
+            ->exists();
+
+        if (! $isEnrolled) {
+            abort(Response::HTTP_FORBIDDEN, 'No estás inscrito en esta asignatura de tutoría.');
+        }
+
+        $sessions = \App\Models\TutoringSession::query()
+            ->where('tutoring_id', $tutoring->getKey())
+            ->with([
+                'topics' => fn ($q) => $q->where('estado', true),
+                'topics.actividades' => fn ($q) => $q->where('estado', true)->orderBy('id_actividad'),
+                'topics.actividades.metodologias' => fn ($q) => $q->where('estado', true),
+            ])
+            ->orderByDesc('date')
+            ->get();
+
+        return response()->json([
+            'data' => $sessions->map(function (\App\Models\TutoringSession $session) use ($tutoring) {
+                $sessionTopics = $session->topics;
+                if ($sessionTopics->isEmpty() && $session->topics_covered) {
+                    $sessionDate = $session->date->toDateString();
+                    $sessionTopics = $tutoring->temas()
+                        ->where('estado', true)
+                        ->where(function ($q) use ($sessionDate) {
+                            $q->whereDate('created_at', $sessionDate)
+                                ->orWhereDate('updated_at', $sessionDate)
+                                ->orWhere('visto', true);
+                        })
+                        ->with([
+                            'actividades' => fn ($q) => $q->where('estado', true)->orderBy('id_actividad'),
+                            'actividades.metodologias' => fn ($q) => $q->where('estado', true),
+                        ])
+                        ->get();
+                }
+
+                return [
+                    'id' => $session->getKey(),
+                    'tutoring_id' => $session->tutoring_id,
+                    'date' => $session->date->toDateString(),
+                    'topics_covered' => (bool) $session->topics_covered,
+                    'topics' => StudentTutoringTopicResource::collection($sessionTopics),
+                ];
+            }),
         ]);
     }
 

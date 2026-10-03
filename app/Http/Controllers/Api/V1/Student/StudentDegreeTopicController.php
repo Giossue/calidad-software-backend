@@ -55,13 +55,7 @@ class StudentDegreeTopicController extends Controller
             abort(Response::HTTP_FORBIDDEN, 'No tienes permiso para consultar este tema de titulación.');
         }
 
-        return (new DegreeTopicResource($topic->load([
-            'estudiante.paralelos',
-            'periodo',
-            'coordinadorRevisor',
-            'asignaciones.docente',
-            'observaciones.coordinador',
-        ])))
+        return (new DegreeTopicResource($topic->load(TemaTitulacion::REVIEW_RELATIONS)))
             ->response()
             ->setStatusCode(Response::HTTP_OK);
     }
@@ -221,5 +215,43 @@ class StudentDegreeTopicController extends Controller
         ])))
             ->response()
             ->setStatusCode(Response::HTTP_OK);
+    }
+
+    /**
+     * Consulta si el estudiante autenticado está matriculado en titulación para el período vigente.
+     */
+    public function enrollmentStatus(Request $request): JsonResponse
+    {
+        /** @var Usuario|null $user */
+        $user = $request->user();
+
+        if (! $user || (! $user->hasRole('estudiante') && ! $user->hasRole('administrador'))) {
+            return response()->json([
+                'is_enrolled' => false,
+                'period_id' => null,
+                'period_name' => null,
+            ]);
+        }
+
+        $currentPeriod = \App\Models\PeriodoAcademico::query()->where('estado', true)->first();
+        if (! $currentPeriod) {
+            return response()->json([
+                'is_enrolled' => false,
+                'period_id' => null,
+                'period_name' => null,
+            ]);
+        }
+
+        $enrolled = \App\Models\MatriculaTitulacion::query()
+            ->where('fk_estudiante', $user->getKey())
+            ->where('fk_periodo', $currentPeriod->getKey())
+            ->where('estado', true)
+            ->exists();
+
+        return response()->json([
+            'is_enrolled' => $enrolled,
+            'period_id' => $currentPeriod->getKey(),
+            'period_name' => $currentPeriod->nombre,
+        ]);
     }
 }

@@ -24,9 +24,6 @@ class UpdateCareerRequest extends FormRequest
     {
         $routeCareer = $this->route('career');
         $career = $routeCareer instanceof Carrera ? $routeCareer : null;
-        $facultyId = $this->has('faculty_id')
-            ? $this->integer('faculty_id')
-            : $career?->fk_facultad;
 
         $currentCycles = (int) ($career?->ciclos()->max('numero') ?? 0);
 
@@ -44,7 +41,6 @@ class UpdateCareerRequest extends FormRequest
                 'string',
                 'max:150',
                 Rule::unique('carrera', 'nombre')
-                    ->where(fn (Builder $query): Builder => $query->where('fk_facultad', $facultyId))
                     ->ignore($career?->getKey(), $career?->getKeyName()),
             ],
             'modality_id' => [
@@ -83,6 +79,7 @@ class UpdateCareerRequest extends FormRequest
     {
         return [
             'cycles_count.min' => 'No se pueden quitar ciclos desde aquí: la carrera ya tiene :min. Si no usas alguno, desactívalo.',
+            'name.unique' => 'Ya existe una carrera con este nombre en el sistema. El nombre de la carrera es único institucionalmente.',
         ];
     }
 }

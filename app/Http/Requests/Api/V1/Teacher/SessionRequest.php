@@ -11,10 +11,19 @@ class SessionRequest extends TeacherMutationRequest
     {
         $tutoring = $this->selectedTutoring();
 
+        $periodStart = $tutoring->periodo?->fecha_inicio?->toDateString();
+        $periodEnd = $tutoring->periodo?->fecha_fin?->toDateString();
+
+        $dateRules = ['required', 'date_format:Y-m-d', 'before_or_equal:today'];
+        if ($periodStart && $periodStart <= now()->toDateString()) {
+            $dateRules[] = 'after_or_equal:'.$periodStart;
+        }
+        if ($periodEnd) {
+            $dateRules[] = 'before_or_equal:'.$periodEnd;
+        }
+
         return [
-            'date' => ['required', 'date_format:Y-m-d', 'before_or_equal:today',
-                'after_or_equal:'.$tutoring->periodo->fecha_inicio->toDateString(),
-                'before_or_equal:'.$tutoring->periodo->fecha_fin->toDateString()],
+            'date' => $dateRules,
             'topics_covered' => ['required', 'boolean'],
             'topic_ids' => ['exclude_unless:topics_covered,true', 'array', 'max:100'],
             'topic_ids.*' => ['integer', 'distinct', Rule::exists('tema', 'id_tema')->where('fk_asig_tutoria', $tutoring->getKey())],
@@ -22,6 +31,30 @@ class SessionRequest extends TeacherMutationRequest
             'attendance.*.enrollment_id' => ['required', 'integer', 'distinct', Rule::exists('inscripcion_tutoria', 'id_inscripcion')->where('fk_asig_tutoria', $tutoring->getKey())->where('estado', true)],
             'attendance.*.present' => ['required', 'boolean'],
         ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($validator): void {
+            if ($this->filled('date')) {
+                $tutoring = $this->selectedTutoring();
+                $activeDays = $tutoring->horarios()->where('estado', true)->pluck('dia_semana')->all();
+                if (! empty($activeDays)) {
+                    $dayMap = [
+                        0 => 'domingo', 1 => 'lunes', 2 => 'martes', 3 => 'miercoles',
+                        4 => 'jueves', 5 => 'viernes', 6 => 'sabado',
+                    ];
+                    try {
+                        $dayOfWeek = $dayMap[\Carbon\Carbon::parse($this->string('date')->toString())->dayOfWeek] ?? null;
+                        if ($dayOfWeek && ! in_array($dayOfWeek, $activeDays, true)) {
+                            $validator->errors()->add('date', 'La fecha seleccionada no coincide con los días registrados en el horario de esta tutoría.');
+                        }
+                    } catch (\Throwable) {
+                        // handled by date_format validation rule
+                    }
+                }
+            }
+        });
     }
 
     /** @return array<string, string> */

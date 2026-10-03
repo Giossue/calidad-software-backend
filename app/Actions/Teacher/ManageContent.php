@@ -22,11 +22,32 @@ class ManageContent
                 $this->workspace->topic($tutoring, $topic);
                 $this->active($topic->estado);
             }
-            if ($tutoring->temas()->where('nombre', $data['name'])->when($topic, fn ($query) => $query->whereKeyNot($topic->getKey()))->exists()) {
+            if (isset($data['name']) && $tutoring->temas()->where('nombre', $data['name'])->when($topic, fn ($query) => $query->whereKeyNot($topic->getKey()))->exists()) {
                 throw ValidationException::withMessages(['name' => 'Ya existe un tema con ese nombre en esta tutoría.']);
             }
             $topic ??= new Tema(['fk_asig_tutoria' => $tutoring->getKey(), 'visto' => false, 'estado' => true]);
-            $topic->fill(['nombre' => $data['name'], 'descripcion' => $data['description'] ?? null])->save();
+            $attributes = [];
+            if (array_key_exists('name', $data)) {
+                $attributes['nombre'] = $data['name'];
+            }
+            if (array_key_exists('description', $data)) {
+                $attributes['descripcion'] = $data['description'];
+            }
+            if (array_key_exists('is_covered', $data)) {
+                $attributes['visto'] = (bool) $data['is_covered'];
+            }
+            $topic->fill($attributes)->save();
+
+            return $topic->refresh()->load('actividades.metodologias');
+        });
+    }
+
+    public function toggleCovered(Usuario $teacher, AsignaturaTutoria $tutoring, Tema $topic, ?bool $isCovered = null): Tema
+    {
+        return $this->workspace->write($teacher, $tutoring, function () use ($tutoring, $topic, $isCovered): Tema {
+            $this->workspace->topic($tutoring, $topic);
+            $this->active($topic->estado);
+            $topic->update(['visto' => $isCovered ?? !$topic->visto]);
 
             return $topic->refresh()->load('actividades.metodologias');
         });

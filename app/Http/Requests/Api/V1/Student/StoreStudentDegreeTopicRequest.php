@@ -71,6 +71,25 @@ class StoreStudentDegreeTopicRequest extends FormRequest
                 return;
             }
 
+            // Validar matrícula en titulación para el período si existen matrículas registradas en dicho período
+            $hasAnyMatricula = \App\Models\MatriculaTitulacion::query()->where('fk_periodo', $periodId)->exists();
+            if ($hasAnyMatricula && ! $user->hasRole('administrador')) {
+                $isEnrolled = \App\Models\MatriculaTitulacion::query()
+                    ->where('fk_estudiante', $user->getKey())
+                    ->where('fk_periodo', $periodId)
+                    ->where('estado', true)
+                    ->exists();
+
+                if (! $isEnrolled) {
+                    $validator->errors()->add(
+                        'academic_period_id',
+                        'No te encuentras matriculado en titulación para este período académico. Consulta con tu Coordinador de Carrera.',
+                    );
+
+                    return;
+                }
+            }
+
             // Validar que el estudiante no tenga ya un tema aprobado en este período
             $hasApproved = TemaTitulacion::query()
                 ->where('fk_id_usuario', $user->getKey())

@@ -4,6 +4,7 @@ namespace Tests\Feature\Api\V1\Teacher;
 
 use App\Models\AsignacionDocente;
 use App\Models\Asistencia;
+use App\Models\Horario;
 use App\Models\Reporte;
 use App\Models\Tema;
 use App\Models\TemaTitulacion;
@@ -114,4 +115,116 @@ class SessionReportAndDegreeTest extends TeacherTestCase
         $own->update(['estado' => false]);
         $this->getJson('/api/v1/teacher/degree-assignments')->assertOk()->assertJsonCount(0, 'data');
     }
+
+    public function test_attendance_session_date_must_match_tutoring_schedules_when_configured(): void
+    {
+        // 2026-09-29 is Tuesday, 2026-09-28 is Monday
+        Horario::query()->create([
+            'fk_asig_tutoria' => $this->tutoring->getKey(),
+            'dia_semana' => 'lunes',
+            'hora_inicio' => '08:00:00',
+            'hora_fin' => '10:00:00',
+            'room' => 'Aula 1',
+            'estado' => true,
+        ]);
+
+        $enrollment = $this->enrollment();
+
+        // Tuesday (not in schedule) -> rejected
+        $response = $this->putJson($this->path('/sessions'), [
+            'date' => '2026-09-29',
+            'topics_covered' => false,
+            'attendance' => [['enrollment_id' => $enrollment->getKey(), 'present' => true]],
+        ]);
+        $response->assertUnprocessable();
+        $response->assertJsonValidationErrors('date');
+
+        // Monday (in schedule) -> accepted
+        $responseMonday = $this->putJson($this->path('/sessions'), [
+            'date' => '2026-09-28',
+            'topics_covered' => false,
+            'attendance' => [['enrollment_id' => $enrollment->getKey(), 'present' => true]],
+        ]);
+        $responseMonday->assertOk();
+    }
+
+    public function test_teacher_can_track_assigned_degree_topics_and_manage_activities(): void
+    {
+        $student = $this->enrollment()->estudiante;
+        $topic = TemaTitulacion::query()->create([
+            'fk_id_usuario' => $student->getKey(),
+            'fk_periodo' => $this->period->getKey(),
+            'titulo' => 'Desarrollo de Software Seguro',
+            'descripcion' => 'Investigación sobre ciberseguridad',
+            'estado' => 'aprobado',
+            'fecha_propuesta' => today(),
+        ]);
+        AsignacionDocente::query()->create([
+            'fk_tema_tit' => $topic->getKey(),
+            'fk_id_usuario' => $this->teacher->getKey(),
+            'rol' => 'tutor',
+            'fecha_asignacion' => today(),
+            'estado' => true,
+        ]);
+
+        // 1. List assigned topics for tracking
+        $res = $this->getJson('/api/v1/teacher/degree-tracking');
+        $res->assertOk()->assertJsonCount(1, 'data');
+        $this->assertSame('Desarrollo de Software Seguro', $res->json('data.0.title'));
+
+        // 2. Show topic tracking detail
+        $this->getJson('/api/v1/teacher/degree-tracking/'.$topic->getKey())
+            ->assertOk()
+            ->assertJsonPath('data.id', $topic->getKey());
+
+        // 3. Add task/activity
+        $actRes = $this->postJson('/api/v1/teacher/degree-tracking/'.$topic->getKey().'/activities', [
+            'descripcion' => 'Entregar primer borrador del marco teórico',
+        ]);
+        $actRes->assertCreated();
+        $this->assertSame('Entregar primer borrador del marco teórico', $actRes->json('data.description'));
+        $this->assertSame($this->teacher->getKey(), $actRes->json('data.teacher.id'));
+        $this->assertSame('tutor', $actRes->json('data.teacher.role'));
+        $activityId = $actRes->json('data.id');
+
+        // 4. Toggle activity
+        $toggleRes = $this->patchJson('/api/v1/teacher/degree-tracking/'.$topic->getKey().'/activities/'.$activityId.'/toggle', [
+            'completada' => true,
+        ]);
+        $toggleRes->assertOk();
+        $this->assertTrue($toggleRes->json('data.is_completed'));
+        $this->assertEquals(100.0, $toggleRes->json('data.progress_percentage'));
+
+        // 5. Update progress directly
+        $progressRes = $this->patchJson('/api/v1/teacher/degree-tracking/'.$topic->getKey().'/progress', [
+            'porcentaje_avance' => 85.5,
+            'estado' => 'en_revision',
+        ]);
+        $progressRes->assertOk();
+        $this->assertEquals(85.5, $progressRes->json('data.progress_percentage'));
+        $this->assertSame('en_revision', $progressRes->json('data.status'));
+
+        // 6. Another assigned teacher (peer) cannot toggle someone else's task
+        $peerTeacher = Usuario::factory()->withRole('docente')->create();
+        AsignacionDocente::query()->create([
+            'fk_tema_tit' => $topic->getKey(),
+            'fk_id_usuario' => $peerTeacher->getKey(),
+            'rol' => 'par_academico',
+            'fecha_asignacion' => today(),
+            'estado' => true,
+        ]);
+        Sanctum::actingAs($peerTeacher, ['access-api']);
+        $this->patchJson('/api/v1/teacher/degree-tracking/'.$topic->getKey().'/activities/'.$activityId.'/toggle', [
+            'completada' => false,
+        ])->assertForbidden();
+
+        // 7. Another unassigned teacher cannot access or mutate
+        $unassignedTeacher = Usuario::factory()->withRole('docente')->create();
+        Sanctum::actingAs($unassignedTeacher, ['access-api']);
+        $this->getJson('/api/v1/teacher/degree-tracking/'.$topic->getKey())->assertForbidden();
+        $this->postJson('/api/v1/teacher/degree-tracking/'.$topic->getKey().'/activities', [
+            'descripcion' => 'Tarea no autorizada',
+        ])->assertForbidden();
+    }
 }
+

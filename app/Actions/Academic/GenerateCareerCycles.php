@@ -29,7 +29,7 @@ class GenerateCareerCycles
         for ($number = 1; $number <= min($count, self::MAX_CYCLES); $number++) {
             Ciclo::query()->firstOrCreate(
                 ['fk_carrera' => $career->getKey(), 'numero' => $number, 'fk_paralelo' => $parallel->getKey()],
-                ['nombre' => (self::NAMES[$number] ?? $number).' ciclo', 'estado' => true],
+                ['nombre' => self::NAMES[$number].' ciclo', 'estado' => true],
             );
         }
     }

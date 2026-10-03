@@ -17,6 +17,14 @@ class SubjectRequest extends FormRequest
             : $this->user()->can('create', Subject::class);
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('code')) {
+            $code = trim((string) $this->input('code'));
+            $this->merge(['code' => $code !== '' ? $code : null]);
+        }
+    }
+
     /** @return array<string, array<int, mixed>> */
     public function rules(): array
     {
@@ -26,12 +34,26 @@ class SubjectRequest extends FormRequest
 
         return [
             'career_id' => $creating ? ['required', 'integer', Rule::exists('carrera', 'id_carrera')->where('estado', true)] : ['prohibited'],
-            'code' => [($creating ? 'required' : 'sometimes'), 'string', 'max:30',
+            'code' => ['nullable', 'string', 'max:30',
                 Rule::unique('subjects', 'code')
                     ->where('career_id', $careerId)
                     ->ignore($this->route('subject'))],
             'cycle_id' => $creating
                 ? ['nullable', 'integer', Rule::exists('ciclo', 'id_ciclo')->where('estado', true)->where('fk_carrera', $careerId)]
+                : ['prohibited'],
+            'parallel_id' => $creating
+                ? ['nullable', 'integer', Rule::exists('paralelo', 'id_paralelo')->where('estado', true)]
+                : ['prohibited'],
+            'parallel_ids' => $creating
+                ? ['nullable', 'array']
+                : ['prohibited'],
+            'parallel_ids.*' => ['integer', Rule::exists('paralelo', 'id_paralelo')->where('estado', true)],
+            'new_parallel_name' => $creating
+                ? ['nullable', 'string', 'max:50']
+                : ['prohibited'],
+            'modality_id' => ['nullable', 'integer', Rule::exists('modalidad', 'id_modalidad')->where('estado', true)],
+            'period_id' => $creating
+                ? ['nullable', 'integer', Rule::exists('periodo_academico', 'id_periodo')->where('estado', true)]
                 : ['prohibited'],
             'name' => [($creating ? 'required' : 'sometimes'), 'string', 'max:150'],
         ];

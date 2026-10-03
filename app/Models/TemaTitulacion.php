@@ -40,6 +40,7 @@ class TemaTitulacion extends Model
         'coordinadorRevisor',
         'activeAssignments.docente',
         'observaciones.coordinador',
+        'fichaSeguimiento.actividades.docente',
     ];
 
     protected $table = 'tema_titulacion';

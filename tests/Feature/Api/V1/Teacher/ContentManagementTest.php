@@ -54,4 +54,22 @@ class ContentManagementTest extends TeacherTestCase
         $this->patchJson($this->path('/topics/'.$topic->getKey()), ['name' => 'Reactivado'])->assertUnprocessable();
         $this->getJson($this->path('/topics').'?status=inactive')->assertOk()->assertJsonCount(1, 'data');
     }
+
+    public function test_topic_coverage_status_can_be_updated_and_toggled(): void
+    {
+        $topic = $this->postJson($this->path('/topics'), ['name' => 'Introducción a QA', 'description' => 'Conceptos'])->assertCreated()->json('data.id');
+        $this->getJson($this->path('/topics'))->assertOk()->assertJsonPath('data.0.is_covered', false);
+
+        // Toggle covered via endpoint
+        $this->patchJson($this->path("/topics/{$topic}/toggle-covered"))->assertOk()->assertJsonPath('data.is_covered', true);
+        $this->assertDatabaseHas('tema', ['id_tema' => $topic, 'visto' => true]);
+
+        // Toggle back to false
+        $this->patchJson($this->path("/topics/{$topic}/toggle-covered"))->assertOk()->assertJsonPath('data.is_covered', false);
+        $this->assertDatabaseHas('tema', ['id_tema' => $topic, 'visto' => false]);
+
+        // Update via updateTopic payload
+        $this->patchJson($this->path("/topics/{$topic}"), ['is_covered' => true])->assertOk()->assertJsonPath('data.is_covered', true);
+        $this->assertDatabaseHas('tema', ['id_tema' => $topic, 'visto' => true]);
+    }
 }

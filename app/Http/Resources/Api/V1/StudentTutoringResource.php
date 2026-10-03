@@ -18,7 +18,7 @@ class StudentTutoringResource extends JsonResource
         $modality = $subject?->modalidad;
         $cycle = $subject?->ciclo;
         $teacher = $subject?->docente;
-        $schedules = $subject?->horarios ?? collect();
+        $schedules = $subject->horarios ?? collect();
 
         return [
             'id' => $this->getKey(),

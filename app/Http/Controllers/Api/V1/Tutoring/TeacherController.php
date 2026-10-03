@@ -55,6 +55,9 @@ class TeacherController extends Controller
         if ($excludeCareerId = $request->integer('exclude_career_id')) {
             $query->whereDoesntHave('teachingCareers', fn (Builder $q) => $q->where('carrera.id_carrera', $excludeCareerId));
         }
+        if ($careerId = $request->integer('career_id')) {
+            $query->whereHas('teachingCareers', fn (Builder $q) => $q->where('carrera.id_carrera', $careerId));
+        }
         // Cada palabra debe aparecer en el nombre o el correo, en cualquier orden ("torres ana" encuentra a "Ana Torres").
         foreach (preg_split('/\s+/', trim((string) $request->string('search')), -1, PREG_SPLIT_NO_EMPTY) ?: [] as $term) {
             $query->where(fn (Builder $q) => $q->whereLike('nombre', "%{$term}%")->orWhereLike('correo', "%{$term}%"));

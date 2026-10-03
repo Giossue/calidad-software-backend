@@ -20,12 +20,17 @@ use App\Http\Controllers\Api\V1\Student\StudentDegreeTopicController;
 use App\Http\Controllers\Api\V1\Student\StudentTutoringController;
 use App\Http\Controllers\Api\V1\Teacher\ContentController as TeacherContentController;
 use App\Http\Controllers\Api\V1\Teacher\DegreeAssignmentController;
+use App\Http\Controllers\Api\V1\Teacher\TeacherDegreeTrackingController;
 use App\Http\Controllers\Api\V1\Teacher\EnrollmentController;
 use App\Http\Controllers\Api\V1\Teacher\GradeController;
 use App\Http\Controllers\Api\V1\Teacher\ReportController as TeacherReportController;
+use App\Http\Controllers\Api\V1\Teacher\ScheduleController as TeacherScheduleController;
 use App\Http\Controllers\Api\V1\Teacher\SessionController;
 use App\Http\Controllers\Api\V1\Teacher\TutoringController as TeacherTutoringController;
 use App\Http\Controllers\Api\V1\Tutoring\CatalogController as TutoringCatalogController;
+use App\Http\Controllers\Api\V1\Tutoring\CoordinatorDegreeEnrollmentController;
+use App\Http\Controllers\Api\V1\Tutoring\CoordinatorEnrollmentController;
+use App\Http\Controllers\Api\V1\Tutoring\CoordinatorStudentController;
 use App\Http\Controllers\Api\V1\Tutoring\ScheduleController as TutoringScheduleController;
 use App\Http\Controllers\Api\V1\Tutoring\SubjectController as TutoringSubjectController;
 use App\Http\Controllers\Api\V1\Tutoring\SupervisionController as TutoringSupervisionController;
@@ -81,6 +86,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::post('academic-periods/current/sections', [PeriodSectionController::class, 'store'])->name('academic-periods.current.sections.store');
 
         Route::prefix('coordination')->name('coordination.')->group(function (): void {
+            Route::get('degree-students', [CoordinatorDegreeEnrollmentController::class, 'index'])->name('degree-students.index');
+            Route::post('degree-students/{student}/enroll', [CoordinatorDegreeEnrollmentController::class, 'enroll'])->name('degree-students.enroll');
+            Route::delete('degree-students/{student}/unenroll', [CoordinatorDegreeEnrollmentController::class, 'unenroll'])->name('degree-students.unenroll');
             Route::get('teachers', [TeacherCoordinationController::class, 'index'])->name('teachers.index');
             Route::get('degree-topics', [DegreeTopicController::class, 'index'])->name('degree-topics.index');
             Route::get('degree-topics/pending', [DegreeTopicController::class, 'indexPending'])->name('degree-topics.pending');
@@ -90,9 +98,15 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::post('degree-topics/{topic}/observations', [DegreeTopicController::class, 'storeObservation'])->name('degree-topics.observations.store');
             Route::get('degree-topics/{topic}/peers', [DegreeTopicController::class, 'peers'])->name('degree-topics.peers.index');
             Route::put('degree-topics/{topic}/peers', [DegreeTopicController::class, 'updatePeers'])->name('degree-topics.peers.update');
+            Route::post('degree-topics/{topic}/activities', [DegreeTopicController::class, 'storeActivity'])->name('degree-topics.activities.store');
+            Route::patch('degree-topics/{topic}/activities/{activity}/toggle', [DegreeTopicController::class, 'toggleActivity'])->name('degree-topics.activities.toggle');
+            Route::patch('degree-topics/{topic}/progress', [DegreeTopicController::class, 'updateProgress'])->name('degree-topics.progress.update');
+            Route::post('degree-topics/{topic}/reports', [DegreeTopicController::class, 'storeReport'])->name('degree-topics.reports.store');
+            Route::get('degree-reports', [DegreeTopicController::class, 'reports'])->name('degree-reports.index');
         });
 
         Route::prefix('student')->name('student.')->group(function (): void {
+            Route::get('degree-enrollment-status', [StudentDegreeTopicController::class, 'enrollmentStatus'])->name('degree-enrollment-status');
             Route::get('degree-topics', [StudentDegreeTopicController::class, 'index'])->name('degree-topics.index');
             Route::post('degree-topics', [StudentDegreeTopicController::class, 'store'])->name('degree-topics.store');
             Route::get('degree-topics/assignments', [StudentDegreeTopicController::class, 'assignments'])->name('degree-topics.assignments');
@@ -106,12 +120,18 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::get('tutoring/{tutoring}/attendance', [StudentTutoringController::class, 'attendance'])->name('tutoring.attendance');
             Route::get('tutoring/{tutoring}/topics', [StudentTutoringController::class, 'topics'])->name('tutoring.topics');
             Route::get('tutoring/{tutoring}/topics/{topic}', [StudentTutoringController::class, 'topicDetail'])->name('tutoring.topics.show');
+            Route::get('tutoring/{tutoring}/sessions', [StudentTutoringController::class, 'sessions'])->name('tutoring.sessions');
         });
 
         Route::prefix('teacher')->name('teacher.')->group(function (): void {
             Route::get('tutorings', [TeacherTutoringController::class, 'index'])->name('tutorings.index');
             Route::get('grade-settings', [TeacherTutoringController::class, 'gradeSettings'])->name('grade-settings');
             Route::get('degree-assignments', [DegreeAssignmentController::class, 'index'])->name('degree-assignments.index');
+            Route::get('degree-tracking', [TeacherDegreeTrackingController::class, 'index'])->name('degree-tracking.index');
+            Route::get('degree-tracking/{topic}', [TeacherDegreeTrackingController::class, 'show'])->name('degree-tracking.show');
+            Route::post('degree-tracking/{topic}/activities', [TeacherDegreeTrackingController::class, 'storeActivity'])->name('degree-tracking.activities.store');
+            Route::patch('degree-tracking/{topic}/activities/{activity}/toggle', [TeacherDegreeTrackingController::class, 'toggleActivity'])->name('degree-tracking.activities.toggle');
+            Route::patch('degree-tracking/{topic}/progress', [TeacherDegreeTrackingController::class, 'updateProgress'])->name('degree-tracking.progress.update');
 
             Route::get('tutorings/{tutoring}/students', [EnrollmentController::class, 'index'])->name('students.index');
             Route::get('tutorings/{tutoring}/available-students', [EnrollmentController::class, 'available'])->name('students.available');
@@ -124,6 +144,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::get('tutorings/{tutoring}/topics', [TeacherContentController::class, 'index'])->name('topics.index');
             Route::post('tutorings/{tutoring}/topics', [TeacherContentController::class, 'storeTopic'])->name('topics.store');
             Route::patch('tutorings/{tutoring}/topics/{topic}', [TeacherContentController::class, 'updateTopic'])->name('topics.update');
+            Route::patch('tutorings/{tutoring}/topics/{topic}/toggle-covered', [TeacherContentController::class, 'toggleCovered'])->name('topics.toggle-covered');
             Route::patch('tutorings/{tutoring}/topics/{topic}/deactivate', [TeacherContentController::class, 'deactivateTopic'])->name('topics.deactivate');
             Route::post('tutorings/{tutoring}/topics/{topic}/activities', [TeacherContentController::class, 'storeActivity'])->name('activities.store');
             Route::patch('tutorings/{tutoring}/topics/{topic}/activities/{activity}', [TeacherContentController::class, 'updateActivity'])->name('activities.update');
@@ -135,8 +156,15 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::get('tutorings/{tutoring}/sessions', [SessionController::class, 'index'])->name('sessions.index');
             Route::get('tutorings/{tutoring}/attendance', [SessionController::class, 'attendance'])->name('attendance.index');
             Route::put('tutorings/{tutoring}/sessions', [SessionController::class, 'store'])->name('sessions.store');
+            Route::patch('tutorings/{tutoring}/sessions/{session}/topics', [SessionController::class, 'updateTopics'])->name('sessions.topics.update');
             Route::get('tutorings/{tutoring}/reports', [TeacherReportController::class, 'index'])->name('reports.index');
             Route::post('tutorings/{tutoring}/reports', [TeacherReportController::class, 'store'])->name('reports.store');
+
+            Route::get('tutorings/{tutoring}/schedules', [TeacherScheduleController::class, 'index'])->name('schedules.index');
+            Route::put('tutorings/{tutoring}/schedules', [TeacherScheduleController::class, 'sync'])->name('schedules.sync');
+            Route::post('tutorings/{tutoring}/schedules', [TeacherScheduleController::class, 'store'])->name('schedules.store');
+            Route::patch('tutorings/{tutoring}/schedules/{schedule}', [TeacherScheduleController::class, 'update'])->name('schedules.update');
+            Route::patch('tutorings/{tutoring}/schedules/{schedule}/deactivate', [TeacherScheduleController::class, 'deactivate'])->name('schedules.deactivate');
         });
     });
 
@@ -165,6 +193,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::get('cycles', [TutoringCatalogController::class, 'cycles'])->name('cycles.index');
             Route::get('periods', [TutoringCatalogController::class, 'periods'])->name('periods.index');
             Route::get('modalities', [TutoringCatalogController::class, 'modalities'])->name('modalities.index');
+            Route::get('sections', [TutoringCatalogController::class, 'sections'])->name('sections.index');
+            Route::post('sections', [TutoringCatalogController::class, 'storeSection'])->name('sections.store');
 
             Route::get('subjects', [TutoringSubjectController::class, 'index'])->name('subjects.index');
             Route::post('subjects', [TutoringSubjectController::class, 'store'])->name('subjects.store');
@@ -172,6 +202,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::patch('subjects/{subject}/deactivate', [TutoringSubjectController::class, 'deactivate'])->name('subjects.deactivate');
             Route::put('subjects/{subject}/cycles/{cycle}', [TutoringSubjectController::class, 'assignCycle'])->name('subjects.cycles.assign');
             Route::delete('subjects/{subject}/cycles/{cycle}', [TutoringSubjectController::class, 'unassignCycle'])->name('subjects.cycles.unassign');
+            Route::post('subjects/{subject}/parallels', [TutoringSubjectController::class, 'assignParallel'])->name('subjects.parallels.assign');
+            Route::delete('subjects/{subject}/parallels/{parallel}', [TutoringSubjectController::class, 'unassignParallel'])->name('subjects.parallels.unassign');
 
             Route::get('teachers', [TutoringTeacherController::class, 'index'])->name('teachers.index');
             Route::get('available-teachers', [TutoringTeacherController::class, 'available'])->name('teachers.available');
@@ -194,6 +226,23 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::patch('tutorings/{tutoring}/schedules/{schedule}/deactivate', [TutoringScheduleController::class, 'deactivate'])->name('schedules.deactivate');
             Route::get('tutorings/{tutoring}/attendance', [TutoringSupervisionController::class, 'attendance'])->name('tutorings.attendance');
             Route::get('tutorings/{tutoring}/reports', [TutoringSupervisionController::class, 'reports'])->name('tutorings.reports');
+            Route::get('reports', [TutoringSupervisionController::class, 'allReports'])->name('tutorings.all-reports');
+
+            Route::get('tutorings/{tutoring}/students', [CoordinatorEnrollmentController::class, 'index'])->name('tutorings.students.index');
+            Route::get('tutorings/{tutoring}/available-students', [CoordinatorEnrollmentController::class, 'available'])->name('tutorings.students.available');
+            Route::post('tutorings/{tutoring}/students', [CoordinatorEnrollmentController::class, 'store'])->name('tutorings.students.store');
+            Route::patch('tutorings/{tutoring}/students/{enrollment}', [CoordinatorEnrollmentController::class, 'update'])->name('tutorings.students.update');
+            Route::patch('tutorings/{tutoring}/students/{enrollment}/deactivate', [CoordinatorEnrollmentController::class, 'deactivate'])->name('tutorings.students.deactivate');
+            Route::patch('tutorings/{tutoring}/students/{enrollment}/reenroll', [CoordinatorEnrollmentController::class, 'reenroll'])->name('tutorings.students.reenroll');
+
+            Route::get('students', [CoordinatorStudentController::class, 'index'])->name('students.index');
+            Route::post('students', [CoordinatorStudentController::class, 'store'])->name('students.store');
+            Route::get('students/{student}/available-tutorings', [CoordinatorStudentController::class, 'availableTutorings'])->name('students.available-tutorings');
+            Route::post('students/{student}/enroll', [CoordinatorStudentController::class, 'enroll'])->name('students.enroll');
+            Route::delete('students/{student}/enrollments/{enrollment}', [CoordinatorStudentController::class, 'unenroll'])->name('students.unenroll');
+            Route::get('degree-students', [CoordinatorDegreeEnrollmentController::class, 'index'])->name('degree-students.index');
+            Route::post('degree-students/{student}/enroll', [CoordinatorDegreeEnrollmentController::class, 'enroll'])->name('degree-students.enroll');
+            Route::delete('degree-students/{student}/unenroll', [CoordinatorDegreeEnrollmentController::class, 'unenroll'])->name('degree-students.unenroll');
         });
 
     Route::middleware(['auth:sanctum', 'verified'])
