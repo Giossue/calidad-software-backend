@@ -45,6 +45,15 @@ class ApproveDegreeTopic
 
             $this->syncPeers->handle($topic, $peerIds);
 
+            \App\Models\FichaSeguimiento::query()->firstOrCreate(
+                ['fk_tema_tit' => $topic->getKey()],
+                [
+                    'fecha_apertura' => now()->toDateString(),
+                    'porcentaje_avance' => 0.00,
+                    'estado' => 'en_progreso',
+                ]
+            );
+
             return $topic->load(TemaTitulacion::REVIEW_RELATIONS);
         });
     }

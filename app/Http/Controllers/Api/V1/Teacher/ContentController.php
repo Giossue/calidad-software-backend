@@ -44,6 +44,13 @@ class ContentController extends Controller
         return TopicResource::make($action->topic($request->user(), $tutoring, $request->validated(), $topic));
     }
 
+    public function toggleCovered(TeacherMutationRequest $request, AsignaturaTutoria $tutoring, Tema $topic, ManageContent $action): TopicResource
+    {
+        $isCovered = $request->has('is_covered') ? $request->boolean('is_covered') : null;
+
+        return TopicResource::make($action->toggleCovered($request->user(), $tutoring, $topic, $isCovered));
+    }
+
     public function deactivateTopic(TeacherMutationRequest $request, AsignaturaTutoria $tutoring, Tema $topic, ManageContent $action): TopicResource
     {
         return TopicResource::make($action->deactivate($request->user(), $tutoring, $topic)->load('actividades.metodologias'));

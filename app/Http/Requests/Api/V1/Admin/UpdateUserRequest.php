@@ -37,6 +37,8 @@ class UpdateUserRequest extends FormRequest
             ],
             'phone' => ['sometimes', 'digits:10'],
             'role' => ['sometimes', Rule::in(Role::query()->pluck('slug'))],
+            'faculty_id' => ['nullable', 'integer', Rule::exists('facultad', 'id_facultad')],
+            'career_id' => ['nullable', 'integer', Rule::exists('carrera', 'id_carrera')],
             'password' => ['sometimes', 'string', Password::default(), 'confirmed'],
         ];
     }
@@ -50,6 +52,8 @@ class UpdateUserRequest extends FormRequest
             'email' => 'correo electrónico',
             'phone' => 'teléfono',
             'role' => 'rol',
+            'faculty_id' => 'facultad',
+            'career_id' => 'carrera',
             'password' => 'contraseña',
         ];
     }

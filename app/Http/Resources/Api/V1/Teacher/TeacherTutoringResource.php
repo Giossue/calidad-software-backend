@@ -14,10 +14,10 @@ class TeacherTutoringResource extends TutoringResource
     public function toArray(Request $request): array
     {
         return [...parent::toArray($request),
-            'career_name' => $this->ciclo->carrera->nombre,
-            'period_start_date' => $this->periodo->fecha_inicio->toDateString(),
-            'period_end_date' => $this->periodo->fecha_fin->toDateString(),
-            'can_manage' => $request->user()->can('teach', $this->resource),
+            'career_name' => $this->ciclo?->carrera?->nombre ?? '',
+            'period_start_date' => $this->periodo?->fecha_inicio?->toDateString() ?? '',
+            'period_end_date' => $this->periodo?->fecha_fin?->toDateString() ?? '',
+            'can_manage' => (bool) $request->user()?->can('teach', $this->resource),
             'active_enrollment_count' => $this->active_enrollment_count,
             'schedules' => TutoringScheduleResource::collection($this->whenLoaded('horarios')),
         ];

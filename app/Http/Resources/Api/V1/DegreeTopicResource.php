@@ -65,6 +65,25 @@ class DegreeTopicResource extends JsonResource
                     'email' => $obs->coordinador->correo,
                 ] : null,
             ]),
+            'tracking' => $this->fichaSeguimiento ? [
+                'id' => $this->fichaSeguimiento->getKey(),
+                'opened_at' => $this->fichaSeguimiento->fecha_apertura?->toDateString(),
+                'progress_percentage' => (float) $this->fichaSeguimiento->porcentaje_avance,
+                'status' => $this->fichaSeguimiento->estado,
+                'activities' => $this->fichaSeguimiento->actividades->map(fn ($act) => [
+                    'id' => $act->getKey(),
+                    'description' => $act->descripcion,
+                    'is_completed' => (bool) $act->completada,
+                    'registered_at' => $act->fecha_registro?->toDateString(),
+                    'teacher' => $act->docente ? [
+                        'id' => $act->docente->getKey(),
+                        'name' => $act->docente->nombre,
+                        'email' => $act->docente->correo,
+                        'role' => $this->activeAssignments->firstWhere('fk_id_usuario', $act->docente->getKey())?->rol
+                            ?? $this->asignaciones->firstWhere('fk_id_usuario', $act->docente->getKey())?->rol,
+                    ] : null,
+                ]),
+            ] : null,
         ];
     }
 }

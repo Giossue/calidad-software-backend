@@ -18,23 +18,75 @@ class ManageTutoring
 {
     public function __construct(private TutoringCoordinatorAccess $access) {}
 
-    /** @param array{subject_id: int, cycle_id: int, period_id: int, modality_id: int} $data */
+    /** @param array{subject_id: int, cycle_id: int, period_id: int, modality_id: int, parallel_ids?: array<int>|null, parallel_id?: int|null} $data */
     public function create(Usuario $user, array $data): AsignaturaTutoria
     {
         return $this->save(function () use ($user, $data): AsignaturaTutoria {
             $subject = Subject::query()->whereKey($data['subject_id'])->firstOrFail();
-            $cycle = Ciclo::query()->whereKey($data['cycle_id'])->lockForUpdate()->firstOrFail();
-            $this->access->authorizeCareer($user, $cycle->fk_carrera);
-            $this->validatePlacement($subject, $cycle, $data['period_id'], $data['modality_id']);
-            $this->assertUnique($subject->getKey(), $cycle->getKey(), $data['period_id']);
-            $this->linkPeriod($cycle, $data['period_id']);
+            $baseCycle = Ciclo::query()->whereKey($data['cycle_id'])->lockForUpdate()->firstOrFail();
+            $this->access->authorizeCareer($user, $baseCycle->fk_carrera);
+
+            $targetParallelIds = [];
+            if (! empty($data['parallel_ids']) && is_array($data['parallel_ids'])) {
+                foreach ($data['parallel_ids'] as $pid) {
+                    if ($pid) {
+                        $targetParallelIds[] = (int) $pid;
+                    }
+                }
+            } elseif (! empty($data['parallel_id'])) {
+                $targetParallelIds[] = (int) $data['parallel_id'];
+            }
+
+            $targetParallelIds = array_values(array_unique($targetParallelIds));
+
+            if (! empty($targetParallelIds)) {
+                $created = [];
+                foreach ($targetParallelIds as $parallelId) {
+                    $targetCycle = Ciclo::query()->firstOrCreate(
+                        [
+                            'fk_carrera' => $baseCycle->fk_carrera,
+                            'numero' => $baseCycle->numero,
+                            'fk_paralelo' => $parallelId,
+                        ],
+                        [
+                            'nombre' => $baseCycle->nombre,
+                            'estado' => true,
+                        ]
+                    );
+
+                    if (! $subject->cycles()->whereKey($targetCycle->getKey())->exists()) {
+                        $subject->cycles()->syncWithoutDetaching([$targetCycle->getKey()]);
+                    }
+
+                    $this->validatePlacement($subject, $targetCycle, $data['period_id'], $data['modality_id']);
+                    $this->assertUnique($subject->getKey(), $targetCycle->getKey(), $data['period_id']);
+                    $this->linkPeriod($targetCycle, $data['period_id']);
+
+                    $created[] = AsignaturaTutoria::query()->create([
+                        'subject_id' => $subject->getKey(),
+                        'fk_ciclo' => $targetCycle->getKey(),
+                        'fk_periodo' => $data['period_id'],
+                        'fk_modalidad' => $data['modality_id'],
+                        'fk_paralelo' => $targetCycle->fk_paralelo,
+                        'fk_docente' => null,
+                        'nombre' => $subject->name,
+                        'estado' => true,
+                    ]);
+                }
+
+                return $created[0];
+            }
+
+            $this->validatePlacement($subject, $baseCycle, $data['period_id'], $data['modality_id']);
+            $this->assertUnique($subject->getKey(), $baseCycle->getKey(), $data['period_id']);
+            $this->linkPeriod($baseCycle, $data['period_id']);
 
             return AsignaturaTutoria::query()->create([
                 'subject_id' => $subject->getKey(),
-                'fk_ciclo' => $cycle->getKey(),
+                'fk_ciclo' => $baseCycle->getKey(),
                 'fk_periodo' => $data['period_id'],
                 'fk_modalidad' => $data['modality_id'],
-                'fk_paralelo' => $cycle->fk_paralelo,
+                'fk_paralelo' => $baseCycle->fk_paralelo,
                 'fk_docente' => null,
                 'nombre' => $subject->name,
                 'estado' => true,

@@ -3,8 +3,9 @@
 namespace Tests\Feature\Api\V1\Student;
 
 use App\Models\AsignaturaTutoria;
+use App\Models\Carrera;
 use App\Models\Ciclo;
-use App\Models\Horario;
+use App\Models\Facultad;
 use App\Models\InscripcionTutoria;
 use App\Models\MetricaConocimiento;
 use App\Models\Modalidad;
@@ -49,12 +50,12 @@ class StudentTutoringGradesTest extends TestCase
             'estado' => true,
         ]);
 
-        $faculty = \App\Models\Facultad::query()->create([
+        $faculty = Facultad::query()->create([
             'nombre' => 'Facultad de Ingeniería',
             'estado' => true,
         ]);
 
-        $career = \App\Models\Carrera::query()->create([
+        $career = Carrera::query()->create([
             'nombre' => 'Ingeniería de Software',
             'fk_facultad' => $faculty->getKey(),
             'estado' => true,

@@ -20,6 +20,11 @@ class TutoringReportResource extends JsonResource
             'generated_at' => $this->fecha_generacion->toISOString(),
             'content' => $this->content,
             'summary' => $this->summary,
+            'tutoring_id' => $this->fk_asig_tutoria,
+            'subject_name' => $this->whenLoaded('asignaturaTutoria', fn () => $this->asignaturaTutoria->nombre),
+            'career_name' => $this->whenLoaded('asignaturaTutoria', fn () => $this->asignaturaTutoria->ciclo?->carrera?->nombre),
+            'cycle_name' => $this->whenLoaded('asignaturaTutoria', fn () => $this->asignaturaTutoria->ciclo?->nombre),
+            'section_name' => $this->whenLoaded('asignaturaTutoria', fn () => $this->asignaturaTutoria->paralelo?->nombre),
         ];
     }
 }

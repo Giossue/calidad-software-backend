@@ -304,4 +304,60 @@ class UserManagementTest extends TestCase
         $this->postJson('/api/v1/users', [])->assertUnauthorized();
         $this->postJson('/api/v1/faculties', [])->assertUnauthorized();
     }
+
+    public function test_admin_can_register_user_with_faculty_and_career(): void
+    {
+        Notification::fake();
+        $faculty = \App\Models\Facultad::query()->create(["nombre" => "Facultad Prueba " . uniqid(), "estado" => true]);
+        $career = \App\Models\Carrera::query()->create(["nombre" => "Carrera Prueba " . uniqid(), "fk_facultad" => $faculty->getKey(), "estado" => true]);
+
+        $response = $this->postJson("/api/v1/users", [
+            "identification" => "0926687856",
+            "name" => "Docente Carrera",
+            "email" => "docente_carrera@example.com",
+            "phone" => "0991234567",
+            "role" => "docente",
+            "faculty_id" => $faculty->getKey(),
+            "career_id" => $career->getKey(),
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath("data.career_id", $career->getKey())
+            ->assertJsonPath("data.career_name", $career->nombre)
+            ->assertJsonPath("data.faculty_id", $faculty->getKey())
+            ->assertJsonPath("data.faculty_name", $faculty->nombre);
+
+        $this->assertDatabaseHas("usuario", [
+            "correo" => "docente_carrera@example.com",
+            "fk_carrera" => $career->getKey(),
+        ]);
+
+        $createdUser = Usuario::where("correo", "docente_carrera@example.com")->firstOrFail();
+        $this->assertTrue($createdUser->teachingCareers()->where("carrera.id_carrera", $career->getKey())->exists());
+    }
+
+    public function test_admin_role_does_not_persist_career(): void
+    {
+        Notification::fake();
+        $faculty = \App\Models\Facultad::query()->create(["nombre" => "Facultad Prueba " . uniqid(), "estado" => true]);
+        $career = \App\Models\Carrera::query()->create(["nombre" => "Carrera Prueba " . uniqid(), "fk_facultad" => $faculty->getKey(), "estado" => true]);
+
+        $response = $this->postJson("/api/v1/users", [
+            "identification" => "0926687856",
+            "name" => "Admin Sistema",
+            "email" => "nuevo_admin@example.com",
+            "phone" => "0991234567",
+            "role" => "administrador",
+            "faculty_id" => $faculty->getKey(),
+            "career_id" => $career->getKey(),
+        ]);
+
+        $response->assertCreated()
+            ->assertJsonPath("data.career_id", null);
+
+        $this->assertDatabaseHas("usuario", [
+            "correo" => "nuevo_admin@example.com",
+            "fk_carrera" => null,
+        ]);
+    }
 }

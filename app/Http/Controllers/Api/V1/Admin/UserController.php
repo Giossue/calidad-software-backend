@@ -25,7 +25,12 @@ class UserController extends Controller
     {
         Gate::authorize('viewAny', Usuario::class);
 
-        $query = Usuario::query()->with('roles', 'coordinatedCareers');
+        $query = Usuario::query()->with([
+            'roles',
+            'carrera.facultad',
+            'coordinatedCareers.facultad',
+            'teachingCareers.facultad',
+        ]);
 
         if ($search = trim((string) $request->string('search'))) {
             $query->where(function (Builder $inner) use ($search) {
@@ -55,6 +60,9 @@ class UserController extends Controller
         $provisionalPassword = Str::password(20, true, true, true, false);
 
         $user = DB::transaction(function () use ($request, $provisionalPassword): Usuario {
+            $roleSlug = $request->validated('role');
+            $careerId = $roleSlug !== 'administrador' ? $request->validated('career_id') : null;
+
             $user = Usuario::query()->create([
                 'cedula' => $request->validated('identification'),
                 'nombre' => $request->validated('name'),
@@ -63,16 +71,25 @@ class UserController extends Controller
                 'password_hash' => Hash::make($provisionalPassword),
                 'estado' => true,
                 'email_verified_at' => now(),
+                'fk_carrera' => $careerId,
             ])->refresh();
 
-            $user->roles()->sync(Role::query()->where('slug', $request->validated('role'))->value('id'));
+            $user->roles()->sync(Role::query()->where('slug', $roleSlug)->value('id'));
+
+            if ($careerId) {
+                if ($roleSlug === 'coordinador_carrera') {
+                    $user->coordinatedCareers()->syncWithoutDetaching([$careerId => ['assigned_at' => now()]]);
+                } elseif ($roleSlug === 'docente') {
+                    $user->teachingCareers()->syncWithoutDetaching([$careerId => ['assigned_at' => now()]]);
+                }
+            }
 
             $user->notify(new ProvisionalPasswordNotification($provisionalPassword));
 
             return $user;
         });
 
-        $user->load('roles');
+        $user->load(['roles', 'carrera.facultad', 'coordinatedCareers.facultad', 'teachingCareers.facultad']);
 
         return response()->json([
             'data' => new UserResource($user),
@@ -97,14 +114,31 @@ class UserController extends Controller
             }
         }
 
+        $roleSlug = $request->exists('role') ? $request->validated('role') : $user->roles->first()?->slug;
+
+        if ($roleSlug === 'administrador') {
+            $attributes['fk_carrera'] = null;
+        } elseif ($request->exists('career_id')) {
+            $attributes['fk_carrera'] = $request->validated('career_id');
+        }
+
         $user->fill($attributes)->save();
 
         if ($request->exists('role')) {
-            $user->roles()->sync(Role::query()->where('slug', $request->validated('role'))->value('id'));
+            $user->roles()->sync(Role::query()->where('slug', $roleSlug)->value('id'));
+        }
+
+        $careerId = $user->fk_carrera;
+        if ($careerId) {
+            if ($roleSlug === 'coordinador_carrera') {
+                $user->coordinatedCareers()->syncWithoutDetaching([$careerId => ['assigned_at' => now()]]);
+            } elseif ($roleSlug === 'docente') {
+                $user->teachingCareers()->syncWithoutDetaching([$careerId => ['assigned_at' => now()]]);
+            }
         }
 
         return response()->json([
-            'data' => new UserResource($user->load('roles')),
+            'data' => new UserResource($user->load(['roles', 'carrera.facultad', 'coordinatedCareers.facultad', 'teachingCareers.facultad'])),
         ]);
     }
 

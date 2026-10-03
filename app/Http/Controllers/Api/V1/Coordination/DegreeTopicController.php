@@ -206,4 +206,197 @@ class DegreeTopicController extends Controller
             ->response()
             ->setStatusCode(Response::HTTP_CREATED);
     }
+
+    /**
+     * Registra una actividad de avance en la ficha de seguimiento del tema.
+     */
+    public function storeActivity(Request $request, TemaTitulacion $topic): JsonResponse
+    {
+        Gate::authorize('viewAny', TemaTitulacion::class);
+
+        $request->validate([
+            'descripcion' => ['required', 'string', 'max:1000'],
+            'completada' => ['nullable', 'boolean'],
+            'docente_id' => ['nullable', 'integer', 'exists:usuario,id_usuario'],
+        ]);
+
+        $ficha = \App\Models\FichaSeguimiento::query()->firstOrCreate(
+            ['fk_tema_tit' => $topic->getKey()],
+            ['fecha_apertura' => now()->toDateString(), 'porcentaje_avance' => 0.00, 'estado' => 'en_progreso']
+        );
+
+        $activity = \App\Models\ActividadAvance::query()->create([
+            'fk_ficha' => $ficha->getKey(),
+            'fk_docente' => $request->integer('docente_id') ?: $topic->activeAssignments()->where('rol', 'tutor')->value('fk_id_usuario'),
+            'descripcion' => $request->string('descripcion')->value(),
+            'completada' => $request->boolean('completada'),
+            'fecha_registro' => now()->toDateString(),
+        ]);
+
+        // Auto-recalculate progress
+        $total = $ficha->actividades()->count();
+        $done = $ficha->actividades()->where('completada', true)->count();
+        if ($total > 0) {
+            $ficha->update(['porcentaje_avance' => round(($done / $total) * 100, 2)]);
+        }
+
+        return response()->json([
+            'message' => 'Actividad registrada exitosamente.',
+            'data' => [
+                'id' => $activity->getKey(),
+                'description' => $activity->descripcion,
+                'is_completed' => (bool) $activity->completada,
+                'registered_at' => $activity->fecha_registro?->toDateString(),
+                'progress_percentage' => (float) $ficha->fresh()->porcentaje_avance,
+            ],
+        ], Response::HTTP_CREATED);
+    }
+
+    /**
+     * Alterna o actualiza el estado de una actividad de avance y recalcula el progreso.
+     */
+    public function toggleActivity(Request $request, TemaTitulacion $topic, \App\Models\ActividadAvance $activity): JsonResponse
+    {
+        Gate::authorize('viewAny', TemaTitulacion::class);
+
+        $ficha = $topic->fichaSeguimiento ?: \App\Models\FichaSeguimiento::query()->firstOrCreate(
+            ['fk_tema_tit' => $topic->getKey()],
+            ['fecha_apertura' => now()->toDateString(), 'porcentaje_avance' => 0.00, 'estado' => 'en_progreso']
+        );
+
+        $activity->update([
+            'completada' => $request->has('completada') ? $request->boolean('completada') : ! $activity->completada,
+        ]);
+
+        $total = $ficha->actividades()->count();
+        $done = $ficha->actividades()->where('completada', true)->count();
+        $progress = $total > 0 ? round(($done / $total) * 100, 2) : 0.00;
+        $ficha->update(['porcentaje_avance' => $progress]);
+
+        return response()->json([
+            'message' => 'Estado de actividad actualizado.',
+            'data' => [
+                'id' => $activity->getKey(),
+                'is_completed' => (bool) $activity->completada,
+                'progress_percentage' => (float) $ficha->fresh()->porcentaje_avance,
+            ],
+        ]);
+    }
+
+    /**
+     * Actualiza directamente el porcentaje de avance de la ficha de seguimiento.
+     */
+    public function updateProgress(Request $request, TemaTitulacion $topic): JsonResponse
+    {
+        Gate::authorize('viewAny', TemaTitulacion::class);
+
+        $request->validate([
+            'porcentaje_avance' => ['required', 'numeric', 'min:0', 'max:100'],
+            'estado' => ['nullable', 'string', 'max:50'],
+        ]);
+
+        $ficha = \App\Models\FichaSeguimiento::query()->firstOrCreate(
+            ['fk_tema_tit' => $topic->getKey()],
+            ['fecha_apertura' => now()->toDateString(), 'porcentaje_avance' => 0.00, 'estado' => 'en_progreso']
+        );
+
+        $ficha->update([
+            'porcentaje_avance' => $request->float('porcentaje_avance'),
+            'estado' => $request->input('estado', $ficha->estado),
+        ]);
+
+        return response()->json([
+            'message' => 'Avance actualizado exitosamente.',
+            'data' => [
+                'id' => $ficha->getKey(),
+                'progress_percentage' => (float) $ficha->porcentaje_avance,
+                'status' => $ficha->estado,
+            ],
+        ]);
+    }
+
+    /**
+     * Registra un informe de titulación asociado a la ficha de seguimiento.
+     */
+    public function storeReport(Request $request, TemaTitulacion $topic): JsonResponse
+    {
+        Gate::authorize('viewAny', TemaTitulacion::class);
+
+        $request->validate([
+            'observaciones_finales' => ['required', 'string', 'max:2000'],
+        ]);
+
+        $ficha = \App\Models\FichaSeguimiento::query()->firstOrCreate(
+            ['fk_tema_tit' => $topic->getKey()],
+            ['fecha_apertura' => now()->toDateString(), 'porcentaje_avance' => 0.00, 'estado' => 'en_progreso']
+        );
+
+        $report = \App\Models\InformeTitulacion::query()->create([
+            'fk_ficha' => $ficha->getKey(),
+            'fk_coord_tit' => $request->user()->getKey(),
+            'fecha_generacion' => now()->toDateString(),
+            'observaciones_finales' => $request->string('observaciones_finales')->value(),
+            'estado' => true,
+        ]);
+
+        return response()->json([
+            'message' => 'Informe de titulación generado exitosamente.',
+            'data' => [
+                'id' => $report->getKey(),
+                'topic_id' => $topic->getKey(),
+                'topic_title' => $topic->titulo,
+                'student_name' => $topic->estudiante?->nombre,
+                'generated_at' => $report->fecha_generacion?->toDateString(),
+                'final_observations' => $report->observaciones_finales,
+                'progress_percentage' => (float) $ficha->porcentaje_avance,
+            ],
+        ], Response::HTTP_CREATED);
+    }
+
+    /**
+     * Lista todos los informes de titulación generados para la coordinación.
+     */
+    public function reports(Request $request): JsonResponse
+    {
+        Gate::authorize('viewAny', TemaTitulacion::class);
+
+        $query = \App\Models\InformeTitulacion::query()
+            ->with(['ficha.temaTitulacion.estudiante', 'ficha.temaTitulacion.periodo', 'coordinador'])
+            ->where('estado', true);
+
+        if ($search = trim((string) $request->string('search'))) {
+            $like = "%{$search}%";
+            $query->where(function (Builder $q) use ($like) {
+                $q->whereLike('observaciones_finales', $like)
+                    ->orWhereHas('ficha.temaTitulacion', fn (Builder $q2) => $q2->whereLike('titulo', $like)->orWhereHas('estudiante', fn (Builder $q3) => $q3->whereLike('nombre', $like)->orWhereLike('cedula', $like)));
+            });
+        }
+
+        $reports = $query->orderByDesc('fecha_generacion')->orderByDesc('id_informe')->paginate($request->integer('per_page', 15));
+
+        return response()->json([
+            'data' => collect($reports->items())->map(function (\App\Models\InformeTitulacion $rep) {
+                $topic = $rep->ficha?->temaTitulacion;
+
+                return [
+                    'id' => $rep->getKey(),
+                    'topic_id' => $topic?->getKey(),
+                    'topic_title' => $topic?->titulo ?? 'Tema no asignado',
+                    'student_name' => $topic?->estudiante?->nombre ?? 'Estudiante no registrado',
+                    'student_identification' => $topic?->estudiante?->cedula ?? '',
+                    'coordinator_name' => $rep->coordinador?->nombre ?? '',
+                    'generated_at' => $rep->fecha_generacion?->toDateString(),
+                    'final_observations' => $rep->observaciones_finales,
+                    'progress_percentage' => (float) ($rep->ficha?->porcentaje_avance ?? 0),
+                    'period_name' => $topic?->periodo?->nombre ?? '',
+                ];
+            }),
+            'meta' => [
+                'current_page' => $reports->currentPage(),
+                'last_page' => $reports->lastPage(),
+                'per_page' => $reports->perPage(),
+                'total' => $reports->total(),
+            ],
+        ]);
+    }
 }

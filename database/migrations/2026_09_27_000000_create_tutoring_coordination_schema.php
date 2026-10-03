@@ -12,7 +12,7 @@ return new class extends Migration
         Schema::create('subjects', function (Blueprint $table): void {
             $table->increments('id');
             $table->unsignedInteger('career_id');
-            $table->string('code', 30);
+            $table->string('code', 30)->nullable();
             $table->string('name', 150);
             $table->boolean('is_active')->default(true);
             $table->timestampsTz();

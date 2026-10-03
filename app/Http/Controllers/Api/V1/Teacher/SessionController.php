@@ -30,7 +30,7 @@ class SessionController extends Controller
 
     public function index(TeacherListRequest $request, AsignaturaTutoria $tutoring): AnonymousResourceCollection
     {
-        $query = TutoringSession::query()->where('tutoring_id', $tutoring->getKey())->with('topics', 'attendance.estudiante');
+        $query = TutoringSession::query()->where('tutoring_id', $tutoring->getKey())->with('topics.actividades.metodologias', 'attendance.estudiante');
         if ($request->filled('date')) {
             $query->whereDate('date', $request->input('date'));
         }
@@ -41,5 +41,27 @@ class SessionController extends Controller
     public function store(SessionRequest $request, AsignaturaTutoria $tutoring, SaveSession $action): JsonResponse
     {
         return SessionResource::make($action->execute($request->user(), $tutoring, $request->sessionData()))->response()->setStatusCode(200);
+    }
+
+    public function updateTopics(\Illuminate\Http\Request $request, AsignaturaTutoria $tutoring, TutoringSession $session): SessionResource
+    {
+        if ($session->tutoring_id !== $tutoring->getKey()) {
+            abort(404, 'La sesión no pertenece a la tutoría.');
+        }
+
+        $validated = $request->validate([
+            'topic_ids' => ['present', 'array'],
+            'topic_ids.*' => ['integer', \Illuminate\Validation\Rule::exists('tema', 'id_tema')->where('fk_asig_tutoria', $tutoring->getKey())],
+        ]);
+
+        $topicIds = $validated['topic_ids'];
+        $session->topics()->sync($topicIds);
+        $session->update(['topics_covered' => count($topicIds) > 0]);
+
+        if (! empty($topicIds)) {
+            \App\Models\Tema::query()->whereIn('id_tema', $topicIds)->update(['visto' => true]);
+        }
+
+        return SessionResource::make($session->load('topics.actividades.metodologias', 'attendance.estudiante'));
     }
 }

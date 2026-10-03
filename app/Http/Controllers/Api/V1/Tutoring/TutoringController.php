@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Gate;
 
 class TutoringController extends Controller
 {
-    private const RELATIONS = ['ciclo', 'periodo', 'modalidad', 'paralelo', 'docente'];
+    private const RELATIONS = ['ciclo', 'periodo', 'modalidad', 'paralelo', 'docente', 'horarios', 'subject'];
 
     public function index(Request $request, TutoringCoordinatorAccess $access): AnonymousResourceCollection
     {
@@ -50,6 +50,8 @@ class TutoringController extends Controller
         return TutoringResource::make($action->create($request->user(), [
             'subject_id' => $request->integer('subject_id'),
             'cycle_id' => $request->integer('cycle_id'),
+            'parallel_ids' => $request->input('parallel_ids'),
+            'parallel_id' => $request->integer('parallel_id') ?: null,
             'period_id' => $request->integer('period_id'),
             'modality_id' => $request->integer('modality_id'),
         ])->load(self::RELATIONS))

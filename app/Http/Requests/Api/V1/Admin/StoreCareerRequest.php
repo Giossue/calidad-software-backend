@@ -29,9 +29,7 @@ class StoreCareerRequest extends FormRequest
                 'required',
                 'string',
                 'max:150',
-                Rule::unique('carrera', 'nombre')->where(
-                    fn (Builder $query): Builder => $query->where('fk_facultad', $this->integer('faculty_id')),
-                ),
+                Rule::unique('carrera', 'nombre'),
             ],
             'cycles_count' => ['nullable', 'integer', 'min:0', 'max:12'],
             'modality_id' => [
@@ -52,6 +50,14 @@ class StoreCareerRequest extends FormRequest
             'name' => 'nombre de la carrera',
             'modality_id' => 'modalidad',
             'cycles_count' => 'cantidad de ciclos',
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function messages(): array
+    {
+        return [
+            'name.unique' => 'Ya existe una carrera con este nombre en el sistema. El nombre de la carrera es único institucionalmente.',
         ];
     }
 }

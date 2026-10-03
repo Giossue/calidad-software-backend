@@ -7,6 +7,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -31,7 +32,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['cedula', 'nombre', 'correo', 'telefono', 'password_hash', 'estado', 'email_verified_at'])]
+#[Fillable(['cedula', 'nombre', 'correo', 'telefono', 'password_hash', 'estado', 'fk_carrera', 'email_verified_at'])]
 #[Hidden(['password_hash', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class Usuario extends Authenticatable implements MustVerifyEmail
 {
@@ -69,6 +70,12 @@ class Usuario extends Authenticatable implements MustVerifyEmail
     {
         return $this->belongsToMany(Role::class, 'role_user', 'user_id', 'role_id', 'id_usuario', 'id')
             ->withPivot('assigned_at');
+    }
+
+    /** @return BelongsTo<Carrera, $this> */
+    public function carrera(): BelongsTo
+    {
+        return $this->belongsTo(Carrera::class, 'fk_carrera', 'id_carrera');
     }
 
     /** @return BelongsToMany<Carrera, $this> */
@@ -157,6 +164,14 @@ class Usuario extends Authenticatable implements MustVerifyEmail
     public function asignacionesDocente(): HasMany
     {
         return $this->hasMany(AsignacionDocente::class, 'fk_id_usuario');
+    }
+
+    /**
+     * @return HasMany<MatriculaTitulacion, $this>
+     */
+    public function matriculasTitulacion(): HasMany
+    {
+        return $this->hasMany(MatriculaTitulacion::class, 'fk_estudiante');
     }
 
     /**

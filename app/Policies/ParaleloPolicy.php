@@ -9,12 +9,12 @@ class ParaleloPolicy
 {
     public function viewAny(Usuario $user): bool
     {
-        return $user->hasRole('administrador');
+        return $user->hasRole('administrador') || $user->hasRole('coordinador_carrera');
     }
 
     public function create(Usuario $user): bool
     {
-        return $user->hasRole('administrador');
+        return $user->hasRole('administrador') || $user->hasRole('coordinador_carrera');
     }
 
     public function update(Usuario $user, Paralelo $paralelo): bool
