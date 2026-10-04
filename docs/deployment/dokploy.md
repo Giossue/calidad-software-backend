@@ -36,7 +36,7 @@ DB_CONNECTION=pgsql
 DB_HOST=internal-postgres-host
 DB_PORT=5432
 DB_DATABASE=calidad_software
-DB_USERNAME=calidad_software
+DB_USERNAME=calidad_software_app
 DB_PASSWORD=replace-with-a-secret
 
 CACHE_STORE=file
@@ -59,17 +59,44 @@ esa clave después de habilitar 2FA: protege secretos y códigos cifrados.
 
 `CORS_ALLOWED_ORIGINS` admite varios orígenes separados por comas, pero nunca
 debe contener `*` en producción. `FRONTEND_URL` se usa para enlaces enviados por
-correo. Las credenciales solo pertenecen a Environment Settings.
+correo. Las credenciales de la aplicación desplegada se configuran en
+Environment Settings; las credenciales administrativas locales se leen desde
+`/home/giossue/.pgpass`.
 
 ## Migraciones
 
-El entrypoint no modifica la base. Después de verificar un backup ejecuta una
-sola vez desde **Advanced → Run Command**:
+El entrypoint no modifica la base. El método habitual para migrar producción es
+ejecutar Artisan local con las credenciales de `/home/giossue/.pgpass`. Dokploy
+es el contexto de hosting: no es obligatorio acceder por SSH ni ejecutar dentro
+de su contenedor. Cuando el usuario pide aplicar migraciones, esta vía ya está
+autorizada y no requiere otra confirmación sobre el método.
 
-```bash
-php artisan migrate:status
-php artisan migrate --force
-```
+La base objetivo es `calidad_software`, en `187.127.6.234:8004`. La entrada
+administrativa registrada en `.pgpass` para ese endpoint, `central-db` y
+`admin_root` permite acceder a `calidad_software`; el nombre de base de la entrada
+no cambia el objetivo de la operación.
+
+Usa un runner local que cargue Laravel y siga este procedimiento:
+
+1. Leer la credencial administrativa de `.pgpass` y configurar en memoria una
+   conexión PostgreSQL con endpoint, base y rol explícitos. Evitar que `DB_URL`,
+   valores de `.env` o la caché de configuración sustituyan esa conexión. Nunca
+   mostrar ni copiar la contraseña, ni pasarla en argumentos, guardarla en
+   archivos nuevos o incorporarla al repositorio.
+2. Comprobar el endpoint efectivo y consultar `current_database()`,
+   `current_user`, `inet_server_addr()` e `inet_server_port()` antes de afirmar
+   que se está conectado a producción.
+3. Crear un respaldo completo y verificar su lectura antes de cualquier cambio.
+   Revisar el lote pendiente y las incompatibilidades de datos o de esquema.
+4. Corregir la propiedad de los objetos que lo requieran con la cuenta
+   administrativa y ejecutar las migraciones de Laravel bajo
+   `calidad_software_app`, usando el runner con el objetivo ya comprobado.
+   Ejecutar `migrate:status`, `migrate` con `--force` y nuevamente `migrate:status`
+   desde esa conexión explícita; no usar un comando Artisan aislado que pueda
+   tomar valores predeterminados como `127.0.0.1`.
+5. Verificar que no quedan pendientes, que se conservaron los datos y que el rol
+   de la API tiene la propiedad y los permisos necesarios sobre tablas y
+   secuencias creadas o modificadas. Comprobar también la salud de la API.
 
 La API usa tokens Bearer, por lo que las sesiones y la caché no requieren tablas
 PostgreSQL. Mientras no exista un worker de colas administrado, usa `sync`.
@@ -77,11 +104,9 @@ PostgreSQL. Mientras no exista un worker de colas administrado, usa `sync`.
 No uses `migrate:fresh`, `db:wipe`, seeders de demostración ni rollback automático
 en producción.
 
-Ejecuta las migraciones con la conexión y el rol PostgreSQL configurados para
-la aplicación. Si una operación excepcional autorizada usa un rol
-administrativo distinto, comprueba después los permisos del rol de la API
-sobre las tablas y secuencias nuevas. Un `migrate:status` correcto no acredita
-que ese rol pueda leer o escribir los objetos creados por otro propietario.
+Un `migrate:status` correcto no acredita que el rol de la API pueda leer o
+escribir objetos de otro propietario. Comprueba los privilegios reales y el
+uso de secuencias con `calidad_software_app`.
 
 ## Comprobación
 

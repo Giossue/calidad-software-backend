@@ -20,6 +20,28 @@ de identidad.
 - No habilites passkeys hasta implementar y probar el desafío WebAuthn específico
   para el origen del frontend desplegado en otro dominio raíz.
 
+## PostgreSQL y migraciones de producción
+
+- El método habitual es Artisan local con las credenciales administrativas de
+  `/home/giossue/.pgpass`, leídas y usadas solo en memoria. Nunca mostrar,
+  copiar ni versionar credenciales, ni incluirlas en argumentos o archivos nuevos.
+- La base objetivo es `calidad_software`, en `187.127.6.234:8004`. La entrada
+  administrativa de `.pgpass` para `central-db` y `admin_root` permite acceder a
+  esa base; el runner debe seleccionar explícitamente `calidad_software`.
+- Antes de ejecutar, verificar el endpoint efectivo, la base y el rol mediante
+  la conexión real. No asumir que `127.0.0.1`, `.env.example` o una configuración
+  Laravel cacheada corresponden a producción.
+- Verificar un respaldo antes de aplicar. Usar un runner local que configure la
+  conexión explícita en memoria, compruebe el objetivo y ejecute Artisan con el
+  rol `calidad_software_app`; corregir la propiedad administrativa necesaria y
+  comprobar después propietarios, permisos de tablas y uso de secuencias para
+  el rol de la API. Seguir `docs/deployment/dokploy.md`.
+- Dokploy describe el hosting. No exige SSH ni ejecutar migraciones dentro del
+  contenedor. Si el usuario pide aplicar migraciones, usar `.pgpass` sin solicitar
+  otra confirmación sobre la vía de ejecución.
+- No ejecutar `migrate:fresh`, `db:wipe`, seeders de demostración ni rollbacks
+  automáticos en producción.
+
 ## Verificación
 
 ```bash
