@@ -45,4 +45,14 @@ class StoreUserRequest extends FormRequest
             'career_id' => 'carrera',
         ];
     }
+
+    /** @return array<string, string> */
+    public function messages(): array
+    {
+        return [
+            'phone.digits' => 'El teléfono debe tener exactamente 10 dígitos numéricos.',
+            'identification.digits' => 'La cédula debe tener exactamente 10 dígitos numéricos.',
+            'name.regex' => 'El nombre solo puede contener letras y espacios.',
+        ];
+    }
 }

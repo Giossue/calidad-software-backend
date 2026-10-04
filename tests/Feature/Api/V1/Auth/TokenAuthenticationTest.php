@@ -286,4 +286,44 @@ class TokenAuthenticationTest extends TestCase
 
         $this->withHeaders($headers)->getJson('/api/v1/coordination/teachers')->assertForbidden();
     }
+
+    public function test_unauthenticated_user_request_without_accept_header_returns_401(): void
+    {
+        $response = $this->get('/api/v1/auth/user');
+        $response->assertStatus(401);
+        $response->assertJson(['message' => 'No autenticado.']);
+    }
+
+    public function test_responses_include_hsts_and_security_headers(): void
+    {
+        $response = $this->postJson('/api/v1/auth/login');
+        $response->assertHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+        $response->assertHeader('X-Content-Type-Options', 'nosniff');
+        $response->assertHeader('X-Frame-Options', 'DENY');
+    }
+
+    public function test_not_found_error_does_not_leak_eloquent_model_name(): void
+    {
+        $admin = Usuario::factory()->withRole('administrador')->create();
+
+        $token = $admin->createToken('admin-web')->plainTextToken;
+        $headers = ['Authorization' => 'Bearer '.$token];
+
+        $response = $this->withHeaders($headers)->patchJson('/api/v1/faculties/999999', ['name' => 'X']);
+        $response->assertNotFound();
+        $response->assertJson(['message' => 'Recurso no encontrado.']);
+        $this->assertStringNotContainsString('App\\Models', $response->getContent());
+    }
+
+    public function test_health_check_endpoint_is_blocked_for_external_public_ips(): void
+    {
+        $response = $this->withServerVariables(['REMOTE_ADDR' => '201.218.10.5'])->get('/up');
+        $response->assertNotFound();
+    }
+
+    public function test_health_check_endpoint_is_allowed_for_internal_ips(): void
+    {
+        $response = $this->withServerVariables(['REMOTE_ADDR' => '127.0.0.1'])->get('/up');
+        $response->assertOk();
+    }
 }

@@ -20,9 +20,19 @@ class RegisterRequest extends FormRequest
     {
         return [
             ...$this->profileRules(),
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:usuario,correo', 'ends_with:@ueb.edu.ec'],
             'password' => $this->passwordRules(),
             'password_confirmation' => ['required', 'string'],
             'device_name' => ['required', 'string', 'max:100'],
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function messages(): array
+    {
+        return [
+            'email.ends_with' => 'El correo electrónico debe pertenecer al dominio institucional (@ueb.edu.ec).',
+            'identification.digits' => 'La cédula debe contener exactamente 10 dígitos numéricos.',
         ];
     }
 

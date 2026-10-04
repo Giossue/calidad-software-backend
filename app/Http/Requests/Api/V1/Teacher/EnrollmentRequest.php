@@ -43,4 +43,15 @@ class EnrollmentRequest extends TeacherMutationRequest
     {
         return ['student_id' => 'estudiante', 'identification' => 'cédula', 'name' => 'nombre', 'email' => 'correo institucional', 'phone' => 'teléfono'];
     }
+
+    /** @return array<string, string> */
+    public function messages(): array
+    {
+        return [
+            'phone.digits' => 'El teléfono debe tener exactamente 10 dígitos numéricos.',
+            'identification.digits' => 'La cédula debe tener exactamente 10 dígitos numéricos.',
+            'email.ends_with' => 'El correo institucional debe pertenecer al dominio @ueb.edu.ec.',
+            'name.regex' => 'El nombre solo puede contener letras y espacios.',
+        ];
+    }
 }

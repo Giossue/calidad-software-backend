@@ -42,7 +42,8 @@ use Laravel\Sanctum\Http\Middleware\CheckAbilities;
 
 Route::prefix('v1')->name('api.v1.')->group(function (): void {
     Route::prefix('auth')->name('auth.')->group(function (): void {
-        Route::post('register', [RegistrationController::class, 'store'])->name('register');
+        Route::post('register', [RegistrationController::class, 'store'])
+            ->middleware('throttle:3,1')->name('register');
         Route::post('login', [TokenController::class, 'store'])
             ->middleware('throttle:5,1')->name('login');
         Route::post('two-factor-challenge', [TwoFactorChallengeController::class, 'store'])
@@ -58,7 +59,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::get('user', [TokenController::class, 'show'])->name('user');
             Route::delete('logout', [TokenController::class, 'destroy'])->name('logout');
             Route::post('email/verification-notification', [EmailVerificationController::class, 'send'])
-                ->middleware('throttle:6,1')->name('verification.send');
+                ->middleware('throttle:3,1')->name('verification.send');
         });
     });
 
