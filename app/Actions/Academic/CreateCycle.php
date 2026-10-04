@@ -13,7 +13,7 @@ class CreateCycle
             'fk_carrera' => (int) $attributes['career_id'],
             'nombre' => (string) $attributes['name'],
             'numero' => (int) $attributes['number'],
-            'fk_paralelo' => isset($attributes['paralelo_id']) ? (int) $attributes['paralelo_id'] : null,
+            'fk_paralelo' => null,
             'estado' => true,
         ]);
     }

@@ -50,6 +50,8 @@ class UserController extends Controller
             'active_count' => Usuario::query()->where('estado', true)->count(),
             'inactive_count' => Usuario::query()->where('estado', false)->count(),
             'admin_count' => Usuario::query()->whereHas('roles', fn (Builder $inner) => $inner->where('slug', 'administrador'))->count(),
+            'career_coordinator_count' => Usuario::query()->whereHas('roles', fn (Builder $inner) => $inner->where('slug', 'coordinador_carrera'))->count(),
+            'degree_coordinator_count' => Usuario::query()->whereHas('roles', fn (Builder $inner) => $inner->where('slug', 'coordinador_titulacion'))->count(),
             'teacher_count' => Usuario::query()->whereHas('roles', fn (Builder $inner) => $inner->where('slug', 'docente'))->count(),
             'student_count' => Usuario::query()->whereHas('roles', fn (Builder $inner) => $inner->where('slug', 'estudiante'))->count(),
         ]]);

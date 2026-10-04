@@ -268,6 +268,8 @@ class UserManagementTest extends TestCase
         $this->assertSame(1, $response->json('meta.admin_count'));
         $this->assertSame(3, $response->json('meta.student_count'));
         $this->assertSame(0, $response->json('meta.teacher_count'));
+        $this->assertSame(0, $response->json('meta.career_coordinator_count'));
+        $this->assertSame(0, $response->json('meta.degree_coordinator_count'));
         $this->assertCount(2, $response->json('data'));
     }
 

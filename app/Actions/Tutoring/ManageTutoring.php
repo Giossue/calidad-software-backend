@@ -142,7 +142,33 @@ class ManageTutoring
             if (! $teacher->estado || ! $teacher->hasRole('docente')) {
                 throw ValidationException::withMessages(['teacher_id' => 'Selecciona un docente habilitado.']);
             }
+
+            // Validar que el docente no tenga conflicto de horario con los horarios activos de esta tutoría
+            $activeSchedules = $tutoring->horarios()->where('estado', true)->get();
+            foreach ($activeSchedules as $sched) {
+                $conflict = ManageSchedule::findTeacherScheduleConflict(
+                    $teacher->getKey(),
+                    $tutoring->fk_periodo,
+                    $sched->dia_semana,
+                    $sched->hora_inicio,
+                    $sched->hora_fin,
+                    $tutoring->getKey()
+                );
+                if ($conflict) {
+                    $materia = $conflict->asignaturaTutoria?->nombre ?? 'otra asignatura';
+                    $inicio = substr($conflict->hora_inicio, 0, 5);
+                    $fin = substr($conflict->hora_fin, 0, 5);
+                    throw ValidationException::withMessages([
+                        'teacher_id' => "El docente ya tiene asignado un horario en '{$materia}' el día {$sched->dia_semana} de {$inicio} a {$fin}.",
+                    ]);
+                }
+            }
+
             $tutoring->update(['fk_docente' => $teacher->getKey()]);
+
+            if ($tutoring->ciclo && $tutoring->ciclo->fk_carrera) {
+                $teacher->teachingCareers()->syncWithoutDetaching([$tutoring->ciclo->fk_carrera => ['assigned_at' => now()]]);
+            }
 
             return $tutoring->refresh();
         });

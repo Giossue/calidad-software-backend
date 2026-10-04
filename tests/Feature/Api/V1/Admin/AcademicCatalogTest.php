@@ -52,7 +52,7 @@ class AcademicCatalogTest extends TestCase
         $this->assertTrue($career->fresh()->estado);
     }
 
-    public function test_creating_a_career_generates_eight_cycles_in_parallel_a(): void
+    public function test_creating_a_career_generates_eight_cycles_without_parallel(): void
     {
         $this->actingAsAdministrator();
         $faculty = Facultad::query()->create(['nombre' => 'Facultad de Ingeniería', 'estado' => true]);
@@ -62,11 +62,10 @@ class AcademicCatalogTest extends TestCase
             'name' => 'Ingeniería de Software',
         ])->assertCreated()->json('data.id');
 
-        $parallel = Paralelo::query()->where('nombre', 'A')->firstOrFail();
         $cycles = Ciclo::query()->where('fk_carrera', $careerId)->orderBy('numero')->get();
 
         $this->assertSame(range(1, 8), $cycles->pluck('numero')->all());
-        $this->assertCount(8, $cycles->where('fk_paralelo', $parallel->getKey()));
+        $this->assertCount(8, $cycles->whereNull('fk_paralelo'));
         $this->assertCount(8, $cycles->where('estado', true));
         $this->assertSame('Primer ciclo', $cycles->first()->nombre);
         $this->assertSame('Octavo ciclo', $cycles->last()->nombre);
@@ -182,47 +181,28 @@ class AcademicCatalogTest extends TestCase
 
         $cycle = Ciclo::query()->findOrFail($cycleId);
 
-        // Mismo número, mismo paralelo (ninguno en este caso): rechazado, sería un duplicado exacto.
+        // Mismo número en la misma carrera: rechazado, el número de ciclo es único por carrera.
         $this->postJson('/api/v1/admin/cycles', [
             'career_id' => $career->getKey(),
-            'name' => 'Primer ciclo',
+            'name' => 'Primer ciclo duplicado',
             'number' => 1,
         ])->assertUnprocessable()->assertJsonValidationErrors('number');
 
-        $sectionA = Paralelo::query()->create(['nombre' => 'Paralelo A', 'estado' => true]);
-        $sectionB = Paralelo::query()->create(['nombre' => 'Paralelo B', 'estado' => true]);
-
-        // Mismo número, paralelo distinto: permitido (dos grupos del mismo ciclo).
-        $this->postJson('/api/v1/admin/cycles', [
+        // Número distinto: permitido.
+        $cycle2Id = $this->postJson('/api/v1/admin/cycles', [
             'career_id' => $career->getKey(),
-            'name' => 'Primer ciclo',
-            'number' => 1,
-            'paralelo_id' => $sectionA->getKey(),
+            'name' => 'Segundo ciclo',
+            'number' => 2,
         ])->assertCreated()
-            ->assertJsonPath('data.number', 1)
-            ->assertJsonPath('data.paralelo_name', 'Paralelo A');
-
-        $this->postJson('/api/v1/admin/cycles', [
-            'career_id' => $career->getKey(),
-            'name' => 'Primer ciclo',
-            'number' => 1,
-            'paralelo_id' => $sectionB->getKey(),
-        ])->assertCreated()->assertJsonPath('data.paralelo_name', 'Paralelo B');
-
-        // Mismo número y mismo paralelo: rechazado.
-        $this->postJson('/api/v1/admin/cycles', [
-            'career_id' => $career->getKey(),
-            'name' => 'Otro nombre',
-            'number' => 1,
-            'paralelo_id' => $sectionA->getKey(),
-        ])->assertUnprocessable()->assertJsonValidationErrors('number');
+            ->assertJsonPath('data.number', 2)
+            ->json('data.id');
 
         $this->patchJson('/api/v1/admin/cycles/'.$cycle->getKey(), [
             'name' => 'Ciclo inicial',
-            'number' => 2,
+            'number' => 3,
         ])->assertOk()
             ->assertJsonPath('data.name', 'Ciclo inicial')
-            ->assertJsonPath('data.number', 2);
+            ->assertJsonPath('data.number', 3);
 
         $this->patchJson('/api/v1/admin/cycles/'.$cycle->getKey().'/deactivate')
             ->assertOk()

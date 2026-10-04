@@ -35,7 +35,7 @@ class UpdateUserRequest extends FormRequest
                 'sometimes', 'string', 'email:rfc', 'max:150',
                 Rule::unique('usuario', 'correo')->ignore($this->route('user')),
             ],
-            'phone' => ['sometimes', 'digits:10'],
+            'phone' => ['sometimes', 'nullable', 'digits:10'],
             'role' => ['sometimes', Rule::in(Role::query()->pluck('slug'))],
             'faculty_id' => ['nullable', 'integer', Rule::exists('facultad', 'id_facultad')],
             'career_id' => ['nullable', 'integer', Rule::exists('carrera', 'id_carrera')],

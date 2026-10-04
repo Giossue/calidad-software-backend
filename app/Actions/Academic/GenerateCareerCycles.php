@@ -4,14 +4,11 @@ namespace App\Actions\Academic;
 
 use App\Models\Carrera;
 use App\Models\Ciclo;
-use App\Models\Paralelo;
 
-/** Crea los ciclos 1..N que falten en una carrera, en el paralelo A. Nunca elimina ni modifica los existentes. */
+/** Crea los ciclos 1..N que falten en una carrera (sin paralelo asignado). Nunca elimina ni modifica los existentes. */
 class GenerateCareerCycles
 {
     public const MAX_CYCLES = 12;
-
-    private const DEFAULT_PARALLEL = 'A';
 
     private const NAMES = [
         1 => 'Primer', 2 => 'Segundo', 3 => 'Tercer', 4 => 'Cuarto', 5 => 'Quinto', 6 => 'Sexto',
@@ -24,12 +21,10 @@ class GenerateCareerCycles
             return;
         }
 
-        $parallel = Paralelo::query()->firstOrCreate(['nombre' => self::DEFAULT_PARALLEL], ['estado' => true]);
-
         for ($number = 1; $number <= min($count, self::MAX_CYCLES); $number++) {
             Ciclo::query()->firstOrCreate(
-                ['fk_carrera' => $career->getKey(), 'numero' => $number, 'fk_paralelo' => $parallel->getKey()],
-                ['nombre' => self::NAMES[$number].' ciclo', 'estado' => true],
+                ['fk_carrera' => $career->getKey(), 'numero' => $number],
+                ['nombre' => self::NAMES[$number].' ciclo', 'estado' => true, 'fk_paralelo' => null],
             );
         }
     }

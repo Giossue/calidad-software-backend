@@ -70,5 +70,59 @@ class ManageSchedule
         if ($overlap) {
             throw ValidationException::withMessages(['start_time' => 'El horario se superpone con otro horario activo de esta tutoría.']);
         }
+
+        // Si la tutoría tiene un docente asignado, validar que no tenga conflicto de horario en otra asignatura
+        if ($tutoring->fk_docente) {
+            $conflict = self::findTeacherScheduleConflict(
+                $tutoring->fk_docente,
+                $tutoring->fk_periodo,
+                $data['day'],
+                $data['start_time'],
+                $data['end_time'],
+                $tutoring->getKey(),
+                $exceptId
+            );
+            if ($conflict) {
+                $materia = $conflict->asignaturaTutoria?->nombre ?? 'otra asignatura';
+                $inicio = substr($conflict->hora_inicio, 0, 5);
+                $fin = substr($conflict->hora_fin, 0, 5);
+                throw ValidationException::withMessages([
+                    'start_time' => "El docente ya está asignado a otra asignatura ({$materia}) en el mismo horario ({$data['day']} de {$inicio} a {$fin}).",
+                ]);
+            }
+        }
+    }
+
+    public static function findTeacherScheduleConflict(
+        int $teacherId,
+        int $periodId,
+        string $day,
+        string $startTime,
+        string $endTime,
+        ?int $exceptTutoringId = null,
+        ?int $exceptScheduleId = null
+    ): ?Horario {
+        $startTimeFull = strlen($startTime) === 5 ? $startTime.':00' : $startTime;
+        $endTimeFull = strlen($endTime) === 5 ? $endTime.':00' : $endTime;
+        $normalizedDay = str_replace(
+            ['á', 'é', 'í', 'ó', 'ú'],
+            ['a', 'e', 'i', 'o', 'u'],
+            trim(mb_strtolower($day))
+        );
+
+        return Horario::query()
+            ->where('estado', true)
+            ->where(fn ($q) => $q->whereRaw('LOWER(dia_semana) = ?', [$normalizedDay])->orWhere('dia_semana', $day))
+            ->where('hora_inicio', '<', $endTimeFull)
+            ->where('hora_fin', '>', $startTimeFull)
+            ->when($exceptScheduleId, fn ($q) => $q->whereKeyNot($exceptScheduleId))
+            ->whereHas('asignaturaTutoria', function ($q) use ($teacherId, $periodId, $exceptTutoringId) {
+                $q->where('estado', true)
+                    ->where('fk_docente', $teacherId)
+                    ->where('fk_periodo', $periodId)
+                    ->when($exceptTutoringId, fn ($inner) => $inner->where('id_asig_tutoria', '!=', $exceptTutoringId));
+            })
+            ->with(['asignaturaTutoria'])
+            ->first();
     }
 }

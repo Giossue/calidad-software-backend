@@ -48,8 +48,7 @@ class UpdateCycleRequest extends FormRequest
                 'min:1',
                 Rule::unique('ciclo', 'numero')
                     ->where(fn (Builder $query): Builder => $query
-                        ->where('fk_carrera', $careerId)
-                        ->where('fk_paralelo', $paraleloId))
+                        ->where('fk_carrera', $careerId))
                     ->ignore($cycle?->getKey(), $cycle?->getKeyName()),
             ],
             'paralelo_id' => [
@@ -76,7 +75,7 @@ class UpdateCycleRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'number.unique' => 'Ya existe un ciclo con ese número en el mismo paralelo de esta carrera. Elige otro número u otro paralelo.',
+            'number.unique' => 'Ya existe un ciclo con ese número en esta carrera. Elige otro número.',
         ];
     }
 

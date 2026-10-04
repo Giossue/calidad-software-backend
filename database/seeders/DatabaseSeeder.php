@@ -122,6 +122,7 @@ class DatabaseSeeder extends Seeder
         $docente->roles()->syncWithoutDetaching([$docenteRole->id]);
 
         // 8. Asignatura e Inscripción de Tutoría para el Estudiante
+        $this->call(ModalidadSeeder::class);
         $modalidad = Modalidad::firstOrCreate(
             ['nombre' => 'Presencial'],
             ['estado' => true]

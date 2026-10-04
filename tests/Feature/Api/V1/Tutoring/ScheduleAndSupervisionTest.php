@@ -157,6 +157,61 @@ class ScheduleAndSupervisionTest extends TutoringTestCase
             ->assertJsonPath('meta.present_count', 1)->assertJsonPath('meta.absent_count', 1);
     }
 
+    public function test_schedule_rejects_overlap_for_same_teacher_across_different_tutorings(): void
+    {
+        $teacher = Usuario::factory()->withRole('docente')->create();
+        $tutoring1 = $this->createTutoring();
+        $tutoring2 = $this->createTutoring(subject: $this->createSubject(code: 'CS-202'));
+
+        Sanctum::actingAs($this->coordinator, ['*']);
+
+        // Asignar docente a tutoría 1 y crear horario lunes 10:00 - 11:00
+        $this->putJson(self::API.'/tutorings/'.$tutoring1->getKey().'/teacher', ['teacher_id' => $teacher->getKey()])
+            ->assertOk();
+        $this->postJson(self::API.'/tutorings/'.$tutoring1->getKey().'/schedules', [
+            'day' => 'lunes', 'start_time' => '10:00', 'end_time' => '11:00', 'room' => 'Aula 101',
+        ])->assertCreated();
+
+        // Asignar mismo docente a tutoría 2
+        $this->putJson(self::API.'/tutorings/'.$tutoring2->getKey().'/teacher', ['teacher_id' => $teacher->getKey()])
+            ->assertOk();
+
+        // Intentar crear horario que se solapa en tutoría 2 (lunes 10:30 - 11:30)
+        $this->postJson(self::API.'/tutorings/'.$tutoring2->getKey().'/schedules', [
+            'day' => 'lunes', 'start_time' => '10:30', 'end_time' => '11:30', 'room' => 'Aula 202',
+        ])->assertUnprocessable()->assertJsonValidationErrors('start_time');
+
+        // Un horario contiguo (lunes 11:00 - 12:00) o en otro día sí debe ser permitido
+        $this->postJson(self::API.'/tutorings/'.$tutoring2->getKey().'/schedules', [
+            'day' => 'lunes', 'start_time' => '11:00', 'end_time' => '12:00', 'room' => 'Aula 202',
+        ])->assertCreated();
+    }
+
+    public function test_assign_teacher_rejects_when_tutoring_has_conflicting_schedules(): void
+    {
+        $teacher = Usuario::factory()->withRole('docente')->create();
+        $tutoring1 = $this->createTutoring();
+        $tutoring2 = $this->createTutoring(subject: $this->createSubject(code: 'CS-203'));
+
+        Sanctum::actingAs($this->coordinator, ['*']);
+
+        // Tutoría 1 tiene al docente en lunes 10:00 - 11:00
+        $this->putJson(self::API.'/tutorings/'.$tutoring1->getKey().'/teacher', ['teacher_id' => $teacher->getKey()])
+            ->assertOk();
+        $this->postJson(self::API.'/tutorings/'.$tutoring1->getKey().'/schedules', [
+            'day' => 'lunes', 'start_time' => '10:00', 'end_time' => '11:00', 'room' => 'Aula 101',
+        ])->assertCreated();
+
+        // Tutoría 2 ya tiene horario lunes 10:00 - 11:00 sin docente
+        $this->postJson(self::API.'/tutorings/'.$tutoring2->getKey().'/schedules', [
+            'day' => 'lunes', 'start_time' => '10:00', 'end_time' => '11:00', 'room' => 'Lab 1',
+        ])->assertCreated();
+
+        // Intentar asignar al mismo docente a tutoría 2 debe ser rechazado por conflicto
+        $this->putJson(self::API.'/tutorings/'.$tutoring2->getKey().'/teacher', ['teacher_id' => $teacher->getKey()])
+            ->assertUnprocessable()->assertJsonValidationErrors('teacher_id');
+    }
+
     private function schedulePayload(): array
     {
         return ['day' => 'lunes', 'start_time' => '10:00', 'end_time' => '11:00', 'room' => 'Aula 101'];

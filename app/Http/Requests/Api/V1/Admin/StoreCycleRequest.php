@@ -32,8 +32,7 @@ class StoreCycleRequest extends FormRequest
                 'min:1',
                 Rule::unique('ciclo', 'numero')->where(
                     fn (Builder $query): Builder => $query
-                        ->where('fk_carrera', $this->integer('career_id'))
-                        ->where('fk_paralelo', $this->integer('paralelo_id') ?: null),
+                        ->where('fk_carrera', $this->integer('career_id')),
                 ),
             ],
             'paralelo_id' => [
@@ -50,7 +49,7 @@ class StoreCycleRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'number.unique' => 'Ya existe un ciclo con ese número en el mismo paralelo de esta carrera. Elige otro número u otro paralelo.',
+            'number.unique' => 'Ya existe un ciclo con ese número en esta carrera. Elige otro número.',
         ];
     }
 
