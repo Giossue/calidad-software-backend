@@ -5,6 +5,7 @@ namespace App\Http\Requests\Api\V1\Tutoring;
 use App\Models\Subject;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Normalizer;
 
 class SubjectRequest extends FormRequest
 {
@@ -23,6 +24,24 @@ class SubjectRequest extends FormRequest
             $code = trim((string) $this->input('code'));
             $this->merge(['code' => $code !== '' ? $code : null]);
         }
+
+        if ($this->has('name')) {
+            $this->merge(['name' => self::normalizeName((string) $this->input('name'))]);
+        }
+    }
+
+    /**
+     * Normalize a subject name: strip accents and convert to lowercase.
+     * This prevents duplicates like "Matemáticas" vs "matematicas" vs "MATEMATICAS".
+     */
+    public static function normalizeName(string $name): string
+    {
+        $name = trim($name);
+        // Decompose characters so accents become separate code points
+        $normalized = Normalizer::normalize($name, Normalizer::FORM_D);
+        // Remove non-spacing marks (accents)
+        $normalized = preg_replace('/\p{Mn}/u', '', $normalized ?? $name);
+        return mb_strtolower($normalized ?? $name);
     }
 
     /** @return array<string, array<int, mixed>> */
@@ -55,7 +74,14 @@ class SubjectRequest extends FormRequest
             'period_id' => $creating
                 ? ['nullable', 'integer', Rule::exists('periodo_academico', 'id_periodo')->where('estado', true)]
                 : ['prohibited'],
-            'name' => [($creating ? 'required' : 'sometimes'), 'string', 'max:150'],
+            'name' => [
+                ($creating ? 'required' : 'sometimes'),
+                'string',
+                'max:150',
+                Rule::unique('subjects', 'name')
+                    ->where('career_id', $careerId)
+                    ->ignore($this->route('subject')),
+            ],
         ];
     }
 }

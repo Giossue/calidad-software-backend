@@ -17,6 +17,10 @@ class RegistrationController extends Controller
         CreateNewUser $creator,
         IssueUserToken $issueUserToken,
     ): JsonResponse {
+        if (! config('auth.registration_enabled', false)) {
+            abort(Response::HTTP_FORBIDDEN, 'El registro público no está habilitado.');
+        }
+
         $user = $creator->create($request->safe()->only([
             'identification', 'name', 'email', 'password', 'password_confirmation',
         ]));

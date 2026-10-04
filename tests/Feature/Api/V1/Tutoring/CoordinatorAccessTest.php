@@ -124,7 +124,7 @@ class CoordinatorAccessTest extends TutoringTestCase
         Sanctum::actingAs(Usuario::factory()->withRole('administrador')->create(), ['*']);
         $this->getJson(self::API.'/careers')->assertOk()->assertJsonCount(2, 'data');
         $this->patchJson(self::API.'/subjects/'.$subject->getKey(), ['name' => 'Álgebra'])
-            ->assertOk()->assertJsonPath('data.name', 'Álgebra');
+            ->assertOk()->assertJsonPath('data.name', 'algebra');
     }
 
     public function test_administrator_can_keep_an_existing_inactive_career_but_cannot_add_a_new_inactive_career(): void

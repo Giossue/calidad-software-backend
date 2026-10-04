@@ -18,23 +18,55 @@ class AccountFlowsTest extends TestCase
 
     public function test_user_can_register_and_receives_a_verification_notification(): void
     {
+        config(['auth.registration_enabled' => true]);
         Notification::fake();
 
         $response = $this->postJson('/api/v1/auth/register', [
             'identification' => '0201234567',
             'name' => 'Ana Torres',
-            'email' => 'ana@example.com',
+            'email' => 'ana@ueb.edu.ec',
             'password' => 'Password1!',
             'password_confirmation' => 'Password1!',
             'device_name' => 'frontend-web',
         ]);
 
         $response->assertCreated()
-            ->assertJsonPath('data.user.email', 'ana@example.com')
+            ->assertJsonPath('data.user.email', 'ana@ueb.edu.ec')
             ->assertJsonStructure(['data' => ['access_token']]);
 
-        $user = Usuario::query()->where('correo', 'ana@example.com')->firstOrFail();
+        $user = Usuario::query()->where('correo', 'ana@ueb.edu.ec')->firstOrFail();
         Notification::assertSentTo($user, VerifyEmail::class);
+    }
+
+    public function test_registration_is_disabled_by_default(): void
+    {
+        $response = $this->postJson('/api/v1/auth/register', [
+            'identification' => '0201234567',
+            'name' => 'Ana Torres',
+            'email' => 'ana@ueb.edu.ec',
+            'password' => 'Password1!',
+            'password_confirmation' => 'Password1!',
+            'device_name' => 'frontend-web',
+        ]);
+
+        $response->assertForbidden();
+    }
+
+    public function test_registration_rejects_arbitrary_non_institutional_email(): void
+    {
+        config(['auth.registration_enabled' => true]);
+
+        $response = $this->postJson('/api/v1/auth/register', [
+            'identification' => '0201234567',
+            'name' => 'Ana Torres',
+            'email' => 'victim@gmail.com',
+            'password' => 'Password1!',
+            'password_confirmation' => 'Password1!',
+            'device_name' => 'frontend-web',
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['email']);
     }
 
     public function test_password_reset_request_does_not_reveal_whether_email_exists(): void

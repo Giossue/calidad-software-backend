@@ -7,6 +7,7 @@ use App\Models\Ciclo;
 use App\Models\Paralelo;
 use App\Models\Subject;
 use App\Models\Usuario;
+use App\Http\Requests\Api\V1\Tutoring\SubjectRequest;
 use App\Support\TutoringCoordinatorAccess;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -24,7 +25,7 @@ class ManageSubject
             $subject = Subject::query()->create([
                 'career_id' => $data['career_id'],
                 'code' => ! empty($data['code']) ? trim($data['code']) : null,
-                'name' => trim($data['name']),
+                'name' => SubjectRequest::normalizeName($data['name']),
                 'modality_id' => ! empty($data['modality_id']) ? (int) $data['modality_id'] : null,
                 'is_active' => true,
             ]);
@@ -88,7 +89,7 @@ class ManageSubject
     {
         $subject->fill(array_filter([
             'code' => array_key_exists('code', $data) ? ($data['code'] !== null && trim($data['code']) !== '' ? trim($data['code']) : null) : null,
-            'name' => isset($data['name']) ? trim($data['name']) : null,
+            'name' => isset($data['name']) ? SubjectRequest::normalizeName($data['name']) : null,
             'modality_id' => array_key_exists('modality_id', $data) ? ($data['modality_id'] ? (int) $data['modality_id'] : null) : null,
         ], fn ($value) => $value !== null))->save();
 

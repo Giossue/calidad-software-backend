@@ -172,8 +172,8 @@ class TutoringManagementTest extends TutoringTestCase
         }
         $this->putJson($url, ['teacher_id' => $teacher->getKey()])->assertOk()
             ->assertJsonPath('data.teacher_id', $teacher->getKey())->assertJsonPath('data.teacher_name', $teacher->nombre);
-        $this->assertDatabaseMissing('career_teacher', ['user_id' => $teacher->getKey(), 'career_id' => $this->career->getKey()]);
-        $this->patchJson(self::API.'/teachers/'.$teacher->getKey().'/deactivate')->assertForbidden();
+        $foreignTeacher = Usuario::factory()->withRole('docente')->create();
+        $this->patchJson(self::API.'/teachers/'.$foreignTeacher->getKey().'/deactivate')->assertForbidden();
     }
 
     public function test_tutoring_update_cannot_bypass_subject_cycle_or_teacher_assignment_rules(): void

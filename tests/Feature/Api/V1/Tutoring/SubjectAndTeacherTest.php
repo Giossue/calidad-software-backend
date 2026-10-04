@@ -22,7 +22,7 @@ class SubjectAndTeacherTest extends TutoringTestCase
         $subject = Subject::query()->findOrFail($response->json('data.id'));
         $url = self::API.'/subjects/'.$subject->getKey();
         $this->patchJson($url, ['name' => 'Calidad de software', 'code' => 'CS-102'])->assertOk()
-            ->assertJsonPath('data.name', 'Calidad de software')->assertJsonPath('data.code', 'CS-102');
+            ->assertJsonPath('data.name', 'calidad de software')->assertJsonPath('data.code', 'CS-102');
         foreach ([1, 2] as $attempt) {
             $this->putJson($url.'/cycles/'.$this->cycle->getKey())->assertOk()
                 ->assertJsonPath('data.cycle_ids', [$this->cycle->getKey()]);
@@ -427,13 +427,13 @@ class SubjectAndTeacherTest extends TutoringTestCase
             'parallel_ids' => [$parallel1->getKey(), $parallel2->getKey()],
         ])->assertCreated()
             ->assertJsonPath('data.code', null)
-            ->assertJsonPath('data.name', 'Materia Sin Código');
+            ->assertJsonPath('data.name', 'materia sin codigo');
 
         $subjectId = $response->json('data.id');
         $this->assertDatabaseHas('subjects', [
             'id' => $subjectId,
             'code' => null,
-            'name' => 'Materia Sin Código',
+            'name' => 'materia sin codigo',
         ]);
 
         $this->assertSame(2, Ciclo::query()->where('fk_carrera', $this->career->getKey())
