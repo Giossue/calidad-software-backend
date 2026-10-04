@@ -81,8 +81,6 @@ class DatabaseSeeder extends Seeder
         );
         $coordCarrera->roles()->syncWithoutDetaching([$coordCarreraRole->id]);
 
-
-
         // 5. Estudiante de Titulación
         $studentRole = Role::firstOrCreate(['slug' => 'estudiante'], ['name' => 'Estudiante']);
         $estudiante = Usuario::firstOrCreate(
@@ -159,12 +157,12 @@ class DatabaseSeeder extends Seeder
                 'estado' => true,
             ]
         );
-    
+
         $carreraSoftware = Carrera::first();
         if ($carreraSoftware) {
             $coordCarrera->fk_carrera = $carreraSoftware->id_carrera;
             $coordCarrera->save();
-            $coordCarrera->coordinatedCareers()->syncWithoutDetaching([$carreraSoftware->id_carrera => ["assigned_at" => now()]]);
+            $coordCarrera->coordinatedCareers()->syncWithoutDetaching([$carreraSoftware->id_carrera => ['assigned_at' => now()]]);
 
             $coordTitulacion->fk_carrera = $carreraSoftware->id_carrera;
             $coordTitulacion->save();
@@ -174,7 +172,7 @@ class DatabaseSeeder extends Seeder
 
             $docente->fk_carrera = $carreraSoftware->id_carrera;
             $docente->save();
-            $docente->teachingCareers()->syncWithoutDetaching([$carreraSoftware->id_carrera => ["assigned_at" => now()]]);
+            $docente->teachingCareers()->syncWithoutDetaching([$carreraSoftware->id_carrera => ['assigned_at' => now()]]);
         }
-}
+    }
 }

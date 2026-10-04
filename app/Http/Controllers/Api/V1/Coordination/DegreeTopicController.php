@@ -15,6 +15,9 @@ use App\Http\Requests\Api\V1\Coordination\UpdateAcademicPeersRequest;
 use App\Http\Resources\Api\V1\AcademicPeerResource;
 use App\Http\Resources\Api\V1\DegreeTopicResource;
 use App\Http\Resources\Api\V1\TopicObservationResource;
+use App\Models\ActividadAvance;
+use App\Models\FichaSeguimiento;
+use App\Models\InformeTitulacion;
 use App\Models\PeriodoAcademico;
 use App\Models\TemaTitulacion;
 use App\Models\Usuario;
@@ -220,12 +223,12 @@ class DegreeTopicController extends Controller
             'docente_id' => ['nullable', 'integer', 'exists:usuario,id_usuario'],
         ]);
 
-        $ficha = \App\Models\FichaSeguimiento::query()->firstOrCreate(
+        $ficha = FichaSeguimiento::query()->firstOrCreate(
             ['fk_tema_tit' => $topic->getKey()],
             ['fecha_apertura' => now()->toDateString(), 'porcentaje_avance' => 0.00, 'estado' => 'en_progreso']
         );
 
-        $activity = \App\Models\ActividadAvance::query()->create([
+        $activity = ActividadAvance::query()->create([
             'fk_ficha' => $ficha->getKey(),
             'fk_docente' => $request->integer('docente_id') ?: $topic->activeAssignments()->where('rol', 'tutor')->value('fk_id_usuario'),
             'descripcion' => $request->string('descripcion')->value(),
@@ -255,11 +258,11 @@ class DegreeTopicController extends Controller
     /**
      * Alterna o actualiza el estado de una actividad de avance y recalcula el progreso.
      */
-    public function toggleActivity(Request $request, TemaTitulacion $topic, \App\Models\ActividadAvance $activity): JsonResponse
+    public function toggleActivity(Request $request, TemaTitulacion $topic, ActividadAvance $activity): JsonResponse
     {
         Gate::authorize('viewAny', TemaTitulacion::class);
 
-        $ficha = $topic->fichaSeguimiento ?: \App\Models\FichaSeguimiento::query()->firstOrCreate(
+        $ficha = $topic->fichaSeguimiento ?: FichaSeguimiento::query()->firstOrCreate(
             ['fk_tema_tit' => $topic->getKey()],
             ['fecha_apertura' => now()->toDateString(), 'porcentaje_avance' => 0.00, 'estado' => 'en_progreso']
         );
@@ -295,7 +298,7 @@ class DegreeTopicController extends Controller
             'estado' => ['nullable', 'string', 'max:50'],
         ]);
 
-        $ficha = \App\Models\FichaSeguimiento::query()->firstOrCreate(
+        $ficha = FichaSeguimiento::query()->firstOrCreate(
             ['fk_tema_tit' => $topic->getKey()],
             ['fecha_apertura' => now()->toDateString(), 'porcentaje_avance' => 0.00, 'estado' => 'en_progreso']
         );
@@ -326,12 +329,12 @@ class DegreeTopicController extends Controller
             'observaciones_finales' => ['required', 'string', 'max:2000'],
         ]);
 
-        $ficha = \App\Models\FichaSeguimiento::query()->firstOrCreate(
+        $ficha = FichaSeguimiento::query()->firstOrCreate(
             ['fk_tema_tit' => $topic->getKey()],
             ['fecha_apertura' => now()->toDateString(), 'porcentaje_avance' => 0.00, 'estado' => 'en_progreso']
         );
 
-        $report = \App\Models\InformeTitulacion::query()->create([
+        $report = InformeTitulacion::query()->create([
             'fk_ficha' => $ficha->getKey(),
             'fk_coord_tit' => $request->user()->getKey(),
             'fecha_generacion' => now()->toDateString(),
@@ -360,7 +363,7 @@ class DegreeTopicController extends Controller
     {
         Gate::authorize('viewAny', TemaTitulacion::class);
 
-        $query = \App\Models\InformeTitulacion::query()
+        $query = InformeTitulacion::query()
             ->with(['ficha.temaTitulacion.estudiante', 'ficha.temaTitulacion.periodo', 'coordinador'])
             ->where('estado', true);
 
@@ -375,20 +378,20 @@ class DegreeTopicController extends Controller
         $reports = $query->orderByDesc('fecha_generacion')->orderByDesc('id_informe')->paginate($request->integer('per_page', 15));
 
         return response()->json([
-            'data' => collect($reports->items())->map(function (\App\Models\InformeTitulacion $rep) {
+            'data' => collect($reports->items())->map(function (InformeTitulacion $rep) {
                 $topic = $rep->ficha?->temaTitulacion;
 
                 return [
                     'id' => $rep->getKey(),
                     'topic_id' => $topic?->getKey(),
-                    'topic_title' => $topic?->titulo ?? 'Tema no asignado',
-                    'student_name' => $topic?->estudiante?->nombre ?? 'Estudiante no registrado',
-                    'student_identification' => $topic?->estudiante?->cedula ?? '',
-                    'coordinator_name' => $rep->coordinador?->nombre ?? '',
+                    'topic_title' => $topic->titulo ?? 'Tema no asignado',
+                    'student_name' => $topic->estudiante->nombre ?? 'Estudiante no registrado',
+                    'student_identification' => $topic->estudiante->cedula ?? '',
+                    'coordinator_name' => $rep->coordinador->nombre ?? '',
                     'generated_at' => $rep->fecha_generacion?->toDateString(),
                     'final_observations' => $rep->observaciones_finales,
-                    'progress_percentage' => (float) ($rep->ficha?->porcentaje_avance ?? 0),
-                    'period_name' => $topic?->periodo?->nombre ?? '',
+                    'progress_percentage' => (float) ($rep->ficha->porcentaje_avance ?? 0),
+                    'period_name' => $topic->periodo->nombre ?? '',
                 ];
             }),
             'meta' => [

@@ -10,6 +10,7 @@ use App\Http\Resources\Api\V1\StudentTutoringTopicResource;
 use App\Models\AsignaturaTutoria;
 use App\Models\InscripcionTutoria;
 use App\Models\Tema;
+use App\Models\TutoringSession;
 use App\Models\Usuario;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -235,7 +236,7 @@ class StudentTutoringController extends Controller
                     'progress_percentage' => $progress,
                 ],
                 'topics' => StudentTutoringTopicResource::collection($topics),
-                'sessions' => \App\Models\TutoringSession::query()
+                'sessions' => TutoringSession::query()
                     ->where('tutoring_id', $tutoring->getKey())
                     ->with([
                         'topics' => fn ($q) => $q->where('estado', true),
@@ -244,7 +245,7 @@ class StudentTutoringController extends Controller
                     ])
                     ->orderByDesc('date')
                     ->get()
-                    ->map(function (\App\Models\TutoringSession $session) use ($tutoring) {
+                    ->map(function (TutoringSession $session) use ($tutoring) {
                         $sessionTopics = $session->topics;
                         if ($sessionTopics->isEmpty() && $session->topics_covered) {
                             $sessionDate = $session->date->toDateString();
@@ -295,7 +296,7 @@ class StudentTutoringController extends Controller
             abort(Response::HTTP_FORBIDDEN, 'No estás inscrito en esta asignatura de tutoría.');
         }
 
-        $sessions = \App\Models\TutoringSession::query()
+        $sessions = TutoringSession::query()
             ->where('tutoring_id', $tutoring->getKey())
             ->with([
                 'topics' => fn ($q) => $q->where('estado', true),
@@ -306,7 +307,7 @@ class StudentTutoringController extends Controller
             ->get();
 
         return response()->json([
-            'data' => $sessions->map(function (\App\Models\TutoringSession $session) use ($tutoring) {
+            'data' => $sessions->map(function (TutoringSession $session) use ($tutoring) {
                 $sessionTopics = $session->topics;
                 if ($sessionTopics->isEmpty() && $session->topics_covered) {
                     $sessionDate = $session->date->toDateString();

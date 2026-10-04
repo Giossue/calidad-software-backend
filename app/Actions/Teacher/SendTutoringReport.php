@@ -61,7 +61,7 @@ class SendTutoringReport
                             'id' => $act->getKey(),
                             'name' => $act->nombre,
                             'duration' => $act->duracion,
-                            'topic' => $act->tema?->nombre ?? 'Sin tema',
+                            'topic' => $act->tema->nombre ?? 'Sin tema',
                             'methodologies' => $act->metodologias->pluck('descripcion')->all(),
                         ])->all(),
                     ];

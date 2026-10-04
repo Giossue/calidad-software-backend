@@ -7,11 +7,11 @@ use App\Models\Carrera;
 use App\Models\MatriculaTitulacion;
 use App\Models\PeriodoAcademico;
 use App\Models\Usuario;
-use App\Support\TutoringCoordinatorAccess;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Collection;
 
 class CoordinatorDegreeEnrollmentController extends Controller
 {
@@ -25,9 +25,9 @@ class CoordinatorDegreeEnrollmentController extends Controller
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, int>
+     * @return Collection<int, int>
      */
-    private function getCoordinatorCareerIds(Usuario $user): \Illuminate\Support\Collection
+    private function getCoordinatorCareerIds(Usuario $user): Collection
     {
         if ($user->hasRole('administrador')) {
             return Carrera::pluck('id_carrera');

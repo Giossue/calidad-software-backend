@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $name
  * @property int|null $modality_id
  * @property bool $is_active
+ * @property-read Carrera|null $career
  */
 class Subject extends Model
 {

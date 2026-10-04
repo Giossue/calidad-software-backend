@@ -2,8 +2,6 @@
 
 namespace Tests\Feature\Api\V1\Tutoring;
 
-use App\Models\AsignaturaTutoria;
-use App\Models\InscripcionTutoria;
 use App\Models\Usuario;
 use App\Notifications\ProvisionalPasswordNotification;
 use Illuminate\Support\Facades\Notification;

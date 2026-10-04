@@ -10,7 +10,10 @@ use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-/** @property CarbonInterface $fecha */
+/**
+ * @property CarbonInterface $fecha
+ * @property-read Usuario|null $estudiante
+ */
 class Asistencia extends Model
 {
     protected $table = 'asistencia';

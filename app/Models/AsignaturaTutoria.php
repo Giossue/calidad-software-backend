@@ -13,6 +13,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @property int|null $subject_id
  * @property int $active_enrollment_count
+ * @property-read Ciclo|null $ciclo
+ * @property-read PeriodoAcademico|null $periodo
+ * @property-read Modalidad|null $modalidad
+ * @property-read Paralelo|null $paralelo
+ * @property-read Usuario|null $docente
  */
 class AsignaturaTutoria extends Model
 {

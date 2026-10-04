@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/** @property-read Carrera|null $carrera */
 class Ciclo extends Model
 {
     protected $table = 'ciclo';

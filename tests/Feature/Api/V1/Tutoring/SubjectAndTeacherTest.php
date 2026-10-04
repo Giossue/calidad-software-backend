@@ -2,11 +2,11 @@
 
 namespace Tests\Feature\Api\V1\Tutoring;
 
+use App\Models\Ciclo;
+use App\Models\Paralelo;
 use App\Models\Role;
 use App\Models\Subject;
 use App\Models\Usuario;
-use App\Models\Ciclo;
-use App\Models\Paralelo;
 use App\Notifications\ProvisionalPasswordNotification;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\Sanctum;

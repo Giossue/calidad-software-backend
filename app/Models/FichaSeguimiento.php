@@ -6,10 +6,18 @@
 
 namespace App\Models;
 
+use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property CarbonInterface|null $fecha_apertura
+ * @property-read TemaTitulacion|null $temaTitulacion
+ * @property-read Collection<int, ActividadAvance> $actividades
+ * @property-read Collection<int, InformeTitulacion> $informes
+ */
 class FichaSeguimiento extends Model
 {
     protected $table = 'ficha_seguimiento';
@@ -21,6 +29,7 @@ class FichaSeguimiento extends Model
         'porcentaje_avance', 'estado',
     ];
 
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

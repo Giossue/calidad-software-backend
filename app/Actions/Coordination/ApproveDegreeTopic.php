@@ -3,6 +3,7 @@
 namespace App\Actions\Coordination;
 
 use App\Models\AsignacionDocente;
+use App\Models\FichaSeguimiento;
 use App\Models\TemaTitulacion;
 use App\Models\Usuario;
 use Illuminate\Support\Facades\DB;
@@ -45,7 +46,7 @@ class ApproveDegreeTopic
 
             $this->syncPeers->handle($topic, $peerIds);
 
-            \App\Models\FichaSeguimiento::query()->firstOrCreate(
+            FichaSeguimiento::query()->firstOrCreate(
                 ['fk_tema_tit' => $topic->getKey()],
                 [
                     'fecha_apertura' => now()->toDateString(),

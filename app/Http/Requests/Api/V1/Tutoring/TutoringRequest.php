@@ -39,8 +39,8 @@ class TutoringRequest extends FormRequest
             if (! $this->filled('modality_id') && ($subjectId || $cycleId)) {
                 $subject = $subjectId ? Subject::with('career')->find($subjectId) : null;
                 $cycle = $cycleId ? Ciclo::with('carrera')->find($cycleId) : null;
-                $modalityId = $subject?->modality_id
-                    ?? $cycle?->carrera?->fk_modalidad
+                $modalityId = $subject->modality_id
+                    ?? $cycle->carrera->fk_modalidad
                     ?? $subject?->career?->fk_modalidad;
                 if ($modalityId) {
                     $this->merge(['modality_id' => $modalityId]);

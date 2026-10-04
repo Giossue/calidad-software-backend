@@ -227,4 +227,3 @@ class SessionReportAndDegreeTest extends TeacherTestCase
         ])->assertForbidden();
     }
 }
-

@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api\V1\Teacher;
 
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class TeacherSyncScheduleRequest extends TeacherMutationRequest
 {
@@ -18,9 +19,9 @@ class TeacherSyncScheduleRequest extends TeacherMutationRequest
         ];
     }
 
-    public function withValidator($validator): void
+    public function withValidator(Validator $validator): void
     {
-        $validator->after(function ($validator): void {
+        $validator->after(function (Validator $validator): void {
             $schedules = $this->input('schedules');
             if (! is_array($schedules)) {
                 return;

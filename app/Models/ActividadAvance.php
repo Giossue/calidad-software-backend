@@ -6,9 +6,15 @@
 
 namespace App\Models;
 
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property CarbonInterface|null $fecha_registro
+ * @property-read FichaSeguimiento|null $ficha
+ * @property-read Usuario|null $docente
+ */
 class ActividadAvance extends Model
 {
     protected $table = 'actividad_avance';
@@ -20,6 +26,7 @@ class ActividadAvance extends Model
         'descripcion', 'completada', 'fecha_registro',
     ];
 
+    /** @return array<string, string> */
     protected function casts(): array
     {
         return [

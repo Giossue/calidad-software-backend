@@ -79,8 +79,8 @@ class DegreeTopicResource extends JsonResource
                         'id' => $act->docente->getKey(),
                         'name' => $act->docente->nombre,
                         'email' => $act->docente->correo,
-                        'role' => $this->activeAssignments->firstWhere('fk_id_usuario', $act->docente->getKey())?->rol
-                            ?? $this->asignaciones->firstWhere('fk_id_usuario', $act->docente->getKey())?->rol,
+                        'role' => ($this->activeAssignments->firstWhere('fk_id_usuario', $act->docente->getKey())
+                            ?? $this->asignaciones->firstWhere('fk_id_usuario', $act->docente->getKey()))?->rol,
                     ] : null,
                 ]),
             ] : null,

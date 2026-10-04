@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Api\V1\Teacher;
 
+use Carbon\Carbon;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class SessionRequest extends TeacherMutationRequest
 {
@@ -33,9 +35,9 @@ class SessionRequest extends TeacherMutationRequest
         ];
     }
 
-    public function withValidator($validator): void
+    public function withValidator(Validator $validator): void
     {
-        $validator->after(function ($validator): void {
+        $validator->after(function (Validator $validator): void {
             if ($this->filled('date')) {
                 $tutoring = $this->selectedTutoring();
                 $activeDays = $tutoring->horarios()->where('estado', true)->pluck('dia_semana')->all();
@@ -45,7 +47,7 @@ class SessionRequest extends TeacherMutationRequest
                         4 => 'jueves', 5 => 'viernes', 6 => 'sabado',
                     ];
                     try {
-                        $dayOfWeek = $dayMap[\Carbon\Carbon::parse($this->string('date')->toString())->dayOfWeek] ?? null;
+                        $dayOfWeek = $dayMap[Carbon::parse($this->string('date')->toString())->dayOfWeek] ?? null;
                         if ($dayOfWeek && ! in_array($dayOfWeek, $activeDays, true)) {
                             $validator->errors()->add('date', 'La fecha seleccionada no coincide con los días registrados en el horario de esta tutoría.');
                         }

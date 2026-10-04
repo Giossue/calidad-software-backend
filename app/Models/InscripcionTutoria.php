@@ -12,7 +12,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
-/** @property CarbonInterface $fecha_inscripcion */
+/**
+ * @property CarbonInterface $fecha_inscripcion
+ * @property-read AsignaturaTutoria|null $asignaturaTutoria
+ */
 class InscripcionTutoria extends Model
 {
     protected $table = 'inscripcion_tutoria';

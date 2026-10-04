@@ -31,6 +31,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read Collection<int, AsignacionDocente> $activeAssignments
  * @property-read Collection<int, AsignacionDocente> $asignaciones
  * @property-read Collection<int, ObservacionTitulacion> $observaciones
+ * @property-read FichaSeguimiento|null $fichaSeguimiento
  */
 class TemaTitulacion extends Model
 {

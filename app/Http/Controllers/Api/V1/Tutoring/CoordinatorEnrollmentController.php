@@ -8,21 +8,19 @@ use App\Http\Resources\Api\V1\Teacher\AvailableStudentResource;
 use App\Http\Resources\Api\V1\Teacher\EnrollmentResource;
 use App\Models\AsignaturaTutoria;
 use App\Models\InscripcionTutoria;
+use App\Models\Role;
 use App\Models\Usuario;
-use App\Support\TutoringCoordinatorAccess;
+use App\Notifications\ProvisionalPasswordNotification;
+use App\Rules\CedulaEcuatoriana;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Validation\ValidationException;
-use App\Rules\CedulaEcuatoriana;
-use Illuminate\Validation\Rule;
-use App\Models\Role;
-use App\Notifications\ProvisionalPasswordNotification;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class CoordinatorEnrollmentController extends Controller
 {
@@ -65,7 +63,7 @@ class CoordinatorEnrollmentController extends Controller
 
         $data = $this->validateEnrollment($request);
 
-        $enrollment = DB::transaction(function () use ($request, $tutoring, $data): InscripcionTutoria {
+        $enrollment = DB::transaction(function () use ($tutoring, $data): InscripcionTutoria {
             $locked = AsignaturaTutoria::query()->whereKey($tutoring->getKey())->lockForUpdate()->firstOrFail();
             Gate::authorize('view', $locked);
 

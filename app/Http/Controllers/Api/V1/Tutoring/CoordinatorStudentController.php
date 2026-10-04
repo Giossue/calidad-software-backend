@@ -25,6 +25,7 @@ use Illuminate\Validation\ValidationException;
 class CoordinatorStudentController extends Controller
 {
     private const ENROLLMENT_RELATIONS = ['estudiante.roles', 'notas', 'knowledgeMetric'];
+
     private const TUTORING_RELATIONS = ['ciclo', 'periodo', 'modalidad', 'paralelo', 'docente', 'horarios', 'subject'];
 
     public function index(Request $request, TutoringCoordinatorAccess $access): JsonResponse
@@ -48,7 +49,7 @@ class CoordinatorStudentController extends Controller
             ->with(['inscripciones' => fn ($q) => $q
                 ->where('estado', true)
                 ->whereHas('asignaturaTutoria.ciclo', fn (Builder $q2) => $q2->whereIn('fk_carrera', $careerIds))
-                ->with(['asignaturaTutoria' => fn ($q2) => $q2->with(self::TUTORING_RELATIONS)])
+                ->with(['asignaturaTutoria' => fn ($q2) => $q2->with(self::TUTORING_RELATIONS)]),
             ]);
 
         if ($search = trim((string) $request->string('search'))) {
@@ -98,7 +99,7 @@ class CoordinatorStudentController extends Controller
             $student->roles()->attach(Role::query()->where('slug', 'estudiante')->valueOrFail('id'));
 
             if (! empty($data['tutoring_id'])) {
-                $tutoring = AsignaturaTutoria::query()->findOrFail($data['tutoring_id']);
+                $tutoring = AsignaturaTutoria::query()->findOrFail((int) $data['tutoring_id']);
                 if ($tutoring->fk_paralelo && ! $student->paralelos()->whereKey($tutoring->fk_paralelo)->wherePivot('estado', true)->exists()) {
                     $student->paralelos()->syncWithoutDetaching([$tutoring->fk_paralelo => ['fecha_asignacion' => today(), 'estado' => true]]);
                 }
@@ -118,7 +119,7 @@ class CoordinatorStudentController extends Controller
         $student->load(['inscripciones' => fn ($q) => $q
             ->where('estado', true)
             ->whereHas('asignaturaTutoria.ciclo', fn (Builder $q2) => $q2->whereIn('fk_carrera', $careerIds))
-            ->with(['asignaturaTutoria' => fn ($q2) => $q2->with(self::TUTORING_RELATIONS)])
+            ->with(['asignaturaTutoria' => fn ($q2) => $q2->with(self::TUTORING_RELATIONS)]),
         ]);
 
         return response()->json(['data' => $this->formatStudent($student)], 201);
@@ -153,7 +154,7 @@ class CoordinatorStudentController extends Controller
             'tutoring_id' => ['required', 'integer', Rule::exists('asignatura_tutoria', 'id_asig_tutoria')],
         ]);
 
-        $tutoring = AsignaturaTutoria::query()->with(self::TUTORING_RELATIONS)->findOrFail($data['tutoring_id']);
+        $tutoring = AsignaturaTutoria::query()->with(self::TUTORING_RELATIONS)->findOrFail((int) $data['tutoring_id']);
         Gate::authorize('view', $tutoring);
 
         $enrollment = DB::transaction(function () use ($student, $tutoring): InscripcionTutoria {
@@ -202,10 +203,10 @@ class CoordinatorStudentController extends Controller
             'tutorings' => $enrollments->map(fn (InscripcionTutoria $enrollment) => [
                 'enrollment_id' => $enrollment->getKey(),
                 'tutoring_id' => $enrollment->fk_asig_tutoria,
-                'subject_name' => $enrollment->asignaturaTutoria?->nombre ?? '—',
-                'cycle_name' => $enrollment->asignaturaTutoria?->ciclo?->nombre ?? '—',
-                'section_name' => $enrollment->asignaturaTutoria?->paralelo?->nombre ?? null,
-                'period_name' => $enrollment->asignaturaTutoria?->periodo?->nombre ?? '—',
+                'subject_name' => $enrollment->asignaturaTutoria->nombre ?? '—',
+                'cycle_name' => $enrollment->asignaturaTutoria->ciclo->nombre ?? '—',
+                'section_name' => $enrollment->asignaturaTutoria->paralelo->nombre ?? null,
+                'period_name' => $enrollment->asignaturaTutoria->periodo->nombre ?? '—',
                 'is_active' => $enrollment->estado,
             ])->values(),
         ];

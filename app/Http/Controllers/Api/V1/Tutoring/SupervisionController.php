@@ -8,6 +8,7 @@ use App\Http\Resources\Api\V1\TutoringReportResource;
 use App\Models\AsignaturaTutoria;
 use App\Models\Asistencia;
 use App\Models\Reporte;
+use App\Support\TutoringCoordinatorAccess;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -42,7 +43,7 @@ class SupervisionController extends Controller
             ]]);
     }
 
-    public function allReports(Request $request, \App\Support\TutoringCoordinatorAccess $access): AnonymousResourceCollection
+    public function allReports(Request $request, TutoringCoordinatorAccess $access): AnonymousResourceCollection
     {
         Gate::authorize('viewAny', AsignaturaTutoria::class);
 

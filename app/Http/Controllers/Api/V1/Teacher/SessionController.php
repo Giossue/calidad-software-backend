@@ -10,10 +10,13 @@ use App\Http\Resources\Api\V1\Teacher\SessionResource;
 use App\Http\Resources\Api\V1\TutoringAttendanceResource;
 use App\Models\AsignaturaTutoria;
 use App\Models\Asistencia;
+use App\Models\Tema;
 use App\Models\TutoringSession;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Validation\Rule;
 
 class SessionController extends Controller
 {
@@ -43,7 +46,7 @@ class SessionController extends Controller
         return SessionResource::make($action->execute($request->user(), $tutoring, $request->sessionData()))->response()->setStatusCode(200);
     }
 
-    public function updateTopics(\Illuminate\Http\Request $request, AsignaturaTutoria $tutoring, TutoringSession $session): SessionResource
+    public function updateTopics(Request $request, AsignaturaTutoria $tutoring, TutoringSession $session): SessionResource
     {
         if ($session->tutoring_id !== $tutoring->getKey()) {
             abort(404, 'La sesión no pertenece a la tutoría.');
@@ -51,7 +54,7 @@ class SessionController extends Controller
 
         $validated = $request->validate([
             'topic_ids' => ['present', 'array'],
-            'topic_ids.*' => ['integer', \Illuminate\Validation\Rule::exists('tema', 'id_tema')->where('fk_asig_tutoria', $tutoring->getKey())],
+            'topic_ids.*' => ['integer', Rule::exists('tema', 'id_tema')->where('fk_asig_tutoria', $tutoring->getKey())],
         ]);
 
         $topicIds = $validated['topic_ids'];
@@ -59,7 +62,7 @@ class SessionController extends Controller
         $session->update(['topics_covered' => count($topicIds) > 0]);
 
         if (! empty($topicIds)) {
-            \App\Models\Tema::query()->whereIn('id_tema', $topicIds)->update(['visto' => true]);
+            Tema::query()->whereIn('id_tema', $topicIds)->update(['visto' => true]);
         }
 
         return SessionResource::make($session->load('topics.actividades.metodologias', 'attendance.estudiante'));

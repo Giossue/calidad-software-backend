@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Teacher;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\DegreeTopicResource;
 use App\Models\ActividadAvance;
+use App\Models\AsignacionDocente;
 use App\Models\FichaSeguimiento;
 use App\Models\TemaTitulacion;
 use App\Models\Usuario;
@@ -186,7 +187,7 @@ class TeacherDegreeTrackingController extends Controller
     /**
      * Valida que el usuario sea docente con asignación activa en el tema.
      */
-    private function authorizeTeacherOnTopic(Usuario $user, TemaTitulacion $topic): \App\Models\AsignacionDocente
+    private function authorizeTeacherOnTopic(Usuario $user, TemaTitulacion $topic): AsignacionDocente
     {
         abort_unless($user->estado && $user->hasAnyRole(['docente', 'administrador']), Response::HTTP_FORBIDDEN);
 

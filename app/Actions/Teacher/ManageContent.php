@@ -47,7 +47,7 @@ class ManageContent
         return $this->workspace->write($teacher, $tutoring, function () use ($tutoring, $topic, $isCovered): Tema {
             $this->workspace->topic($tutoring, $topic);
             $this->active($topic->estado);
-            $topic->update(['visto' => $isCovered ?? !$topic->visto]);
+            $topic->update(['visto' => $isCovered ?? ! $topic->visto]);
 
             return $topic->refresh()->load('actividades.metodologias');
         });

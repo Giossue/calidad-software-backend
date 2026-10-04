@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\V1\Student;
 
+use App\Models\MatriculaTitulacion;
 use App\Models\PeriodoAcademico;
 use App\Models\TemaTitulacion;
 use App\Models\Usuario;
@@ -72,9 +73,9 @@ class StoreStudentDegreeTopicRequest extends FormRequest
             }
 
             // Validar matrícula en titulación para el período si existen matrículas registradas en dicho período
-            $hasAnyMatricula = \App\Models\MatriculaTitulacion::query()->where('fk_periodo', $periodId)->exists();
+            $hasAnyMatricula = MatriculaTitulacion::query()->where('fk_periodo', $periodId)->exists();
             if ($hasAnyMatricula && ! $user->hasRole('administrador')) {
-                $isEnrolled = \App\Models\MatriculaTitulacion::query()
+                $isEnrolled = MatriculaTitulacion::query()
                     ->where('fk_estudiante', $user->getKey())
                     ->where('fk_periodo', $periodId)
                     ->where('estado', true)

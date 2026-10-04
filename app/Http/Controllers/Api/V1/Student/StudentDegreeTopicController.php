@@ -8,6 +8,8 @@ use App\Http\Requests\Api\V1\Student\StoreStudentDegreeTopicRequest;
 use App\Http\Requests\Api\V1\Student\UpdateStudentDegreeTopicRequest;
 use App\Http\Resources\Api\V1\DegreeTopicResource;
 use App\Http\Resources\Api\V1\StudentDegreeAssignmentResource;
+use App\Models\MatriculaTitulacion;
+use App\Models\PeriodoAcademico;
 use App\Models\TemaTitulacion;
 use App\Models\Usuario;
 use Illuminate\Http\JsonResponse;
@@ -233,7 +235,7 @@ class StudentDegreeTopicController extends Controller
             ]);
         }
 
-        $currentPeriod = \App\Models\PeriodoAcademico::query()->where('estado', true)->first();
+        $currentPeriod = PeriodoAcademico::query()->where('estado', true)->first();
         if (! $currentPeriod) {
             return response()->json([
                 'is_enrolled' => false,
@@ -242,7 +244,7 @@ class StudentDegreeTopicController extends Controller
             ]);
         }
 
-        $enrolled = \App\Models\MatriculaTitulacion::query()
+        $enrolled = MatriculaTitulacion::query()
             ->where('fk_estudiante', $user->getKey())
             ->where('fk_periodo', $currentPeriod->getKey())
             ->where('estado', true)

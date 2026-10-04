@@ -3,8 +3,8 @@
 namespace Tests\Feature\Api\V1\Tutoring;
 
 use App\Models\Carrera;
+use App\Models\Facultad;
 use App\Models\MatriculaTitulacion;
-use App\Models\Paralelo;
 use App\Models\PeriodoAcademico;
 use App\Models\Usuario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -16,8 +16,11 @@ class CoordinatorDegreeEnrollmentTest extends TestCase
     use RefreshDatabase;
 
     private PeriodoAcademico $period;
+
     private Carrera $career;
+
     private Usuario $coordinator;
+
     private Usuario $student;
 
     protected function setUp(): void
@@ -31,7 +34,7 @@ class CoordinatorDegreeEnrollmentTest extends TestCase
             'fecha_fin' => '2027-02-28',
         ]);
 
-        $faculty = \App\Models\Facultad::query()->create(['nombre' => 'Facultad de Ingeniería', 'estado' => true]);
+        $faculty = Facultad::query()->create(['nombre' => 'Facultad de Ingeniería', 'estado' => true]);
         $this->career = Carrera::query()->create([
             'nombre' => 'Ingeniería en Software',
             'fk_facultad' => $faculty->getKey(),
