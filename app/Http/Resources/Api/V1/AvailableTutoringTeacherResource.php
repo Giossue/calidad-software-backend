@@ -17,6 +17,7 @@ class AvailableTutoringTeacherResource extends JsonResource
             'name' => $this->nombre,
             'email' => $this->correo,
             'is_active' => $this->estado,
+            'busy_schedules' => $this->busy_schedules ?? [],
         ];
     }
 }

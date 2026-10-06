@@ -44,6 +44,8 @@ class CatalogController extends Controller
     {
         Gate::authorize('viewAny', Subject::class);
 
+        PeriodoAcademico::sincronizarVigencia();
+
         return AcademicPeriodResource::collection(PeriodoAcademico::query()->where('estado', true)->orderByDesc('fecha_inicio')->get());
     }
 

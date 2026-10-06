@@ -9,6 +9,8 @@ use App\Http\Resources\Api\V1\AvailableTutoringTeacherResource;
 use App\Http\Resources\Api\V1\TutoringTeacherResource;
 use App\Models\AsignaturaTutoria;
 use App\Models\Carrera;
+use App\Models\Horario;
+use App\Models\PeriodoAcademico;
 use App\Models\Usuario;
 use App\Support\TutoringCoordinatorAccess;
 use Illuminate\Database\Eloquent\Builder;
@@ -38,7 +40,7 @@ class TeacherController extends Controller
             $query->where('estado', $status === 'active');
         }
         if ($search = trim((string) $request->string('search'))) {
-            $query->where(fn (Builder $q) => $q->whereLike('nombre', "%{$search}%")->orWhereLike('correo', "%{$search}%"));
+            $query->where(fn (Builder $q) => $query->whereLike('nombre', "%{$search}%")->orWhereLike('correo', "%{$search}%"));
         }
 
         return TutoringTeacherResource::collection($query->orderBy('nombre')->paginate(min(max($request->integer('per_page', 15), 1), 100)));
@@ -63,7 +65,46 @@ class TeacherController extends Controller
             $query->where(fn (Builder $q) => $q->whereLike('nombre', "%{$term}%")->orWhereLike('correo', "%{$term}%"));
         }
 
-        return AvailableTutoringTeacherResource::collection($query->orderBy('nombre')->limit(100)->get());
+        $teachers = $query->orderBy('nombre')->limit(100)->get();
+
+        $periodId = $request->integer('period_id')
+            ?: PeriodoAcademico::query()->where('estado', true)->latest('id_periodo')->value('id_periodo');
+
+        if ($periodId && $teachers->isNotEmpty()) {
+            $teacherIds = $teachers->pluck('id_usuario')->all();
+            $busyHorarios = Horario::query()
+                ->where('estado', true)
+                ->whereHas('asignaturaTutoria', function ($q) use ($teacherIds, $periodId) {
+                    $q->where('estado', true)
+                        ->where('fk_periodo', $periodId)
+                        ->whereIn('fk_docente', $teacherIds);
+                })
+                ->with(['asignaturaTutoria'])
+                ->get();
+
+            $grouped = $busyHorarios->groupBy(fn ($h) => $h->asignaturaTutoria?->fk_docente);
+
+            foreach ($teachers as $teacher) {
+                $slots = $grouped->get($teacher->getKey(), collect());
+                $teacher->busy_schedules = $slots->map(function ($h) {
+                    $normalizedDay = str_replace(
+                        ['á', 'é', 'í', 'ó', 'ú'],
+                        ['a', 'e', 'i', 'o', 'u'],
+                        trim(mb_strtolower($h->dia_semana))
+                    );
+
+                    return [
+                        'tutoring_id' => $h->fk_asig_tutoria,
+                        'tutoring_name' => $h->asignaturaTutoria?->nombre ?? '',
+                        'day' => $normalizedDay,
+                        'start_time' => substr($h->hora_inicio, 0, 5),
+                        'end_time' => substr($h->hora_fin, 0, 5),
+                    ];
+                })->values()->all();
+            }
+        }
+
+        return AvailableTutoringTeacherResource::collection($teachers);
     }
 
     public function store(TeacherRequest $request, ManageTeacher $action, TutoringCoordinatorAccess $access): JsonResponse

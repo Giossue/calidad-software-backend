@@ -20,6 +20,8 @@ class AcademicPeriodController extends Controller
     {
         $this->authorize('viewAny', PeriodoAcademico::class);
 
+        PeriodoAcademico::sincronizarVigencia();
+
         $query = PeriodoAcademico::query();
 
         if ($search = trim((string) $request->string('search'))) {
@@ -40,14 +42,29 @@ class AcademicPeriodController extends Controller
 
     public function store(StoreAcademicPeriodRequest $request): JsonResponse
     {
-        $academicPeriod = PeriodoAcademico::query()->create($request->validated());
+        $data = $request->validated();
+        $today = now()->toDateString();
+        $isCurrent = $data['fecha_inicio'] <= $today && $data['fecha_fin'] >= $today;
 
-        return AcademicPeriodResource::make($academicPeriod)->response()->setStatusCode(Response::HTTP_CREATED);
+        if ($isCurrent) {
+            PeriodoAcademico::query()->where('estado', true)->update(['estado' => false]);
+            $data['estado'] = true;
+        } else {
+            $data['estado'] = false;
+        }
+
+        $academicPeriod = PeriodoAcademico::query()->create($data);
+
+        PeriodoAcademico::sincronizarVigencia();
+
+        return AcademicPeriodResource::make($academicPeriod->refresh())->response()->setStatusCode(Response::HTTP_CREATED);
     }
 
     public function update(UpdateAcademicPeriodRequest $request, PeriodoAcademico $academicPeriod): AcademicPeriodResource
     {
         $academicPeriod->update($request->validated());
+
+        PeriodoAcademico::sincronizarVigencia();
 
         return AcademicPeriodResource::make($academicPeriod->refresh());
     }

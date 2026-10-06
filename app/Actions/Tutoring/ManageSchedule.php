@@ -63,7 +63,12 @@ class ManageSchedule
         if ($data['start_time'] >= $data['end_time']) {
             throw ValidationException::withMessages(['end_time' => 'La hora final debe ser posterior a la inicial.']);
         }
-        $overlap = $tutoring->horarios()->where('estado', true)->where('dia_semana', $data['day'])
+        $dayVariants = self::getDayVariants($data['day']);
+        $overlap = $tutoring->horarios()->where('estado', true)
+            ->where(function ($q) use ($dayVariants) {
+                $q->whereIn(DB::raw('LOWER(dia_semana)'), array_map('mb_strtolower', $dayVariants))
+                    ->orWhereIn('dia_semana', $dayVariants);
+            })
             ->where('hora_inicio', '<', $data['end_time'].':00')
             ->where('hora_fin', '>', $data['start_time'].':00')
             ->when($exceptId, fn ($query) => $query->whereKeyNot($exceptId))->exists();
@@ -93,6 +98,32 @@ class ManageSchedule
         }
     }
 
+    /**
+     * @return array<int, string>
+     */
+    public static function getDayVariants(string $day): array
+    {
+        $normalized = str_replace(
+            ['á', 'é', 'í', 'ó', 'ú'],
+            ['a', 'e', 'i', 'o', 'u'],
+            trim(mb_strtolower($day))
+        );
+
+        $variants = [$normalized, trim(mb_strtolower($day)), trim($day)];
+        if ($normalized === 'miercoles') {
+            $variants[] = 'miércoles';
+        } elseif ($normalized === 'miércoles') {
+            $variants[] = 'miercoles';
+        }
+        if ($normalized === 'sabado') {
+            $variants[] = 'sábado';
+        } elseif ($normalized === 'sábado') {
+            $variants[] = 'sabado';
+        }
+
+        return array_values(array_unique(array_filter($variants)));
+    }
+
     public static function findTeacherScheduleConflict(
         int $teacherId,
         int $periodId,
@@ -104,22 +135,21 @@ class ManageSchedule
     ): ?Horario {
         $startTimeFull = strlen($startTime) === 5 ? $startTime.':00' : $startTime;
         $endTimeFull = strlen($endTime) === 5 ? $endTime.':00' : $endTime;
-        $normalizedDay = str_replace(
-            ['á', 'é', 'í', 'ó', 'ú'],
-            ['a', 'e', 'i', 'o', 'u'],
-            trim(mb_strtolower($day))
-        );
+        $dayVariants = self::getDayVariants($day);
 
         return Horario::query()
             ->where('estado', true)
-            ->where(fn ($q) => $q->whereRaw('LOWER(dia_semana) = ?', [$normalizedDay])->orWhere('dia_semana', $day))
+            ->where(function ($q) use ($dayVariants) {
+                $q->whereIn(DB::raw('LOWER(dia_semana)'), array_map('mb_strtolower', $dayVariants))
+                    ->orWhereIn('dia_semana', $dayVariants);
+            })
             ->where('hora_inicio', '<', $endTimeFull)
             ->where('hora_fin', '>', $startTimeFull)
             ->when($exceptScheduleId, fn ($q) => $q->whereKeyNot($exceptScheduleId))
             ->whereHas('asignaturaTutoria', function ($q) use ($teacherId, $periodId, $exceptTutoringId) {
                 $q->where('estado', true)
                     ->where('fk_docente', $teacherId)
-                    ->where('fk_periodo', $periodId)
+                    ->when($periodId, fn ($inner) => $inner->where('fk_periodo', $periodId))
                     ->when($exceptTutoringId, fn ($inner) => $inner->where('id_asig_tutoria', '!=', $exceptTutoringId));
             })
             ->with(['asignaturaTutoria'])

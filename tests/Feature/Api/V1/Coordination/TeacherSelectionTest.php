@@ -134,4 +134,38 @@ class TeacherSelectionTest extends TestCase
 
         $this->getJson('/api/v1/coordination/teachers')->assertForbidden();
     }
+
+    public function test_teachers_can_be_searched_by_career_and_faculty_and_include_careers_in_resource(): void
+    {
+        $faculty1 = \App\Models\Facultad::query()->create(['nombre' => 'Facultad de Ingeniería', 'estado' => true]);
+        $career1 = \App\Models\Carrera::query()->create(['nombre' => 'Ingeniería de Software', 'fk_facultad' => $faculty1->getKey(), 'estado' => true]);
+
+        $faculty2 = \App\Models\Facultad::query()->create(['nombre' => 'Facultad de Ciencias de la Salud', 'estado' => true]);
+        $career2 = \App\Models\Carrera::query()->create(['nombre' => 'Enfermería', 'fk_facultad' => $faculty2->getKey(), 'estado' => true]);
+
+        $teacherSoftware = Usuario::factory()->withRole('docente')->create(['nombre' => 'Carlos Programador']);
+        $teacherSoftware->teachingCareers()->attach($career1->getKey());
+
+        $teacherHealth = Usuario::factory()->withRole('docente')->create(['nombre' => 'Diana Doctora']);
+        $teacherHealth->teachingCareers()->attach($career2->getKey());
+
+        $coordinator = Usuario::factory()->withRole('coordinador_titulacion')->create();
+        Sanctum::actingAs($coordinator, ['access-api']);
+
+        // Buscar por carrera
+        $responseCareer = $this->getJson('/api/v1/coordination/teachers?search=Software');
+        $responseCareer->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $teacherSoftware->getKey())
+            ->assertJsonPath('data.0.careers.0.name', 'Ingeniería de Software')
+            ->assertJsonPath('data.0.careers.0.faculty_name', 'Facultad de Ingeniería');
+
+        // Buscar por facultad
+        $responseFaculty = $this->getJson('/api/v1/coordination/teachers?search=Salud');
+        $responseFaculty->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $teacherHealth->getKey())
+            ->assertJsonPath('data.0.careers.0.name', 'Enfermería')
+            ->assertJsonPath('data.0.careers.0.faculty_name', 'Facultad de Ciencias de la Salud');
+    }
 }

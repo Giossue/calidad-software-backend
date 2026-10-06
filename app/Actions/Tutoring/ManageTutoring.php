@@ -4,6 +4,7 @@ namespace App\Actions\Tutoring;
 
 use App\Models\AsignaturaTutoria;
 use App\Models\Ciclo;
+use App\Models\Horario;
 use App\Models\Modalidad;
 use App\Models\Paralelo;
 use App\Models\PeriodoAcademico;
@@ -18,7 +19,7 @@ class ManageTutoring
 {
     public function __construct(private TutoringCoordinatorAccess $access) {}
 
-    /** @param array{subject_id: int, cycle_id: int, period_id: int, modality_id: int, parallel_ids?: array<int>|null, parallel_id?: int|null} $data */
+    /** @param array{subject_id: int, cycle_id: int, period_id: int, modality_id: int, parallel_ids?: array<int>|null, parallel_id?: int|null, teacher_id?: int|null, schedules?: array<int, array{day: string, start_time: string, end_time: string, room?: string|null}>|null} $data */
     public function create(Usuario $user, array $data): AsignaturaTutoria
     {
         return $this->save(function () use ($user, $data): AsignaturaTutoria {
@@ -62,7 +63,7 @@ class ManageTutoring
                     $this->assertUnique($subject->getKey(), $targetCycle->getKey(), $data['period_id']);
                     $this->linkPeriod($targetCycle, $data['period_id']);
 
-                    $created[] = AsignaturaTutoria::query()->create([
+                    $tutoring = AsignaturaTutoria::query()->create([
                         'subject_id' => $subject->getKey(),
                         'fk_ciclo' => $targetCycle->getKey(),
                         'fk_periodo' => $data['period_id'],
@@ -72,6 +73,10 @@ class ManageTutoring
                         'nombre' => $subject->name,
                         'estado' => true,
                     ]);
+
+                    $this->applyTeacherAndSchedules($tutoring, $data, $targetCycle);
+
+                    $created[] = $tutoring;
                 }
 
                 return $created[0];
@@ -81,7 +86,7 @@ class ManageTutoring
             $this->assertUnique($subject->getKey(), $baseCycle->getKey(), $data['period_id']);
             $this->linkPeriod($baseCycle, $data['period_id']);
 
-            return AsignaturaTutoria::query()->create([
+            $tutoring = AsignaturaTutoria::query()->create([
                 'subject_id' => $subject->getKey(),
                 'fk_ciclo' => $baseCycle->getKey(),
                 'fk_periodo' => $data['period_id'],
@@ -91,6 +96,212 @@ class ManageTutoring
                 'nombre' => $subject->name,
                 'estado' => true,
             ]);
+
+            $this->applyTeacherAndSchedules($tutoring, $data, $baseCycle);
+
+            return $tutoring;
+        });
+    }
+
+    /** @param array{teacher_id?: int|null, schedules?: array<int, array{day: string, start_time: string, end_time: string, room?: string|null}>|null} $data */
+    private function applyTeacherAndSchedules(AsignaturaTutoria $tutoring, array $data, Ciclo $cycle): void
+    {
+        if (empty($data['teacher_id'])) {
+            return;
+        }
+
+        $teacher = Usuario::query()->whereKey($data['teacher_id'])->lockForUpdate()->firstOrFail();
+        if (! $teacher->estado || ! $teacher->hasRole('docente')) {
+            throw ValidationException::withMessages(['teacher_id' => 'Selecciona un docente habilitado.']);
+        }
+
+        $schedules = $data['schedules'] ?? [];
+        if (! empty($schedules)) {
+            $count = count($schedules);
+            for ($i = 0; $i < $count; $i++) {
+                $schedA = $schedules[$i];
+                $dayA = trim($schedA['day']);
+                $startA = substr($schedA['start_time'], 0, 5);
+                $endA = substr($schedA['end_time'], 0, 5);
+                $variantsA = ManageSchedule::getDayVariants($dayA);
+
+                if ($startA >= $endA) {
+                    throw ValidationException::withMessages(['end_time' => 'La hora final debe ser posterior a la inicial.']);
+                }
+
+                for ($j = $i + 1; $j < $count; $j++) {
+                    $schedB = $schedules[$j];
+                    $dayB = trim($schedB['day']);
+                    $startB = substr($schedB['start_time'], 0, 5);
+                    $endB = substr($schedB['end_time'], 0, 5);
+                    $variantsB = ManageSchedule::getDayVariants($dayB);
+
+                    if (array_intersect($variantsA, $variantsB)) {
+                        if ($startA < $endB && $endA > $startB) {
+                            throw ValidationException::withMessages([
+                                'schedules' => 'No puedes registrar horarios superpuestos en el mismo día.',
+                            ]);
+                        }
+                    }
+                }
+
+                $conflict = ManageSchedule::findTeacherScheduleConflict(
+                    $teacher->getKey(),
+                    $tutoring->fk_periodo,
+                    $dayA,
+                    $startA,
+                    $endA,
+                    $tutoring->getKey()
+                );
+                if ($conflict) {
+                    $materia = $conflict->asignaturaTutoria?->nombre ?? 'otra asignatura';
+                    $inicio = substr($conflict->hora_inicio, 0, 5);
+                    $fin = substr($conflict->hora_fin, 0, 5);
+                    throw ValidationException::withMessages([
+                        'teacher_id' => "El docente ya tiene asignado un horario en '{$materia}' el día {$dayA} de {$inicio} a {$fin}.",
+                    ]);
+                }
+
+                $room = trim($schedA['room'] ?? '') ?: 'Por asignar';
+                Horario::query()->create([
+                    'fk_asig_tutoria' => $tutoring->getKey(),
+                    'dia_semana' => $dayA,
+                    'hora_inicio' => $startA . ':00',
+                    'hora_fin' => $endA . ':00',
+                    'room' => $room,
+                    'estado' => true,
+                ]);
+            }
+        }
+
+        $tutoring->update(['fk_docente' => $teacher->getKey()]);
+
+        if ($cycle->fk_carrera) {
+            $teacher->teachingCareers()->syncWithoutDetaching([$cycle->fk_carrera => ['assigned_at' => now()]]);
+        }
+    }
+
+    /** @param array{teacher_id: int, cycle_id?: int|null, schedules: array<int, array{day: string, start_time: string, end_time: string, room?: string|null}>} $data */
+    public function configure(AsignaturaTutoria $tutoring, array $data): AsignaturaTutoria
+    {
+        return $this->save(function () use ($tutoring, $data): AsignaturaTutoria {
+            $tutoring = AsignaturaTutoria::query()->whereKey($tutoring->getKey())->lockForUpdate()->firstOrFail();
+            $this->assertActive($tutoring);
+
+            if (! empty($data['cycle_id']) && (int) $data['cycle_id'] !== (int) $tutoring->fk_ciclo) {
+                $cycle = Ciclo::query()->whereKey($data['cycle_id'])->firstOrFail();
+                $this->assignCycle($tutoring, $cycle);
+                $tutoring->refresh();
+            }
+
+            $teacher = Usuario::query()->whereKey($data['teacher_id'])->lockForUpdate()->firstOrFail();
+            if (! $teacher->estado || ! $teacher->hasRole('docente')) {
+                throw ValidationException::withMessages(['teacher_id' => 'Selecciona un docente habilitado.']);
+            }
+
+            $schedules = $data['schedules'] ?? [];
+            $count = count($schedules);
+            for ($i = 0; $i < $count; $i++) {
+                $schedA = $schedules[$i];
+                $dayA = trim($schedA['day']);
+                $startA = substr($schedA['start_time'], 0, 5);
+                $endA = substr($schedA['end_time'], 0, 5);
+                $variantsA = ManageSchedule::getDayVariants($dayA);
+
+                if ($startA >= $endA) {
+                    throw ValidationException::withMessages(['end_time' => 'La hora final debe ser posterior a la inicial.']);
+                }
+
+                for ($j = $i + 1; $j < $count; $j++) {
+                    $schedB = $schedules[$j];
+                    $dayB = trim($schedB['day']);
+                    $startB = substr($schedB['start_time'], 0, 5);
+                    $endB = substr($schedB['end_time'], 0, 5);
+                    $variantsB = ManageSchedule::getDayVariants($dayB);
+
+                    if (array_intersect($variantsA, $variantsB)) {
+                        if ($startA < $endB && $endA > $startB) {
+                            throw ValidationException::withMessages([
+                                'schedules' => 'No puedes registrar horarios superpuestos en el mismo día.',
+                            ]);
+                        }
+                    }
+                }
+
+                $conflict = ManageSchedule::findTeacherScheduleConflict(
+                    $teacher->getKey(),
+                    $tutoring->fk_periodo,
+                    $dayA,
+                    $startA,
+                    $endA,
+                    $tutoring->getKey()
+                );
+                if ($conflict) {
+                    $materia = $conflict->asignaturaTutoria?->nombre ?? 'otra asignatura';
+                    $inicio = substr($conflict->hora_inicio, 0, 5);
+                    $fin = substr($conflict->hora_fin, 0, 5);
+                    throw ValidationException::withMessages([
+                        'teacher_id' => "El docente ya tiene asignado un horario en '{$materia}' el día {$dayA} de {$inicio} a {$fin}.",
+                    ]);
+                }
+            }
+
+            $existingActive = $tutoring->horarios()->where('estado', true)->get();
+            $newDays = array_map(fn ($s) => trim($s['day']), $schedules);
+
+            foreach ($existingActive as $existing) {
+                $existingVariants = ManageSchedule::getDayVariants($existing->dia_semana);
+                $matched = false;
+                foreach ($newDays as $nd) {
+                    if (in_array($nd, $existingVariants, true)) {
+                        $matched = true;
+                        break;
+                    }
+                }
+                if (! $matched) {
+                    $existing->update(['estado' => false]);
+                }
+            }
+
+            foreach ($schedules as $sched) {
+                $day = trim($sched['day']);
+                $startTime = substr($sched['start_time'], 0, 5);
+                $endTime = substr($sched['end_time'], 0, 5);
+                $dayVariants = ManageSchedule::getDayVariants($day);
+
+                $match = $existingActive->first(function ($item) use ($dayVariants) {
+                    return in_array($item->dia_semana, $dayVariants, true);
+                });
+
+                if ($match) {
+                    $room = trim($sched['room'] ?? '') ?: ($match->room ?: 'Por asignar');
+                    $match->update([
+                        'dia_semana' => $day,
+                        'hora_inicio' => $startTime . ':00',
+                        'hora_fin' => $endTime . ':00',
+                        'room' => $room,
+                        'estado' => true,
+                    ]);
+                } else {
+                    $room = trim($sched['room'] ?? '') ?: 'Por asignar';
+                    Horario::query()->create([
+                        'fk_asig_tutoria' => $tutoring->getKey(),
+                        'dia_semana' => $day,
+                        'hora_inicio' => $startTime . ':00',
+                        'hora_fin' => $endTime . ':00',
+                        'room' => $room,
+                        'estado' => true,
+                    ]);
+                }
+            }
+
+            $tutoring->update(['fk_docente' => $teacher->getKey()]);
+
+            if ($tutoring->ciclo && $tutoring->ciclo->fk_carrera) {
+                $teacher->teachingCareers()->syncWithoutDetaching([$tutoring->ciclo->fk_carrera => ['assigned_at' => now()]]);
+            }
+
+            return $tutoring->refresh();
         });
     }
 

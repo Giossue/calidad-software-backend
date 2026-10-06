@@ -24,7 +24,7 @@ class PeriodSectionController extends Controller
     {
         Gate::authorize('viewAny', TemaTitulacion::class);
 
-        $currentPeriod = PeriodoAcademico::query()->where('estado', true)->first();
+        $currentPeriod = PeriodoAcademico::periodoVigente();
 
         if (! $currentPeriod) {
             return response()->json([
@@ -42,7 +42,7 @@ class PeriodSectionController extends Controller
     {
         Gate::authorize('viewAny', TemaTitulacion::class);
 
-        $currentPeriod = PeriodoAcademico::query()->where('estado', true)->first();
+        $currentPeriod = PeriodoAcademico::periodoVigente();
 
         if (! $currentPeriod) {
             return response()->json([
@@ -62,7 +62,7 @@ class PeriodSectionController extends Controller
     {
         Gate::authorize('viewAny', TemaTitulacion::class);
 
-        $currentPeriod = PeriodoAcademico::query()->where('estado', true)->first();
+        $currentPeriod = PeriodoAcademico::periodoVigente();
 
         if (! $currentPeriod) {
             return response()->json([

@@ -40,4 +40,31 @@ class UpdateAcademicPeriodRequest extends FormRequest
     {
         return ['nombre' => 'nombre', 'fecha_inicio' => 'fecha de inicio', 'fecha_fin' => 'fecha de fin'];
     }
+
+    public function withValidator(\Illuminate\Validation\Validator $validator): void
+    {
+        $validator->after(function (\Illuminate\Validation\Validator $validator) {
+            /** @var PeriodoAcademico $academicPeriod */
+            $academicPeriod = $this->route('academicPeriod');
+            $inicio = $this->input('fecha_inicio');
+            $fin = $this->input('fecha_fin');
+
+            if ($inicio && $fin && $inicio <= $fin && $academicPeriod) {
+                $overlapping = PeriodoAcademico::query()
+                    ->where('id_periodo', '!=', $academicPeriod->getKey())
+                    ->where(function ($query) use ($inicio, $fin) {
+                        $query->where('fecha_inicio', '<=', $fin)
+                            ->where('fecha_fin', '>=', $inicio);
+                    })
+                    ->first();
+
+                if ($overlapping) {
+                    $validator->errors()->add(
+                        'fecha_inicio',
+                        "El rango de fechas coincide con el período '{$overlapping->nombre}' ({$overlapping->fecha_inicio->format('Y-m-d')} al {$overlapping->fecha_fin->format('Y-m-d')}). Solo debe existir un PAO a la vez.",
+                    );
+                }
+            }
+        });
+    }
 }

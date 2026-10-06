@@ -235,7 +235,7 @@ class StudentDegreeTopicController extends Controller
             ]);
         }
 
-        $currentPeriod = PeriodoAcademico::query()->where('estado', true)->first();
+        $currentPeriod = PeriodoAcademico::periodoVigente();
         if (! $currentPeriod) {
             return response()->json([
                 'is_enrolled' => false,

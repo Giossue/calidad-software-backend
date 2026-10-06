@@ -6,6 +6,7 @@ use App\Actions\Tutoring\ManageTutoring;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Tutoring\AssignTutoringCycleRequest;
 use App\Http\Requests\Api\V1\Tutoring\AssignTutoringTeacherRequest;
+use App\Http\Requests\Api\V1\Tutoring\ConfigureTutoringRequest;
 use App\Http\Requests\Api\V1\Tutoring\TutoringRequest;
 use App\Http\Resources\Api\V1\TutoringResource;
 use App\Models\AsignaturaTutoria;
@@ -60,6 +61,8 @@ class TutoringController extends Controller
             'parallel_id' => $request->integer('parallel_id') ?: null,
             'period_id' => $request->integer('period_id'),
             'modality_id' => $request->integer('modality_id'),
+            'teacher_id' => $request->integer('teacher_id') ?: null,
+            'schedules' => $request->input('schedules') ?: [],
         ])->load(self::RELATIONS))
             ->response()->setStatusCode(Response::HTTP_CREATED);
     }
@@ -104,5 +107,10 @@ class TutoringController extends Controller
         $teacher = Usuario::query()->findOrFail($request->integer('teacher_id'));
 
         return TutoringResource::make($action->assignTeacher($tutoring, $teacher)->load(self::RELATIONS));
+    }
+
+    public function configure(ConfigureTutoringRequest $request, AsignaturaTutoria $tutoring, ManageTutoring $action): TutoringResource
+    {
+        return TutoringResource::make($action->configure($tutoring, $request->validated())->load(self::RELATIONS));
     }
 }

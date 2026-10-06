@@ -18,7 +18,7 @@ class DegreeCoordinatorSectionTest extends TestCase
         $activePeriod = PeriodoAcademico::query()->create([
             'nombre' => 'PAO 2026-1',
             'fecha_inicio' => '2026-05-01',
-            'fecha_fin' => '2026-09-30',
+            'fecha_fin' => '2026-12-31',
             'estado' => true,
         ]);
 
@@ -56,7 +56,7 @@ class DegreeCoordinatorSectionTest extends TestCase
         $activePeriod = PeriodoAcademico::query()->create([
             'nombre' => 'PAO 2026-1',
             'fecha_inicio' => '2026-05-01',
-            'fecha_fin' => '2026-09-30',
+            'fecha_fin' => '2026-12-31',
             'estado' => true,
         ]);
 
@@ -109,7 +109,7 @@ class DegreeCoordinatorSectionTest extends TestCase
         PeriodoAcademico::query()->create([
             'nombre' => 'PAO 2026-1',
             'fecha_inicio' => '2026-05-01',
-            'fecha_fin' => '2026-09-30',
+            'fecha_fin' => '2026-12-31',
             'estado' => true,
         ]);
 

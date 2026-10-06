@@ -105,8 +105,8 @@ class AdministrativeCatalogsTest extends TestCase
         $paginated->assertOk()
             ->assertJsonPath('meta.per_page', 2)
             ->assertJsonPath('meta.total', 3)
-            ->assertJsonPath('meta.active_count', 2)
-            ->assertJsonPath('meta.inactive_count', 1);
+            ->assertJsonPath('meta.active_count', 1)
+            ->assertJsonPath('meta.inactive_count', 2);
 
         $searched = $this->getJson('/api/v1/academic-periods?search=2026-A');
         $names = collect($searched->json('data'))->pluck('name');
@@ -123,6 +123,74 @@ class AdministrativeCatalogsTest extends TestCase
             'fecha_inicio' => '2026-08-31',
             'fecha_fin' => '2026-04-01',
         ])->assertUnprocessable()->assertJsonValidationErrors('fecha_fin');
+    }
+
+    public function test_only_one_academic_period_can_be_active_at_the_same_time(): void
+    {
+        Sanctum::actingAs($this->administrator());
+
+        // Período 1 vigente
+        $period1 = $this->postJson('/api/v1/academic-periods', [
+            'nombre' => 'PAO I 2026',
+            'fecha_inicio' => '2026-05-01',
+            'fecha_fin' => '2026-10-31',
+        ])->assertCreated();
+
+        $this->assertTrue($period1->json('data.is_active'));
+
+        // Período 2 consecutivo en el futuro: se registra inactivo porque aún no llega su fecha
+        $period2 = $this->postJson('/api/v1/academic-periods', [
+            'nombre' => 'PAO II 2026',
+            'fecha_inicio' => '2026-11-01',
+            'fecha_fin' => '2027-03-31',
+        ])->assertCreated();
+
+        $this->assertFalse($period2->json('data.is_active'));
+
+        // Al consultar el catálogo, solo 1 está activo
+        $response = $this->getJson('/api/v1/academic-periods');
+        $response->assertOk()
+            ->assertJsonPath('meta.active_count', 1)
+            ->assertJsonPath('meta.inactive_count', 1);
+    }
+
+    public function test_academic_period_rejects_overlapping_dates_with_another_period(): void
+    {
+        Sanctum::actingAs($this->administrator());
+
+        $this->postJson('/api/v1/academic-periods', [
+            'nombre' => 'PAO I 2026',
+            'fecha_inicio' => '2026-05-01',
+            'fecha_fin' => '2026-10-31',
+        ])->assertCreated();
+
+        // Intento de crear período solapado con el existente
+        $response = $this->postJson('/api/v1/academic-periods', [
+            'nombre' => 'PAO Solapado',
+            'fecha_inicio' => '2026-08-01',
+            'fecha_fin' => '2026-12-31',
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors('fecha_inicio');
+    }
+
+    public function test_activating_an_expired_academic_period_is_rejected(): void
+    {
+        Sanctum::actingAs($this->administrator());
+
+        // Período ya finalizado (cerrado en su fecha de fin)
+        $expired = $this->postJson('/api/v1/academic-periods', [
+            'nombre' => 'PAO Pasado 2025',
+            'fecha_inicio' => '2025-05-01',
+            'fecha_fin' => '2025-09-30',
+        ])->assertCreated();
+
+        $this->assertFalse($expired->json('data.is_active'));
+
+        // Intentar habilitar un período cuya fecha ya expiró debe fallar
+        $this->patchJson("/api/v1/academic-periods/{$expired->json('data.id')}/activate")
+            ->assertStatus(422);
     }
 
     public function test_administrator_can_create_update_and_deactivate_a_modality(): void

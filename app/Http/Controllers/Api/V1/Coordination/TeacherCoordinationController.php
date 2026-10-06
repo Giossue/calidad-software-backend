@@ -23,17 +23,35 @@ class TeacherCoordinationController extends Controller
         $query = Usuario::query()
             ->whereHas('roles', fn (Builder $q) => $q->where('slug', 'docente'))
             ->where('estado', true)
+            ->with([
+                'teachingCareers' => fn ($q) => $q->with('facultad')->where('carrera.estado', true),
+            ])
             ->withCount([
                 'asignacionesDocente as tutor_assignments_count' => fn (Builder $q) => $q->where('rol', 'tutor')->where('estado', true),
                 'asignacionesDocente as peer_assignments_count' => fn (Builder $q) => $q->where('rol', 'par_academico')->where('estado', true),
             ]);
 
         if ($search = trim((string) $request->string('search'))) {
-            $query->where(function (Builder $inner) use ($search): void {
-                $inner->whereLike('nombre', "%{$search}%")
-                    ->orWhereLike('correo', "%{$search}%")
-                    ->orWhereLike('cedula', "%{$search}%");
-            });
+            $terms = preg_split('/\s+/', $search, -1, PREG_SPLIT_NO_EMPTY) ?: [$search];
+            foreach ($terms as $term) {
+                $query->where(function (Builder $inner) use ($term): void {
+                    $inner->whereLike('nombre', "%{$term}%")
+                        ->orWhereLike('correo', "%{$term}%")
+                        ->orWhereLike('cedula', "%{$term}%")
+                        ->orWhereHas('teachingCareers', function (Builder $cq) use ($term): void {
+                            $cq->whereLike('carrera.nombre', "%{$term}%")
+                                ->orWhereHas('facultad', fn (Builder $fq) => $fq->whereLike('facultad.nombre', "%{$term}%"));
+                        });
+                });
+            }
+        }
+
+        if ($careerId = $request->integer('career_id')) {
+            $query->whereHas('teachingCareers', fn (Builder $q) => $q->where('carrera.id_carrera', $careerId));
+        }
+
+        if ($facultyId = $request->integer('faculty_id')) {
+            $query->whereHas('teachingCareers.facultad', fn (Builder $q) => $q->where('facultad.id_facultad', $facultyId));
         }
 
         return TeacherResource::collection(

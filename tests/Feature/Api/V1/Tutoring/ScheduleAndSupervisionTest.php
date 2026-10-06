@@ -212,6 +212,115 @@ class ScheduleAndSupervisionTest extends TutoringTestCase
             ->assertUnprocessable()->assertJsonValidationErrors('teacher_id');
     }
 
+    public function test_create_tutoring_with_teacher_and_schedules_rejects_schedule_conflict(): void
+    {
+        $teacher = Usuario::factory()->withRole('docente')->create();
+        $this->teacher = $teacher;
+        $subject1 = $this->createSubject();
+        $subject2 = $this->createSubject(code: 'CS-204');
+
+        Sanctum::actingAs($this->coordinator, ['*']);
+
+        // Crear primera tutoría con docente y horario lunes 08:00 - 10:00
+        $this->postJson(self::API.'/tutorings', [
+            'subject_id' => $subject1->getKey(),
+            'cycle_id' => $this->cycle->getKey(),
+            'period_id' => $this->period->getKey(),
+            'modality_id' => $this->modality->getKey(),
+            'teacher_id' => $teacher->getKey(),
+            'schedules' => [
+                ['day' => 'lunes', 'start_time' => '08:00', 'end_time' => '10:00', 'room' => 'Aula 1'],
+            ],
+        ])->assertCreated()->assertJsonPath('data.teacher_id', $teacher->getKey());
+
+        // Intentar crear segunda tutoría con mismo docente y horario solapado (lunes 09:00 - 11:00)
+        $this->postJson(self::API.'/tutorings', [
+            'subject_id' => $subject2->getKey(),
+            'cycle_id' => $this->cycle->getKey(),
+            'period_id' => $this->period->getKey(),
+            'modality_id' => $this->modality->getKey(),
+            'teacher_id' => $teacher->getKey(),
+            'schedules' => [
+                ['day' => 'lunes', 'start_time' => '09:00', 'end_time' => '11:00', 'room' => 'Aula 2'],
+            ],
+        ])->assertUnprocessable()->assertJsonValidationErrors('teacher_id');
+
+        // Horario contiguo (lunes 10:00 - 12:00) debe ser permitido
+        $response = $this->postJson(self::API.'/tutorings', [
+            'subject_id' => $subject2->getKey(),
+            'cycle_id' => $this->cycle->getKey(),
+            'period_id' => $this->period->getKey(),
+            'modality_id' => $this->modality->getKey(),
+            'teacher_id' => $teacher->getKey(),
+            'schedules' => [
+                ['day' => 'lunes', 'start_time' => '10:00', 'end_time' => '12:00', 'room' => 'Aula 2'],
+            ],
+        ])->assertCreated()->assertJsonPath('data.teacher_id', $teacher->getKey());
+
+        $this->assertCount(1, $response->json('data.schedules'));
+    }
+
+    public function test_configure_tutoring_updates_teacher_and_schedules_and_rejects_conflicts(): void
+    {
+        $teacher = Usuario::factory()->withRole('docente')->create();
+        $tutoring1 = $this->createTutoring();
+        $tutoring2 = $this->createTutoring(subject: $this->createSubject(code: 'CS-205'));
+
+        Sanctum::actingAs($this->coordinator, ['*']);
+
+        // Tutoría 1 con horario lunes 08:00 - 10:00
+        $this->putJson(self::API.'/tutorings/'.$tutoring1->getKey().'/configuration', [
+            'teacher_id' => $teacher->getKey(),
+            'schedules' => [
+                ['day' => 'lunes', 'start_time' => '08:00', 'end_time' => '10:00', 'room' => 'Aula 1'],
+            ],
+        ])->assertOk()->assertJsonPath('data.teacher_id', $teacher->getKey());
+
+        // Intentar configurar tutoría 2 con mismo docente y horario solapado
+        $this->putJson(self::API.'/tutorings/'.$tutoring2->getKey().'/configuration', [
+            'teacher_id' => $teacher->getKey(),
+            'schedules' => [
+                ['day' => 'lunes', 'start_time' => '09:00', 'end_time' => '11:00', 'room' => 'Aula 2'],
+            ],
+        ])->assertUnprocessable()->assertJsonValidationErrors('teacher_id');
+
+        // Configurar tutoría 2 en martes 08:00 - 10:00 debe tener éxito
+        $this->putJson(self::API.'/tutorings/'.$tutoring2->getKey().'/configuration', [
+            'teacher_id' => $teacher->getKey(),
+            'schedules' => [
+                ['day' => 'martes', 'start_time' => '08:00', 'end_time' => '10:00', 'room' => 'Aula 2'],
+            ],
+        ])->assertOk()->assertJsonPath('data.teacher_id', $teacher->getKey())
+            ->assertJsonPath('data.schedules.0.day', 'martes');
+    }
+
+    public function test_available_teachers_endpoint_returns_busy_schedules(): void
+    {
+        $teacher = Usuario::factory()->withRole('docente')->create();
+        $teacher->teachingCareers()->attach($this->career);
+        $tutoring = $this->createTutoring();
+
+        Sanctum::actingAs($this->coordinator, ['*']);
+
+        $this->putJson(self::API.'/tutorings/'.$tutoring->getKey().'/configuration', [
+            'teacher_id' => $teacher->getKey(),
+            'schedules' => [
+                ['day' => 'lunes', 'start_time' => '08:00', 'end_time' => '10:00', 'room' => 'Aula 1'],
+            ],
+        ])->assertOk();
+
+        $response = $this->getJson(self::API.'/available-teachers?search='.$teacher->nombre)
+            ->assertOk();
+
+        $teacherData = collect($response->json('data'))->firstWhere('id', $teacher->getKey());
+        $this->assertNotNull($teacherData);
+        $this->assertNotEmpty($teacherData['busy_schedules']);
+        $this->assertSame('lunes', $teacherData['busy_schedules'][0]['day']);
+        $this->assertSame('08:00', $teacherData['busy_schedules'][0]['start_time']);
+        $this->assertSame('10:00', $teacherData['busy_schedules'][0]['end_time']);
+        $this->assertSame($tutoring->getKey(), $teacherData['busy_schedules'][0]['tutoring_id']);
+    }
+
     private function schedulePayload(): array
     {
         return ['day' => 'lunes', 'start_time' => '10:00', 'end_time' => '11:00', 'room' => 'Aula 101'];

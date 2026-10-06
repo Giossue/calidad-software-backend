@@ -221,6 +221,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::patch('tutorings/{tutoring}/activate', [TutoringController::class, 'activate'])->name('tutorings.activate');
             Route::put('tutorings/{tutoring}/cycle', [TutoringController::class, 'assignCycle'])->name('tutorings.cycle.assign');
             Route::put('tutorings/{tutoring}/teacher', [TutoringController::class, 'assignTeacher'])->name('tutorings.teacher.assign');
+            Route::put('tutorings/{tutoring}/configuration', [TutoringController::class, 'configure'])->name('tutorings.configuration');
             Route::get('tutorings/{tutoring}/schedules', [TutoringScheduleController::class, 'index'])->name('schedules.index');
             Route::post('tutorings/{tutoring}/schedules', [TutoringScheduleController::class, 'store'])->name('schedules.store');
             Route::patch('tutorings/{tutoring}/schedules/{schedule}', [TutoringScheduleController::class, 'update'])->name('schedules.update');

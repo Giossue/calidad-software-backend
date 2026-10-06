@@ -69,6 +69,12 @@ class TutoringRequest extends FormRequest
             'modality_id' => [($creating ? 'required' : 'sometimes'), 'integer', Rule::exists('modalidad', 'id_modalidad')->where(
                 fn (Builder $query) => $query->where('estado', true)->when($modalityId, fn (Builder $q) => $q->orWhere('id_modalidad', $modalityId)),
             )],
+            'teacher_id' => ['nullable', 'integer', Rule::exists('usuario', 'id_usuario')->where('estado', true)],
+            'schedules' => ['nullable', 'array'],
+            'schedules.*.day' => ['required', 'string', Rule::in(['lunes', 'martes', 'miercoles', 'miércoles', 'jueves', 'viernes', 'sabado', 'sábado', 'domingo'])],
+            'schedules.*.start_time' => ['required', 'string'],
+            'schedules.*.end_time' => ['required', 'string'],
+            'schedules.*.room' => ['nullable', 'string', 'max:100'],
         ];
     }
 }
