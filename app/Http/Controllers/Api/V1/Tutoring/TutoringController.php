@@ -35,6 +35,9 @@ class TutoringController extends Controller
         if ($cycleId = $request->integer('cycle_id')) {
             $query->where('fk_ciclo', $cycleId);
         }
+        if ($cycleNumber = $request->integer('cycle_number')) {
+            $query->whereHas('ciclo', fn (Builder $q) => $q->where('numero', $cycleNumber));
+        }
         if ($status = $request->string('status')->toString()) {
             $query->where('estado', $status === 'active');
         }
@@ -42,7 +45,10 @@ class TutoringController extends Controller
             $query->whereLike('nombre', "%{$search}%");
         }
 
-        return TutoringResource::collection($query->orderByDesc('id_asig_tutoria')
+        return TutoringResource::collection($query
+            ->orderByRaw('(select numero from ciclo where ciclo.id_ciclo = asignatura_tutoria.fk_ciclo) asc nulls last')
+            ->orderBy('nombre')
+            ->orderByDesc('id_asig_tutoria')
             ->paginate(min(max($request->integer('per_page', 15), 1), 100)));
     }
 

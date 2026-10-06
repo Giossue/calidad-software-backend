@@ -288,6 +288,25 @@ class UserManagementTest extends TestCase
         $this->assertTrue($roles->every(fn (string $role) => $role === 'docente'));
     }
 
+    public function test_user_index_filters_by_status_and_career(): void
+    {
+        $faculty = Facultad::query()->create(['nombre' => 'Facultad Filtros', 'estado' => true]);
+        $career = Carrera::query()->create(['fk_facultad' => $faculty->getKey(), 'nombre' => 'Carrera Filtros', 'estado' => true]);
+        $other = Carrera::query()->create(['fk_facultad' => $faculty->getKey(), 'nombre' => 'Otra Carrera', 'estado' => true]);
+        $inCareer = Usuario::factory()->withRole('estudiante')->create(['nombre' => 'En Carrera', 'fk_carrera' => $career->getKey()]);
+        Usuario::factory()->withRole('estudiante')->create(['nombre' => 'Otra Carrera Estudiante', 'fk_carrera' => $other->getKey()]);
+        $inactive = Usuario::factory()->withRole('estudiante')->create(['nombre' => 'Inactivo Filtro', 'estado' => false]);
+
+        $byCareer = collect($this->getJson('/api/v1/users?career_id='.$career->getKey())->assertOk()->json('data'))->pluck('id');
+        $this->assertTrue($byCareer->contains($inCareer->getKey()));
+        $this->assertCount(1, $byCareer);
+
+        $inactiveIds = collect($this->getJson('/api/v1/users?status=inactive')->assertOk()->json('data'))->pluck('id');
+        $this->assertSame([$inactive->getKey()], $inactiveIds->all());
+        $activeIds = collect($this->getJson('/api/v1/users?status=active&per_page=100')->assertOk()->json('data'))->pluck('id');
+        $this->assertFalse($activeIds->contains($inactive->getKey()));
+    }
+
     public function test_deactivated_user_cannot_login(): void
     {
         $user = Usuario::factory()->create();

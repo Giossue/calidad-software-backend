@@ -35,13 +35,19 @@ class CoordinatorStudentController extends Controller
         Gate::authorize('viewAny', AsignaturaTutoria::class);
 
         $careerIds = $request->user()->coordinatedCareers()->pluck('carrera.id_carrera');
+        $selectedCareerId = $request->integer('career_id');
+        if ($selectedCareerId) {
+            $access->authorizeCareer($request->user(), $selectedCareerId);
+            $careerIds = collect([$selectedCareerId]);
+        }
+        $cycleNumber = $request->integer('cycle_number');
 
         $query = Usuario::query()
             ->where('estado', true)
             ->whereHas('roles', fn (Builder $q) => $q->where('slug', 'estudiante'))
-            ->where(function (Builder $q) use ($careerIds) {
+            ->where(function (Builder $q) use ($careerIds, $selectedCareerId) {
                 $q->whereIn('fk_carrera', $careerIds)
-                    ->orWhereNull('fk_carrera')
+                    ->when(! $selectedCareerId, fn (Builder $q2) => $q2->orWhereNull('fk_carrera'))
                     ->orWhereHas('inscripciones', fn (Builder $q2) => $q2
                         ->where('estado', true)
                         ->whereHas('asignaturaTutoria.ciclo', fn (Builder $q3) => $q3->whereIn('fk_carrera', $careerIds))
@@ -59,6 +65,23 @@ class CoordinatorStudentController extends Controller
             $query->where(fn (Builder $q) => $q->whereLike('nombre', $like)->orWhereLike('cedula', $like)->orWhereLike('correo', $like));
         }
 
+        if ($cycleNumber) {
+            $query->where(fn (Builder $q) => $q
+                ->whereHas('inscripciones', fn (Builder $q2) => $q2
+                    ->where('estado', true)
+                    ->whereHas('asignaturaTutoria.ciclo', fn (Builder $q3) => $q3->whereIn('fk_carrera', $careerIds)->where('numero', $cycleNumber)))
+                ->orWhereHas('paralelos.ciclos', fn (Builder $q2) => $q2->whereIn('fk_carrera', $careerIds)->where('numero', $cycleNumber)));
+        }
+
+        $enrollmentScope = fn (Builder $q) => $q->where('estado', true)
+            ->whereHas('asignaturaTutoria.ciclo', fn (Builder $q2) => $q2->whereIn('fk_carrera', $careerIds));
+        $tutoringStatus = $request->string('tutoring_status')->toString();
+        if ($tutoringStatus === 'with') {
+            $query->whereHas('inscripciones', $enrollmentScope);
+        } elseif ($tutoringStatus === 'without') {
+            $query->whereDoesntHave('inscripciones', $enrollmentScope);
+        }
+
         $students = $query->orderBy('nombre')->paginate($request->integer('per_page', 15));
 
         return response()->json([
@@ -67,6 +90,8 @@ class CoordinatorStudentController extends Controller
                 'current_page' => $students->currentPage(),
                 'last_page' => $students->lastPage(),
                 'per_page' => $students->perPage(),
+                'from' => $students->firstItem(),
+                'to' => $students->lastItem(),
                 'total' => $students->total(),
             ],
         ]);
@@ -77,6 +102,10 @@ class CoordinatorStudentController extends Controller
         Gate::authorize('viewAny', AsignaturaTutoria::class);
 
         $careerIds = $request->user()->coordinatedCareers()->pluck('carrera.id_carrera');
+        if ($selectedCareerId = $request->integer('career_id')) {
+            $access->authorizeCareer($request->user(), $selectedCareerId);
+            $careerIds = collect([$selectedCareerId]);
+        }
 
         $data = $request->validate([
             'identification' => ['required', 'digits:10', new CedulaEcuatoriana, Rule::unique('usuario', 'cedula')],

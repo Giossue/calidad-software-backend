@@ -63,6 +63,10 @@ class SupervisionController extends Controller
             $query->whereHas('asignaturaTutoria', fn (Builder $q) => $q->where('fk_ciclo', $cycleId));
         }
 
+        if ($cycleNumber = $request->integer('cycle_number')) {
+            $query->whereHas('asignaturaTutoria.ciclo', fn (Builder $q) => $q->where('numero', $cycleNumber));
+        }
+
         if ($search = trim((string) $request->string('search'))) {
             $query->where(function (Builder $sub) use ($search) {
                 $sub->whereLike('tipo_reporte', "%{$search}%")

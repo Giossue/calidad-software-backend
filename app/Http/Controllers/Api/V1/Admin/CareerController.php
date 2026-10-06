@@ -40,6 +40,10 @@ class CareerController extends Controller
             $query->where('fk_facultad', $request->integer('faculty_id'));
         }
 
+        if ($status = $request->string('status')->toString()) {
+            $query->where('estado', $status === 'active');
+        }
+
         if ($request->boolean('all')) {
             return CareerResource::collection(
                 (clone $query)->where('estado', true)->orderBy('nombre')->get(),

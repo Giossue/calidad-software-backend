@@ -19,6 +19,9 @@ class DatabaseSeeder extends Seeder
     /**
      * Seed the application's database with verified initial admin users.
      */
+    /** Clave única de las cuentas demo locales (una por rol). */
+    private const DEMO_PASSWORD = '12345678Jv.';
+
     public function run(): void
     {
         $adminRole = Role::firstOrCreate(['slug' => 'administrador'], ['name' => 'Administrador']);
@@ -27,40 +30,26 @@ class DatabaseSeeder extends Seeder
 
         // 1. Administrador Principal
         $adminPrincipal = Usuario::firstOrCreate(
-            ['correo' => 'admin@sistema.com'],
+            ['correo' => 'admin@email.com'],
             [
                 'cedula' => '1234567890',
                 'nombre' => 'Administrador del Sistema',
                 'telefono' => '0999999999',
-                'password_hash' => Hash::make('Admin123*'),
+                'password_hash' => Hash::make(self::DEMO_PASSWORD),
                 'estado' => true,
                 'email_verified_at' => now(),
             ]
         );
         $adminPrincipal->roles()->syncWithoutDetaching([$adminRole->id]);
 
-        // 2. Administrador de Servidor / Pruebas
-        $adminServidor = Usuario::firstOrCreate(
-            ['correo' => 'admin@mail.com'],
-            [
-                'cedula' => '0201234567',
-                'nombre' => 'Elvis Rimax Chela Tiamba',
-                'telefono' => '0987654321',
-                'password_hash' => Hash::make('Admin123*'),
-                'estado' => true,
-                'email_verified_at' => now(),
-            ]
-        );
-        $adminServidor->roles()->syncWithoutDetaching([$adminRole->id]);
-
         // 3. Coordinador de Titulación
         $coordTitulacion = Usuario::firstOrCreate(
-            ['correo' => 'titulacion@mail.com'],
+            ['correo' => 'titulacion@email.com'],
             [
                 'cedula' => '0201864329',
                 'nombre' => 'Darwin Carrión Buenaño',
                 'telefono' => '0980219332',
-                'password_hash' => Hash::make('password123'),
+                'password_hash' => Hash::make(self::DEMO_PASSWORD),
                 'estado' => true,
                 'email_verified_at' => now(),
             ]
@@ -69,12 +58,12 @@ class DatabaseSeeder extends Seeder
 
         // 4. Coordinador de Carrera (Tutorías)
         $coordCarrera = Usuario::firstOrCreate(
-            ['correo' => 'coordinador@mail.com'],
+            ['correo' => 'coordinador@email.com'],
             [
                 'cedula' => '0201888888',
                 'nombre' => 'Coordinador de Carrera',
                 'telefono' => '0987777777',
-                'password_hash' => Hash::make('password123'),
+                'password_hash' => Hash::make(self::DEMO_PASSWORD),
                 'estado' => true,
                 'email_verified_at' => now(),
             ]
@@ -84,12 +73,12 @@ class DatabaseSeeder extends Seeder
         // 5. Estudiante de Titulación
         $studentRole = Role::firstOrCreate(['slug' => 'estudiante'], ['name' => 'Estudiante']);
         $estudiante = Usuario::firstOrCreate(
-            ['correo' => 'estudiante@mail.com'],
+            ['correo' => 'estudiante@email.com'],
             [
                 'cedula' => '0201999999',
                 'nombre' => 'Carlos Estudiante de Prueba',
                 'telefono' => '0981112233',
-                'password_hash' => Hash::make('password123'),
+                'password_hash' => Hash::make(self::DEMO_PASSWORD),
                 'estado' => true,
                 'email_verified_at' => now(),
             ]
@@ -109,12 +98,12 @@ class DatabaseSeeder extends Seeder
         // 7. Docente de Tutorías
         $docenteRole = Role::firstOrCreate(['slug' => 'docente'], ['name' => 'Docente']);
         $docente = Usuario::firstOrCreate(
-            ['correo' => 'docente@mail.com'],
+            ['correo' => 'docente@email.com'],
             [
                 'cedula' => '0201555555',
                 'nombre' => 'Ing. Docente de Tutoría',
                 'telefono' => '0984443322',
-                'password_hash' => Hash::make('password123'),
+                'password_hash' => Hash::make(self::DEMO_PASSWORD),
                 'estado' => true,
                 'email_verified_at' => now(),
             ]

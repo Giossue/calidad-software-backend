@@ -65,6 +65,9 @@ class CoordinatorDegreeEnrollmentController extends Controller
         }
 
         $careerIds = $this->getCoordinatorCareerIds($user);
+        if ($selectedCareerId = $request->integer('career_id')) {
+            $careerIds = $careerIds->contains($selectedCareerId) ? collect([$selectedCareerId]) : collect();
+        }
 
         $query = Usuario::query()
             ->where('estado', true)
@@ -131,6 +134,8 @@ class CoordinatorDegreeEnrollmentController extends Controller
                 'current_page' => $students->currentPage(),
                 'last_page' => $students->lastPage(),
                 'per_page' => $students->perPage(),
+                'from' => $students->firstItem(),
+                'to' => $students->lastItem(),
                 'total' => $students->total(),
                 'current_period' => [
                     'id' => $currentPeriod->getKey(),

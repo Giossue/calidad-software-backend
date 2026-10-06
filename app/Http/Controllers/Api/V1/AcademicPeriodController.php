@@ -26,6 +26,10 @@ class AcademicPeriodController extends Controller
             $query->whereLike('nombre', "%{$search}%");
         }
 
+        if ($status = $request->string('status')->toString()) {
+            $query->where('estado', $status === 'active');
+        }
+
         return AcademicPeriodResource::collection(
             $query->orderByDesc('fecha_inicio')->orderBy('id_periodo')->paginate($request->integer('per_page', 15)),
         )->additional(['meta' => [

@@ -29,6 +29,9 @@ class SubjectController extends Controller
         if ($cycleId = $request->integer('cycle_id')) {
             $query->whereHas('cycles', fn (Builder $q) => $q->where('ciclo.id_ciclo', $cycleId));
         }
+        if ($cycleNumber = $request->integer('cycle_number')) {
+            $query->whereHas('cycles', fn (Builder $q) => $q->where('ciclo.numero', $cycleNumber));
+        }
         if ($status = $request->string('status')->toString()) {
             $query->where('is_active', $status === 'active');
         }
@@ -36,7 +39,7 @@ class SubjectController extends Controller
             $query->where(fn (Builder $q) => $q->whereLike('name', "%{$search}%")->orWhereLike('code', "%{$search}%"));
         }
 
-        return TutoringSubjectResource::collection($query->orderBy('name')->paginate(min(max($request->integer('per_page', 15), 1), 100)));
+        return TutoringSubjectResource::collection($query->orderByRaw('(select min(c.numero) from subject_cycle sc join ciclo c on c.id_ciclo = sc.cycle_id where sc.subject_id = subjects.id) asc nulls last')->orderBy('name')->paginate(min(max($request->integer('per_page', 15), 1), 100)));
     }
 
     public function store(SubjectRequest $request, ManageSubject $action): JsonResponse
