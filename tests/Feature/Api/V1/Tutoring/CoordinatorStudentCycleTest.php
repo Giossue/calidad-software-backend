@@ -28,6 +28,12 @@ class CoordinatorStudentCycleTest extends TutoringTestCase
         $this->postJson(self::API.'/students', $payload)->assertUnprocessable()->assertJsonValidationErrors('cycle_id');
         $this->postJson(self::API.'/students', [...$payload, 'cycle_id' => $this->otherCycle->getKey()])->assertForbidden();
 
+        // Con una carrera elegida, el ciclo debe pertenecer a ella.
+        $this->coordinator->coordinatedCareers()->attach($this->otherCareer);
+        $this->postJson(self::API.'/students', [...$payload, 'career_id' => $this->career->getKey(), 'cycle_id' => $this->otherCycle->getKey()])
+            ->assertUnprocessable()->assertJsonValidationErrors('cycle_id');
+        $this->coordinator->coordinatedCareers()->detach($this->otherCareer);
+
         $tutoring = $this->createTutoring($this->cycle);
         $this->postJson(self::API.'/students', [...$payload, 'cycle_id' => $this->lastCycle->getKey(), 'tutoring_id' => $tutoring->getKey()])
             ->assertUnprocessable()->assertJsonValidationErrors('tutoring_id');

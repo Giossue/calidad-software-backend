@@ -119,6 +119,9 @@ class CoordinatorStudentController extends Controller
 
         $cycle = Ciclo::query()->findOrFail((int) $data['cycle_id']);
         $access->authorizeCareer($request->user(), $cycle->fk_carrera);
+        if ($selectedCareerId && $cycle->fk_carrera !== $selectedCareerId) {
+            throw ValidationException::withMessages(['cycle_id' => 'El ciclo no pertenece a la carrera seleccionada.']);
+        }
 
         $password = Str::password(20, true, true, true, false);
         $student = DB::transaction(function () use ($data, $password, $cycle): Usuario {
