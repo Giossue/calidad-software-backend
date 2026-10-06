@@ -22,11 +22,6 @@ class AcademicPeriodPolicy
         return $user->hasRole('administrador');
     }
 
-    public function deactivate(Usuario $user, PeriodoAcademico $academicPeriod): bool
-    {
-        return $user->hasRole('administrador');
-    }
-
     public function activate(Usuario $user, PeriodoAcademico $academicPeriod): bool
     {
         return $user->hasRole('administrador');

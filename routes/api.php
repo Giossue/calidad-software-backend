@@ -108,20 +108,27 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
         Route::prefix('student')->name('student.')->group(function (): void {
             Route::get('degree-enrollment-status', [StudentDegreeTopicController::class, 'enrollmentStatus'])->name('degree-enrollment-status');
-            Route::get('degree-topics', [StudentDegreeTopicController::class, 'index'])->name('degree-topics.index');
-            Route::post('degree-topics', [StudentDegreeTopicController::class, 'store'])->name('degree-topics.store');
-            Route::get('degree-topics/assignments', [StudentDegreeTopicController::class, 'assignments'])->name('degree-topics.assignments');
-            Route::get('degree-topics/{topic}', [StudentDegreeTopicController::class, 'show'])->name('degree-topics.show');
-            Route::match(['put', 'patch'], 'degree-topics/{topic}', [StudentDegreeTopicController::class, 'update'])->name('degree-topics.update');
-            Route::get('degree-topics/{topic}/assignments', [StudentDegreeTopicController::class, 'topicAssignments'])->name('degree-topics.topic-assignments');
-            Route::get('tutoring', [StudentTutoringController::class, 'index'])->name('tutoring.index');
-            Route::get('tutoring/grades', [StudentTutoringController::class, 'allGrades'])->name('tutoring.grades.all');
-            Route::get('tutoring/{tutoring}/grades', [StudentTutoringController::class, 'grades'])->name('tutoring.grades');
-            Route::get('tutoring/attendance', [StudentTutoringController::class, 'allAttendance'])->name('tutoring.attendance.all');
-            Route::get('tutoring/{tutoring}/attendance', [StudentTutoringController::class, 'attendance'])->name('tutoring.attendance');
-            Route::get('tutoring/{tutoring}/topics', [StudentTutoringController::class, 'topics'])->name('tutoring.topics');
-            Route::get('tutoring/{tutoring}/topics/{topic}', [StudentTutoringController::class, 'topicDetail'])->name('tutoring.topics.show');
-            Route::get('tutoring/{tutoring}/sessions', [StudentTutoringController::class, 'sessions'])->name('tutoring.sessions');
+
+            // Último ciclo de la carrera: titulación; ciclos anteriores: tutorías.
+            Route::middleware('student.stage:titulacion')->group(function (): void {
+                Route::get('degree-topics', [StudentDegreeTopicController::class, 'index'])->name('degree-topics.index');
+                Route::post('degree-topics', [StudentDegreeTopicController::class, 'store'])->name('degree-topics.store');
+                Route::get('degree-topics/assignments', [StudentDegreeTopicController::class, 'assignments'])->name('degree-topics.assignments');
+                Route::get('degree-topics/{topic}', [StudentDegreeTopicController::class, 'show'])->name('degree-topics.show');
+                Route::match(['put', 'patch'], 'degree-topics/{topic}', [StudentDegreeTopicController::class, 'update'])->name('degree-topics.update');
+                Route::get('degree-topics/{topic}/assignments', [StudentDegreeTopicController::class, 'topicAssignments'])->name('degree-topics.topic-assignments');
+            });
+
+            Route::middleware('student.stage:tutorias')->group(function (): void {
+                Route::get('tutoring', [StudentTutoringController::class, 'index'])->name('tutoring.index');
+                Route::get('tutoring/grades', [StudentTutoringController::class, 'allGrades'])->name('tutoring.grades.all');
+                Route::get('tutoring/{tutoring}/grades', [StudentTutoringController::class, 'grades'])->name('tutoring.grades');
+                Route::get('tutoring/attendance', [StudentTutoringController::class, 'allAttendance'])->name('tutoring.attendance.all');
+                Route::get('tutoring/{tutoring}/attendance', [StudentTutoringController::class, 'attendance'])->name('tutoring.attendance');
+                Route::get('tutoring/{tutoring}/topics', [StudentTutoringController::class, 'topics'])->name('tutoring.topics');
+                Route::get('tutoring/{tutoring}/topics/{topic}', [StudentTutoringController::class, 'topicDetail'])->name('tutoring.topics.show');
+                Route::get('tutoring/{tutoring}/sessions', [StudentTutoringController::class, 'sessions'])->name('tutoring.sessions');
+            });
         });
 
         Route::prefix('teacher')->name('teacher.')->group(function (): void {
@@ -173,8 +180,6 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::get('academic-periods', [AcademicPeriodController::class, 'index'])->name('academic-periods.index.legacy');
         Route::post('academic-periods', [AcademicPeriodController::class, 'store'])->name('academic-periods.store.legacy');
         Route::patch('academic-periods/{academicPeriod}', [AcademicPeriodController::class, 'update'])->name('academic-periods.update.legacy');
-        Route::patch('academic-periods/{academicPeriod}/deactivate', [AcademicPeriodController::class, 'deactivate'])
-            ->middleware('can:deactivate,academicPeriod')->name('academic-periods.deactivate.legacy');
         Route::patch('academic-periods/{academicPeriod}/activate', [AcademicPeriodController::class, 'activate'])
             ->middleware('can:activate,academicPeriod')->name('academic-periods.activate.legacy');
         Route::get('modalities', [ModalityController::class, 'index'])->name('modalities.index.legacy');
@@ -217,7 +222,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::get('tutorings', [TutoringController::class, 'index'])->name('tutorings.index');
             Route::post('tutorings', [TutoringController::class, 'store'])->name('tutorings.store');
             Route::patch('tutorings/{tutoring}', [TutoringController::class, 'update'])->name('tutorings.update');
-            Route::patch('tutorings/{tutoring}/deactivate', [TutoringController::class, 'deactivate'])->name('tutorings.deactivate');
+            // Una tutoría creada no se deshabilita: deja de estar activa cuando termina su PAO.
+            Route::put('tutorings/{tutoring}/configuration', [TutoringController::class, 'configure'])->name('tutorings.configure');
             Route::patch('tutorings/{tutoring}/activate', [TutoringController::class, 'activate'])->name('tutorings.activate');
             Route::put('tutorings/{tutoring}/cycle', [TutoringController::class, 'assignCycle'])->name('tutorings.cycle.assign');
             Route::put('tutorings/{tutoring}/teacher', [TutoringController::class, 'assignTeacher'])->name('tutorings.teacher.assign');
@@ -270,8 +276,6 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::get('academic-periods', [AcademicPeriodController::class, 'index'])->name('academic-periods.index');
             Route::post('academic-periods', [AcademicPeriodController::class, 'store'])->name('academic-periods.store');
             Route::patch('academic-periods/{academicPeriod}', [AcademicPeriodController::class, 'update'])->name('academic-periods.update');
-            Route::patch('academic-periods/{academicPeriod}/deactivate', [AcademicPeriodController::class, 'deactivate'])
-                ->middleware('can:deactivate,academicPeriod')->name('academic-periods.deactivate');
             Route::patch('academic-periods/{academicPeriod}/activate', [AcademicPeriodController::class, 'activate'])
                 ->middleware('can:activate,academicPeriod')->name('academic-periods.activate');
             Route::get('modalities', [ModalityController::class, 'index'])->name('modalities.index');

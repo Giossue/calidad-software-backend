@@ -14,7 +14,6 @@ use App\Models\Horario;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\DB;
 
 class ScheduleController extends Controller
 {
@@ -27,47 +26,7 @@ class ScheduleController extends Controller
 
     public function sync(TeacherSyncScheduleRequest $request, AsignaturaTutoria $tutoring, ManageSchedule $action): AnonymousResourceCollection
     {
-        $result = DB::transaction(function () use ($tutoring, $request, $action) {
-            $locked = AsignaturaTutoria::query()->whereKey($tutoring->getKey())->lockForUpdate()->firstOrFail();
-            $existingActive = $locked->horarios()->where('estado', true)->get();
-            $newSchedules = $request->validatedSchedules();
-            $newDays = array_column($newSchedules, 'day');
-
-            // Deactivate schedules for removed days
-            foreach ($existingActive as $existing) {
-                if (! in_array($existing->dia_semana, $newDays, true)) {
-                    $existing->update(['estado' => false]);
-                }
-            }
-
-            // Create or update schedules
-            foreach ($newSchedules as $sched) {
-                $day = $sched['day'];
-                $startTime = $sched['start_time'];
-                $endTime = $sched['end_time'];
-                $match = $existingActive->firstWhere('dia_semana', $day);
-
-                if ($match) {
-                    $room = $sched['room'] ?? ($match->room ?: 'Por asignar');
-                    $action->update($locked, $match, [
-                        'day' => $day,
-                        'start_time' => $startTime,
-                        'end_time' => $endTime,
-                        'room' => $room,
-                    ]);
-                } else {
-                    $room = $sched['room'] ?? 'Por asignar';
-                    $action->create($locked, [
-                        'day' => $day,
-                        'start_time' => $startTime,
-                        'end_time' => $endTime,
-                        'room' => $room,
-                    ]);
-                }
-            }
-
-            return $locked->horarios()->where('estado', true)->orderBy('dia_semana')->orderBy('hora_inicio')->get();
-        }, 3);
+        $result = $action->sync($tutoring, $request->validatedSchedules());
 
         return TutoringScheduleResource::collection($result);
     }
@@ -87,11 +46,10 @@ class ScheduleController extends Controller
         return TutoringScheduleResource::make($updated);
     }
 
-    public function deactivate(TeacherMutationRequest $request, AsignaturaTutoria $tutoring, Horario $schedule): TutoringScheduleResource
+    public function deactivate(TeacherMutationRequest $request, AsignaturaTutoria $tutoring, Horario $schedule, ManageSchedule $action): TutoringScheduleResource
     {
         abort_unless($schedule->fk_asig_tutoria === $tutoring->getKey(), Response::HTTP_NOT_FOUND);
-        $schedule->update(['estado' => false]);
 
-        return TutoringScheduleResource::make($schedule->refresh());
+        return TutoringScheduleResource::make($action->deactivate($tutoring, $schedule));
     }
 }

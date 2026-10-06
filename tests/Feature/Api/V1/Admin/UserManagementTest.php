@@ -54,13 +54,13 @@ class UserManagementTest extends TestCase
             'name' => 'Luis Pérez',
             'email' => 'luis@example.com',
             'phone' => '0991234567',
-            'role' => 'estudiante',
+            'role' => 'docente',
         ]);
 
         $response->assertCreated()
             ->assertJsonPath('data.identification', '0926687856')
             ->assertJsonPath('data.email', 'luis@example.com')
-            ->assertJsonPath('data.role', 'estudiante')
+            ->assertJsonPath('data.role', 'docente')
             ->assertJsonPath('data.is_active', true)
             ->assertJsonPath('message', 'Usuario creado. Revisa el correo registrado para obtener la contraseña provisional.');
 
@@ -72,7 +72,7 @@ class UserManagementTest extends TestCase
         ]);
 
         $user = Usuario::query()->where('correo', 'luis@example.com')->firstOrFail();
-        $this->assertTrue($user->hasRole('estudiante'));
+        $this->assertTrue($user->hasRole('docente'));
         $this->assertNotNull($user->email_verified_at);
         Notification::assertSentTo($user, ProvisionalPasswordNotification::class, function (ProvisionalPasswordNotification $notification) use ($user): bool {
             return password_verify($notification->provisionalPassword, $user->password_hash);

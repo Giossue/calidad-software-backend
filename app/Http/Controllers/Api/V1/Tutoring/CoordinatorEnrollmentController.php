@@ -72,12 +72,15 @@ class CoordinatorEnrollmentController extends Controller
                 if (! $student->estado || ! $student->hasRole('estudiante') || ! $student->paralelos()->whereKey($locked->fk_paralelo)->wherePivot('estado', true)->exists()) {
                     throw ValidationException::withMessages(['student_id' => 'Selecciona un estudiante activo del paralelo de esta tutoría.']);
                 }
+                ManageEnrollment::assertCanTakeTutorings($student, 'student_id');
             } else {
                 $password = Str::password(20, true, true, true, false);
                 $student = Usuario::query()->create([
                     'cedula' => $data['identification'], 'nombre' => $data['name'],
                     'correo' => $data['email'], 'telefono' => $data['phone'] ?? null,
                     'password_hash' => $password, 'estado' => true, 'email_verified_at' => now(),
+                    // Carrera y ciclo del estudiante: los de la tutoría en la que se inscribe.
+                    ...ManageEnrollment::placementFromTutoring($locked),
                 ]);
                 $student->roles()->attach(Role::query()->where('slug', 'estudiante')->valueOrFail('id'));
                 $student->paralelos()->attach($locked->fk_paralelo, ['fecha_asignacion' => today(), 'estado' => true]);
@@ -130,6 +133,7 @@ class CoordinatorEnrollmentController extends Controller
 
         $student = $enrollment->estudiante;
         abort_unless($student->estado, 422);
+        ManageEnrollment::assertCanTakeTutorings($student, 'student_id');
 
         $enrollment->update(['estado' => true]);
 

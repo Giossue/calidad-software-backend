@@ -118,6 +118,8 @@ class CoordinatorDegreeEnrollmentController extends Controller
                     'name' => $student->nombre,
                     'email' => $student->correo,
                     'phone' => $student->telefono,
+                    'cycle_number' => $student->ciclo_actual,
+                    'academic_stage' => $student->academicStage(),
                     'is_degree_enrolled' => $matricula !== null,
                     'degree_enrollment_id' => $matricula?->getKey(),
                     'enrolled_at' => $matricula?->fecha_matricula?->toDateString(),
@@ -144,6 +146,8 @@ class CoordinatorDegreeEnrollmentController extends Controller
         $user = $request->user();
         $this->authorizeCoordinator($user);
         abort_unless($student->hasRole('estudiante') && $student->estado, 422, 'El usuario no es un estudiante activo.');
+        // Sin ciclo registrado se conserva el comportamiento anterior.
+        abort_if($student->academicStage() === Usuario::STAGE_TUTORING, 422, 'Solo se matriculan en titulación los estudiantes del último ciclo de su carrera.');
 
         $currentPeriod = PeriodoAcademico::query()->where('estado', true)->firstOrFail();
 

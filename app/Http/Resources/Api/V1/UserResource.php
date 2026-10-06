@@ -28,6 +28,9 @@ class UserResource extends JsonResource
             'career_name' => $career?->nombre,
             'faculty_id' => $career?->fk_facultad,
             'faculty_name' => $career?->facultad?->nombre,
+            'cycle_number' => $this->ciclo_actual,
+            // 'tutorias' (ciclos anteriores) o 'titulacion' (último ciclo de la carrera).
+            'academic_stage' => $this->academicStage(),
             'is_active' => $this->estado,
             'email_verified_at' => $this->email_verified_at?->toISOString(),
             'has_two_factor' => $this->two_factor_confirmed_at !== null,

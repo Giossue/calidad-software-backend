@@ -7,11 +7,13 @@
 namespace App\Models;
 
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 
 /**
  * @property int $id_tema_tit
@@ -53,6 +55,26 @@ class TemaTitulacion extends Model
         'titulo', 'descripcion', 'estado',
         'fecha_propuesta', 'fecha_revision',
     ];
+
+    /**
+     * Oculta las propuestas rechazadas de un estudiante que ya tiene un tema
+     * aprobado: en los listados solo queda el tema aprobado. Los rechazos se
+     * conservan en la base de datos como historial.
+     *
+     * @param  Builder<self>  $query
+     */
+    public function scopeWithoutSupersededRejections(Builder $query): void
+    {
+        $query->where(function (Builder $query): void {
+            $query->where('tema_titulacion.estado', '!=', 'rechazado')
+                ->orWhereNotExists(function (QueryBuilder $approved): void {
+                    $approved->selectRaw('1')
+                        ->from('tema_titulacion as aprobado')
+                        ->whereColumn('aprobado.fk_id_usuario', 'tema_titulacion.fk_id_usuario')
+                        ->where('aprobado.estado', 'aprobado');
+                });
+        });
+    }
 
     protected function casts(): array
     {

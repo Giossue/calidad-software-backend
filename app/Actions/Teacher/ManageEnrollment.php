@@ -18,6 +18,26 @@ class ManageEnrollment
 
     public function __construct(private TeacherWorkspace $workspace) {}
 
+    /** Un estudiante del último ciclo de su carrera solo accede a titulación. */
+    public static function assertCanTakeTutorings(Usuario $student, string $field): void
+    {
+        if ($student->academicStage() === Usuario::STAGE_DEGREE) {
+            throw ValidationException::withMessages([
+                $field => 'El estudiante cursa el último ciclo de su carrera (titulación) y no se inscribe en tutorías.',
+            ]);
+        }
+    }
+
+    /**
+     * Carrera y ciclo de un estudiante nuevo registrado desde una tutoría.
+     *
+     * @return array{fk_carrera: int|null, ciclo_actual: int|null}
+     */
+    public static function placementFromTutoring(AsignaturaTutoria $tutoring): array
+    {
+        return ['fk_carrera' => $tutoring->ciclo?->fk_carrera, 'ciclo_actual' => $tutoring->ciclo?->numero];
+    }
+
     /** @param array<string, mixed> $data */
     public function create(Usuario $teacher, AsignaturaTutoria $tutoring, array $data): InscripcionTutoria
     {
@@ -27,12 +47,15 @@ class ManageEnrollment
                 if (! $student->estado || ! $student->hasRole('estudiante') || ! $student->paralelos()->whereKey($locked->fk_paralelo)->wherePivot('estado', true)->exists()) {
                     throw ValidationException::withMessages(['student_id' => 'Selecciona un estudiante activo del paralelo de esta tutoría.']);
                 }
+                ManageEnrollment::assertCanTakeTutorings($student, 'student_id');
             } else {
                 $password = Str::password(20, true, true, true, false);
                 $student = Usuario::query()->create([
                     'cedula' => $data['identification'], 'nombre' => $data['name'],
                     'correo' => $data['email'], 'telefono' => $data['phone'] ?? null,
                     'password_hash' => $password, 'estado' => true, 'email_verified_at' => now(),
+                    // Carrera y ciclo del estudiante: los de la tutoría en la que se inscribe.
+                    ...ManageEnrollment::placementFromTutoring($locked),
                 ]);
                 $student->roles()->attach(Role::query()->where('slug', 'estudiante')->valueOrFail('id'));
                 $student->paralelos()->attach($locked->fk_paralelo, ['fecha_asignacion' => today(), 'estado' => true]);

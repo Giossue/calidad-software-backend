@@ -16,81 +16,76 @@ use Illuminate\Validation\ValidationException;
 
 class ManageTutoring
 {
-    public function __construct(private TutoringCoordinatorAccess $access) {}
+    public function __construct(private TutoringCoordinatorAccess $access, private ManageSchedule $schedules) {}
 
-    /** @param array{subject_id: int, cycle_id: int, period_id: int, modality_id: int, parallel_ids?: array<int>|null, parallel_id?: int|null} $data */
+    /**
+     * Crea la tutoría de un paralelo junto con su docente y sus horarios en una
+     * sola transacción: si algo falla (por ejemplo, un choque de horario del
+     * docente) no queda ninguna tutoría a medias.
+     *
+     * @param  array{subject_id: int, cycle_id: int, period_id: int, modality_id: int, parallel_id: int|null, teacher_id: int|null, schedules: list<array{day: string, start_time: string, end_time: string, room: string|null}>}  $data
+     */
     public function create(Usuario $user, array $data): AsignaturaTutoria
     {
         return $this->save(function () use ($user, $data): AsignaturaTutoria {
             $subject = Subject::query()->whereKey($data['subject_id'])->firstOrFail();
-            $baseCycle = Ciclo::query()->whereKey($data['cycle_id'])->lockForUpdate()->firstOrFail();
-            $this->access->authorizeCareer($user, $baseCycle->fk_carrera);
+            $cycle = Ciclo::query()->whereKey($data['cycle_id'])->lockForUpdate()->firstOrFail();
+            $this->access->authorizeCareer($user, $cycle->fk_carrera);
 
-            $targetParallelIds = [];
-            if (! empty($data['parallel_ids']) && is_array($data['parallel_ids'])) {
-                foreach ($data['parallel_ids'] as $pid) {
-                    if ($pid) {
-                        $targetParallelIds[] = (int) $pid;
-                    }
-                }
-            } elseif (! empty($data['parallel_id'])) {
-                $targetParallelIds[] = (int) $data['parallel_id'];
+            // Cada paralelo es una tutoría propia, con su docente y su horario.
+            if ($data['parallel_id'] && $data['parallel_id'] !== $cycle->fk_paralelo) {
+                $cycle = Ciclo::query()->firstOrCreate(
+                    ['fk_carrera' => $cycle->fk_carrera, 'numero' => $cycle->numero, 'fk_paralelo' => $data['parallel_id']],
+                    ['nombre' => $cycle->nombre, 'estado' => true],
+                );
+                $subject->cycles()->syncWithoutDetaching([$cycle->getKey()]);
             }
 
-            $targetParallelIds = array_values(array_unique($targetParallelIds));
+            $this->validatePlacement($subject, $cycle, $data['period_id'], $data['modality_id']);
+            $this->assertUnique($subject->getKey(), $cycle->getKey(), $data['period_id']);
+            $this->linkPeriod($cycle, $data['period_id']);
 
-            if (! empty($targetParallelIds)) {
-                $created = [];
-                foreach ($targetParallelIds as $parallelId) {
-                    $targetCycle = Ciclo::query()->firstOrCreate(
-                        [
-                            'fk_carrera' => $baseCycle->fk_carrera,
-                            'numero' => $baseCycle->numero,
-                            'fk_paralelo' => $parallelId,
-                        ],
-                        [
-                            'nombre' => $baseCycle->nombre,
-                            'estado' => true,
-                        ]
-                    );
-
-                    if (! $subject->cycles()->whereKey($targetCycle->getKey())->exists()) {
-                        $subject->cycles()->syncWithoutDetaching([$targetCycle->getKey()]);
-                    }
-
-                    $this->validatePlacement($subject, $targetCycle, $data['period_id'], $data['modality_id']);
-                    $this->assertUnique($subject->getKey(), $targetCycle->getKey(), $data['period_id']);
-                    $this->linkPeriod($targetCycle, $data['period_id']);
-
-                    $created[] = AsignaturaTutoria::query()->create([
-                        'subject_id' => $subject->getKey(),
-                        'fk_ciclo' => $targetCycle->getKey(),
-                        'fk_periodo' => $data['period_id'],
-                        'fk_modalidad' => $data['modality_id'],
-                        'fk_paralelo' => $targetCycle->fk_paralelo,
-                        'fk_docente' => null,
-                        'nombre' => $subject->name,
-                        'estado' => true,
-                    ]);
-                }
-
-                return $created[0];
-            }
-
-            $this->validatePlacement($subject, $baseCycle, $data['period_id'], $data['modality_id']);
-            $this->assertUnique($subject->getKey(), $baseCycle->getKey(), $data['period_id']);
-            $this->linkPeriod($baseCycle, $data['period_id']);
-
-            return AsignaturaTutoria::query()->create([
+            $tutoring = AsignaturaTutoria::query()->create([
                 'subject_id' => $subject->getKey(),
-                'fk_ciclo' => $baseCycle->getKey(),
+                'fk_ciclo' => $cycle->getKey(),
                 'fk_periodo' => $data['period_id'],
                 'fk_modalidad' => $data['modality_id'],
-                'fk_paralelo' => $baseCycle->fk_paralelo,
+                'fk_paralelo' => $cycle->fk_paralelo,
                 'fk_docente' => null,
                 'nombre' => $subject->name,
                 'estado' => true,
             ]);
+
+            if ($data['teacher_id']) {
+                $this->setTeacher($tutoring, $data['teacher_id']);
+            }
+            $this->schedules->sync($tutoring, $data['schedules']);
+
+            return $tutoring->refresh();
+        });
+    }
+
+    /**
+     * Actualiza docente, paralelo y horarios de una tutoría en una sola
+     * transacción, para que un error no deje cambios a medias.
+     *
+     * @param  list<array{day: string, start_time: string, end_time: string, room: string|null}>  $schedules
+     */
+    public function configure(AsignaturaTutoria $tutoring, int $teacherId, ?int $cycleId, array $schedules): AsignaturaTutoria
+    {
+        return $this->save(function () use ($tutoring, $teacherId, $cycleId, $schedules): AsignaturaTutoria {
+            $tutoring = AsignaturaTutoria::query()->whereKey($tutoring->getKey())->lockForUpdate()->firstOrFail();
+            $this->assertActive($tutoring);
+
+            if ($cycleId && $cycleId !== $tutoring->fk_ciclo) {
+                $tutoring = $this->assignCycle($tutoring, Ciclo::query()->findOrFail($cycleId));
+            }
+            $this->setTeacher($tutoring, $teacherId);
+            $this->schedules->sync($tutoring, $schedules);
+            // Los horarios que no cambiaron también deben estar libres para el docente.
+            ManageSchedule::assertTeacherAvailable($tutoring, $teacherId, $tutoring->fk_periodo, 'teacher_id');
+
+            return $tutoring->refresh();
         });
     }
 
@@ -106,6 +101,9 @@ class ManageTutoring
             }
             $this->validatePeriodAndModality($periodId, $modalityId, $tutoring);
             $this->assertUnique($tutoring->subject_id, $tutoring->fk_ciclo, $periodId, $tutoring->getKey());
+            if ($periodId !== $tutoring->fk_periodo && $tutoring->estado && $tutoring->fk_docente) {
+                ManageSchedule::assertTeacherAvailable($tutoring, $tutoring->fk_docente, $periodId, 'period_id');
+            }
             $this->linkPeriod($tutoring->ciclo, $periodId);
             $tutoring->update(['fk_periodo' => $periodId, 'fk_modalidad' => $modalityId]);
 
@@ -137,38 +135,10 @@ class ManageTutoring
     {
         return DB::transaction(function () use ($tutoring, $teacher): AsignaturaTutoria {
             $tutoring = AsignaturaTutoria::query()->whereKey($tutoring->getKey())->lockForUpdate()->firstOrFail();
-            $teacher = Usuario::query()->whereKey($teacher->getKey())->lockForUpdate()->firstOrFail();
             $this->assertActive($tutoring);
-            if (! $teacher->estado || ! $teacher->hasRole('docente')) {
-                throw ValidationException::withMessages(['teacher_id' => 'Selecciona un docente habilitado.']);
-            }
-
             // Validar que el docente no tenga conflicto de horario con los horarios activos de esta tutoría
-            $activeSchedules = $tutoring->horarios()->where('estado', true)->get();
-            foreach ($activeSchedules as $sched) {
-                $conflict = ManageSchedule::findTeacherScheduleConflict(
-                    $teacher->getKey(),
-                    $tutoring->fk_periodo,
-                    $sched->dia_semana,
-                    $sched->hora_inicio,
-                    $sched->hora_fin,
-                    $tutoring->getKey()
-                );
-                if ($conflict) {
-                    $materia = $conflict->asignaturaTutoria?->nombre ?? 'otra asignatura';
-                    $inicio = substr($conflict->hora_inicio, 0, 5);
-                    $fin = substr($conflict->hora_fin, 0, 5);
-                    throw ValidationException::withMessages([
-                        'teacher_id' => "El docente ya tiene asignado un horario en '{$materia}' el día {$sched->dia_semana} de {$inicio} a {$fin}.",
-                    ]);
-                }
-            }
-
-            $tutoring->update(['fk_docente' => $teacher->getKey()]);
-
-            if ($tutoring->ciclo && $tutoring->ciclo->fk_carrera) {
-                $teacher->teachingCareers()->syncWithoutDetaching([$tutoring->ciclo->fk_carrera => ['assigned_at' => now()]]);
-            }
+            ManageSchedule::assertTeacherAvailable($tutoring, $teacher->getKey(), $tutoring->fk_periodo, 'teacher_id');
+            $this->setTeacher($tutoring, $teacher->getKey());
 
             return $tutoring->refresh();
         });
@@ -191,10 +161,28 @@ class ManageTutoring
             if (! $tutoring->ciclo?->estado || ! $tutoring->ciclo->carrera?->estado) {
                 throw ValidationException::withMessages(['cycle_id' => 'El ciclo o la carrera de la tutoría están inactivos; no puede habilitarse.']);
             }
+            // Mientras estuvo deshabilitada, el docente pudo recibir otra tutoría en la misma franja.
+            if ($tutoring->fk_docente) {
+                ManageSchedule::assertTeacherAvailable($tutoring, $tutoring->fk_docente, $tutoring->fk_periodo, 'teacher_id');
+            }
             $tutoring->update(['estado' => true]);
 
             return $tutoring->refresh();
         });
+    }
+
+    private function setTeacher(AsignaturaTutoria $tutoring, int $teacherId): void
+    {
+        $teacher = Usuario::query()->whereKey($teacherId)->lockForUpdate()->firstOrFail();
+        if (! $teacher->estado || ! $teacher->hasRole('docente')) {
+            throw ValidationException::withMessages(['teacher_id' => 'Selecciona un docente habilitado.']);
+        }
+
+        $tutoring->update(['fk_docente' => $teacher->getKey()]);
+
+        if ($tutoring->ciclo && $tutoring->ciclo->fk_carrera) {
+            $teacher->teachingCareers()->syncWithoutDetaching([$tutoring->ciclo->fk_carrera => ['assigned_at' => now()]]);
+        }
     }
 
     private function assertActive(AsignaturaTutoria $tutoring): void

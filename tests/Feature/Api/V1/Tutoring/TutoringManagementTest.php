@@ -75,7 +75,8 @@ class TutoringManagementTest extends TutoringTestCase
         $payload = $this->tutoringPayload($subject);
         $id = $this->postJson(self::API.'/tutorings', $payload)->assertCreated()->json('data.id');
         $this->postJson(self::API.'/tutorings', $payload)->assertUnprocessable()->assertJsonValidationErrors('subject_id');
-        $this->patchJson(self::API.'/tutorings/'.$id.'/deactivate')->assertOk()->assertJsonPath('data.is_active', false);
+        // Una tutoría solo deja de estar activa al terminar su PAO.
+        AsignaturaTutoria::query()->whereKey($id)->update(['estado' => false]);
         $this->postJson(self::API.'/tutorings', $payload)->assertUnprocessable()->assertJsonValidationErrors('subject_id');
         $this->assertDatabaseCount('asignatura_tutoria', 1);
     }
@@ -90,7 +91,7 @@ class TutoringManagementTest extends TutoringTestCase
         Sanctum::actingAs($this->coordinator, ['*']);
         $url = self::API.'/tutorings/'.$tutoring->getKey();
 
-        $this->patchJson($url.'/deactivate')->assertOk()->assertJsonPath('data.is_active', false);
+        $tutoring->update(['estado' => false]);
         $this->patchJson($url.'/activate')->assertOk()->assertJsonPath('data.is_active', true)->assertJsonPath('data.teacher_id', $teacher->getKey());
         $this->patchJson($url.'/activate')->assertOk()->assertJsonPath('data.is_active', true);
         $this->assertDatabaseHas('inscripcion_tutoria', ['fk_asig_tutoria' => $tutoring->getKey(), 'fk_id_usuario' => $student->getKey(), 'estado' => true]);
@@ -121,7 +122,6 @@ class TutoringManagementTest extends TutoringTestCase
         $this->postJson(self::API.'/tutorings', $this->tutoringPayload($foreign->subject, $this->otherCycle))->assertForbidden();
         $url = self::API.'/tutorings/'.$foreign->getKey();
         $this->patchJson($url, ['modality_id' => $this->modality->getKey()])->assertForbidden();
-        $this->patchJson($url.'/deactivate')->assertForbidden();
         $this->patchJson($url.'/activate')->assertForbidden();
         $this->putJson($url.'/cycle', ['cycle_id' => $this->cycle->getKey()])->assertForbidden();
         $teacher = Usuario::factory()->withRole('docente')->create();
@@ -199,7 +199,7 @@ class TutoringManagementTest extends TutoringTestCase
         $cycle = $this->createCycle($this->career, number: 2);
         $tutoring->subject->cycles()->attach($cycle);
         $period = PeriodoAcademico::query()->create([
-            'nombre' => 'PAO 2027', 'fecha_inicio' => '2027-01-01', 'fecha_fin' => '2027-06-30', 'estado' => true,
+            'nombre' => 'PAO 2027', 'fecha_inicio' => '2027-01-01', 'fecha_fin' => '2027-06-30', 'estado' => false,
         ]);
         Sanctum::actingAs($this->coordinator, ['*']);
         $url = self::API.'/tutorings/'.$tutoring->getKey();

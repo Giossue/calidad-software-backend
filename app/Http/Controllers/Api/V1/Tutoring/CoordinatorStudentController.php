@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Api\V1\Tutoring;
 
+use App\Actions\Teacher\ManageEnrollment;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\Teacher\EnrollmentResource;
 use App\Http\Resources\Api\V1\TutoringResource;
 use App\Models\AsignaturaTutoria;
+use App\Models\Ciclo;
 use App\Models\InscripcionTutoria;
 use App\Models\Role;
 use App\Models\Usuario;
@@ -81,22 +83,34 @@ class CoordinatorStudentController extends Controller
             'name' => ['required', 'string', 'max:150', 'regex:/^[\pL\s]+$/u'],
             'email' => ['required', 'email:rfc', 'max:150', 'ends_with:@ueb.edu.ec', Rule::unique('usuario', 'correo')],
             'phone' => ['nullable', 'digits:10'],
+            // Ciclo (y paralelo) que cursa: el último ciclo de la carrera es titulación.
+            'cycle_id' => ['required', 'integer', Rule::exists('ciclo', 'id_ciclo')->where('estado', true)],
             'tutoring_id' => ['nullable', 'integer', Rule::exists('asignatura_tutoria', 'id_asig_tutoria')],
-        ]);
+        ], ['cycle_id.required' => 'Selecciona el ciclo que cursa el estudiante.']);
+
+        $cycle = Ciclo::query()->findOrFail((int) $data['cycle_id']);
+        $access->authorizeCareer($request->user(), $cycle->fk_carrera);
 
         $password = Str::password(20, true, true, true, false);
-        $student = DB::transaction(function () use ($data, $password, $careerIds): Usuario {
+        $student = DB::transaction(function () use ($data, $password, $cycle): Usuario {
             $student = Usuario::query()->create([
                 'cedula' => $data['identification'],
                 'nombre' => $data['name'],
                 'correo' => $data['email'],
                 'telefono' => $data['phone'] ?? null,
                 'password_hash' => $password,
-                'fk_carrera' => $careerIds->first(),
+                'fk_carrera' => $cycle->fk_carrera,
+                'ciclo_actual' => $cycle->numero,
                 'estado' => true,
                 'email_verified_at' => now(),
             ]);
             $student->roles()->attach(Role::query()->where('slug', 'estudiante')->valueOrFail('id'));
+            if ($cycle->fk_paralelo) {
+                $student->paralelos()->attach($cycle->fk_paralelo, ['fecha_asignacion' => today(), 'estado' => true]);
+            }
+            if (! empty($data['tutoring_id'])) {
+                ManageEnrollment::assertCanTakeTutorings($student, 'tutoring_id');
+            }
 
             if (! empty($data['tutoring_id'])) {
                 $tutoring = AsignaturaTutoria::query()->findOrFail((int) $data['tutoring_id']);
@@ -156,6 +170,7 @@ class CoordinatorStudentController extends Controller
 
         $tutoring = AsignaturaTutoria::query()->with(self::TUTORING_RELATIONS)->findOrFail((int) $data['tutoring_id']);
         Gate::authorize('view', $tutoring);
+        ManageEnrollment::assertCanTakeTutorings($student, 'tutoring_id');
 
         $enrollment = DB::transaction(function () use ($student, $tutoring): InscripcionTutoria {
             $locked = AsignaturaTutoria::query()->whereKey($tutoring->getKey())->lockForUpdate()->firstOrFail();

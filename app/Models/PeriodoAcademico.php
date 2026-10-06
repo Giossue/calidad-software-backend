@@ -26,7 +26,18 @@ class PeriodoAcademico extends Model
 
     protected $primaryKey = 'id_periodo';
 
+    /** Zona horaria en la que se evalúa la fecha de finalización del PAO. */
+    public const TIMEZONE = 'America/Guayaquil';
+
     protected $fillable = ['nombre', 'fecha_inicio', 'fecha_fin', 'estado'];
+
+    /**
+     * Fecha actual (Y-m-d) en la zona horaria institucional.
+     */
+    public static function today(): string
+    {
+        return now(self::TIMEZONE)->toDateString();
+    }
 
     protected function casts(): array
     {

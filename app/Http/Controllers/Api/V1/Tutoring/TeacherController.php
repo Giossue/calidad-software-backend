@@ -63,6 +63,11 @@ class TeacherController extends Controller
             $query->where(fn (Builder $q) => $q->whereLike('nombre', "%{$term}%")->orWhereLike('correo', "%{$term}%"));
         }
 
+        // Horarios ocupados del docente en el período vigente, para avisar de choques antes de guardar.
+        $query->with(['asignaturasTutoria' => fn ($q) => $q->where('estado', true)
+            ->whereHas('periodo', fn (Builder $p) => $p->where('estado', true))
+            ->with(['horarios' => fn ($h) => $h->where('estado', true)])]);
+
         return AvailableTutoringTeacherResource::collection($query->orderBy('nombre')->limit(100)->get());
     }
 

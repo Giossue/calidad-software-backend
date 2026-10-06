@@ -23,10 +23,13 @@ class ScheduleAndSupervisionTest extends TutoringTestCase
         $this->patchJson($url.'/'.$id, ['end_time' => '12:00', 'room' => 'Aula 202'])->assertOk()
             ->assertJsonPath('data.start_time', '10:00')->assertJsonPath('data.end_time', '12:00')->assertJsonPath('data.room', 'Aula 202');
         $this->getJson($url)->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $id);
+        // El horario es obligatorio: no se puede retirar el último horario activo.
+        $this->patchJson($url.'/'.$id.'/deactivate')->assertUnprocessable()->assertJsonValidationErrors('schedule');
+        $this->postJson($url, [...$this->schedulePayload(), 'day' => 'martes'])->assertCreated();
         $this->patchJson($url.'/'.$id.'/deactivate')->assertOk()->assertJsonPath('data.is_active', false);
         $this->assertDatabaseHas('horario', ['id_horario' => $id, 'estado' => false]);
         $this->postJson($url, $this->schedulePayload())->assertCreated();
-        $this->assertDatabaseCount('horario', 2);
+        $this->assertDatabaseCount('horario', 3);
     }
 
     public function test_schedule_rejects_invalid_times_days_and_empty_rooms_on_create_and_partial_update(): void
@@ -102,7 +105,7 @@ class ScheduleAndSupervisionTest extends TutoringTestCase
         Sanctum::actingAs($this->coordinator, ['*']);
         $url = self::API.'/tutorings/'.$tutoring->getKey();
         $this->postJson($url.'/schedules', $this->schedulePayload())->assertCreated();
-        $this->patchJson($url.'/deactivate')->assertOk();
+        $tutoring->update(['estado' => false]);
         $this->postJson($url.'/schedules', $this->schedulePayload())->assertUnprocessable();
         $this->getJson($url.'/schedules')->assertOk()->assertJsonCount(1, 'data');
     }
@@ -128,7 +131,7 @@ class ScheduleAndSupervisionTest extends TutoringTestCase
         $this->postJson($url.'/attendance', [])->assertMethodNotAllowed();
         $this->postJson($url.'/reports', [])->assertMethodNotAllowed();
 
-        $this->patchJson($url.'/deactivate')->assertOk();
+        $own->update(['estado' => false]);
         $this->getJson($url.'/attendance')->assertOk()->assertJsonPath('data.0.id', $attendance->getKey());
         $this->getJson($url.'/reports')->assertOk()->assertJsonPath('data.0.id', $report->getKey());
         $this->assertDatabaseCount('inscripcion_tutoria', 3);

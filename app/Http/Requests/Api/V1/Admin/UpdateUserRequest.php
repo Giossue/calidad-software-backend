@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\V1\Admin;
 
+use App\Http\Requests\Api\V1\Concerns\ValidatesStudentCycle;
 use App\Models\Role;
 use App\Models\Usuario;
 use App\Rules\CedulaEcuatoriana;
@@ -14,6 +15,8 @@ use Illuminate\Validation\Rules\Unique;
 
 class UpdateUserRequest extends FormRequest
 {
+    use ValidatesStudentCycle;
+
     public function authorize(): bool
     {
         $user = $this->route('user');
@@ -39,6 +42,7 @@ class UpdateUserRequest extends FormRequest
             'role' => ['sometimes', Rule::in(Role::query()->pluck('slug'))],
             'faculty_id' => ['nullable', 'integer', Rule::exists('facultad', 'id_facultad')],
             'career_id' => ['nullable', 'integer', Rule::exists('carrera', 'id_carrera')],
+            ...$this->studentCycleRules(),
             'password' => ['sometimes', 'string', Password::default(), 'confirmed'],
         ];
     }
@@ -54,6 +58,7 @@ class UpdateUserRequest extends FormRequest
             'role' => 'rol',
             'faculty_id' => 'facultad',
             'career_id' => 'carrera',
+            'cycle_number' => 'ciclo',
             'password' => 'contraseña',
         ];
     }
@@ -65,6 +70,7 @@ class UpdateUserRequest extends FormRequest
             'phone.digits' => 'El teléfono debe tener exactamente 10 dígitos numéricos.',
             'identification.digits' => 'La cédula debe tener exactamente 10 dígitos numéricos.',
             'name.regex' => 'El nombre solo puede contener letras y espacios.',
+            'cycle_number.required_if' => 'Selecciona el ciclo que cursa el estudiante.',
         ];
     }
 }

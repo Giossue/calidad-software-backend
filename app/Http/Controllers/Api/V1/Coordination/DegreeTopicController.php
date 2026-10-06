@@ -59,7 +59,8 @@ class DegreeTopicController extends Controller
 
         $query = TemaTitulacion::query()
             ->with(TemaTitulacion::REVIEW_RELATIONS)
-            ->where('fk_periodo', $currentPeriod->getKey());
+            ->where('fk_periodo', $currentPeriod->getKey())
+            ->withoutSupersededRejections();
 
         if ($status !== null) {
             $query->where('estado', $status);

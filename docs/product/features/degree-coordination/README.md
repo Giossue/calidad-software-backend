@@ -50,7 +50,7 @@ listas de propuestas no están paginados.
 | `GET /academic-periods/current` | Período vigente |
 | `GET /academic-periods/current/sections` | Paralelos del período |
 | `POST /academic-periods/current/sections` | Registrar o vincular paralelo: `name` |
-| `GET /coordination/teachers?search=...` | Docentes activos y carga de asignaciones |
+| `GET /coordination/teachers?search=...` | Docentes activos de **todas las carreras y facultades**, con sus carreras (`careers`) y carga de asignaciones. Cada palabra de `search` debe coincidir con nombre, correo, cédula, carrera o facultad. |
 | `GET /coordination/degree-topics` | Propuestas del período vigente |
 | `GET /coordination/degree-topics/pending` | Ruta anterior de pendientes, conservada |
 | `GET /coordination/degree-topics/{topic}` | Detalle |
@@ -87,3 +87,41 @@ Desplegar versiones compatibles del backend y frontend y verificar login,
 navegación por rol, listas, revisión, reasignación de pares y consulta del
 estudiante. El estado de ejecución se registra en
 [el plan activo](../../../plans/active/diagnostico-interfaz-titulacion.md).
+
+## Historial de propuestas rechazadas — 2026-10-06
+
+Mientras un estudiante no tenga un tema aprobado, sus propuestas rechazadas se
+muestran como historial en **Mis propuestas** y en el listado del coordinador.
+Cuando se aprueba uno de sus temas, los listados ocultan sus rechazos y solo
+muestran el tema aprobado (scope `TemaTitulacion::withoutSupersededRejections`).
+Los rechazos y sus observaciones no se eliminan: permanecen en la base de datos
+como respaldo.
+
+## Módulos del estudiante según su ciclo — 2026-10-06
+
+El administrador registra el ciclo que cursa cada estudiante (`cycle_number`,
+columna `usuario.ciclo_actual`) junto con su carrera; es obligatorio para el rol
+estudiante y no puede superar el número de ciclos de la carrera.
+
+- Último ciclo de la carrera (octavo en una carrera de ocho): solo **Titulación**.
+- Ciclos anteriores: solo **Tutorías**.
+
+`UserResource` expone `cycle_number` y `academic_stage` (`tutorias`,
+`titulacion` o `null`). El middleware `student.stage` aplica la regla en las
+rutas `/student/tutoring*` y `/student/degree-topics*` (403 fuera de etapa).
+Los estudiantes sin ciclo registrado conservan el acceso anterior: tutorías y,
+si están matriculados, titulación. La matrícula en titulación sigue siendo
+necesaria para presentar propuestas.
+
+La regla se aplica en todos los registros de estudiantes:
+
+- **Administrador** (Usuarios): elige carrera y ciclo.
+- **Coordinador de carrera** (Registrar estudiante): elige el ciclo y paralelo
+  (`cycle_id`, obligatorio); se guardan carrera, ciclo y paralelo. En el ciclo de
+  titulación no se puede asignar una tutoría inicial.
+- **Estudiante nuevo inscrito desde una tutoría** (coordinador o docente): toma la
+  carrera y el ciclo de la tutoría.
+- Un estudiante del ciclo de titulación no se inscribe ni se reinscribe en tutorías.
+- La matrícula en titulación rechaza a estudiantes con un ciclo anterior al último.
+- El autorregistro público (`/auth/register`) no pide carrera ni ciclo: esos
+  estudiantes conservan el acceso anterior hasta que se les asigne.

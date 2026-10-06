@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Middleware\EnsureStudentStage;
+use App\Http\Middleware\ExpireAcademicPeriods;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
@@ -19,7 +22,12 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn (Request $request) => null);
 
         // CAL-005 & CAL-008: Security headers and internal healthcheck protection
-        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
+        $middleware->append(SecurityHeaders::class);
+
+        // Un PAO solo se desactiva al pasar su fecha de finalización.
+        $middleware->api(append: [ExpireAcademicPeriods::class]);
+
+        $middleware->alias(['student.stage' => EnsureStudentStage::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
@@ -52,4 +60,3 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
     })->create();
-

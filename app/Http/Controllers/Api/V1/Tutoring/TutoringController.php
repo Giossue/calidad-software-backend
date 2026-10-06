@@ -6,6 +6,7 @@ use App\Actions\Tutoring\ManageTutoring;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Tutoring\AssignTutoringCycleRequest;
 use App\Http\Requests\Api\V1\Tutoring\AssignTutoringTeacherRequest;
+use App\Http\Requests\Api\V1\Tutoring\ConfigureTutoringRequest;
 use App\Http\Requests\Api\V1\Tutoring\TutoringRequest;
 use App\Http\Resources\Api\V1\TutoringResource;
 use App\Models\AsignaturaTutoria;
@@ -50,10 +51,11 @@ class TutoringController extends Controller
         return TutoringResource::make($action->create($request->user(), [
             'subject_id' => $request->integer('subject_id'),
             'cycle_id' => $request->integer('cycle_id'),
-            'parallel_ids' => $request->input('parallel_ids'),
-            'parallel_id' => $request->integer('parallel_id') ?: null,
+            'parallel_id' => $request->integer('parallel_ids.0') ?: ($request->integer('parallel_id') ?: null),
             'period_id' => $request->integer('period_id'),
             'modality_id' => $request->integer('modality_id'),
+            'teacher_id' => $request->integer('teacher_id') ?: null,
+            'schedules' => $request->validatedSchedules(),
         ])->load(self::RELATIONS))
             ->response()->setStatusCode(Response::HTTP_CREATED);
     }
@@ -71,12 +73,14 @@ class TutoringController extends Controller
         return TutoringResource::make($action->update($tutoring, $changes)->load(self::RELATIONS));
     }
 
-    public function deactivate(AsignaturaTutoria $tutoring): TutoringResource
+    public function configure(ConfigureTutoringRequest $request, AsignaturaTutoria $tutoring, ManageTutoring $action): TutoringResource
     {
-        Gate::authorize('update', $tutoring);
-        $tutoring->update(['estado' => false]);
-
-        return TutoringResource::make($tutoring->refresh()->load(self::RELATIONS));
+        return TutoringResource::make($action->configure(
+            $tutoring,
+            $request->integer('teacher_id'),
+            $request->integer('cycle_id') ?: null,
+            $request->validatedSchedules(),
+        )->load(self::RELATIONS));
     }
 
     public function activate(AsignaturaTutoria $tutoring, ManageTutoring $action): TutoringResource

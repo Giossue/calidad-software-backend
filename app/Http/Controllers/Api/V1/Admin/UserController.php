@@ -74,6 +74,8 @@ class UserController extends Controller
                 'estado' => true,
                 'email_verified_at' => now(),
                 'fk_carrera' => $careerId,
+                // El último ciclo de la carrera es titulación; los anteriores, tutorías.
+                'ciclo_actual' => $roleSlug === 'estudiante' ? $request->validated('cycle_number') : null,
             ])->refresh();
 
             $user->roles()->sync(Role::query()->where('slug', $roleSlug)->value('id'));
@@ -122,6 +124,12 @@ class UserController extends Controller
             $attributes['fk_carrera'] = null;
         } elseif ($request->exists('career_id')) {
             $attributes['fk_carrera'] = $request->validated('career_id');
+        }
+
+        if ($roleSlug !== 'estudiante') {
+            $attributes['ciclo_actual'] = null;
+        } elseif ($request->exists('cycle_number')) {
+            $attributes['ciclo_actual'] = $request->validated('cycle_number');
         }
 
         $user->fill($attributes)->save();

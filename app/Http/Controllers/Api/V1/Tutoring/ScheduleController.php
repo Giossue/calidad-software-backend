@@ -40,12 +40,11 @@ class ScheduleController extends Controller
         return TutoringScheduleResource::make($action->update($tutoring, $schedule, $request->validated()));
     }
 
-    public function deactivate(AsignaturaTutoria $tutoring, Horario $schedule): TutoringScheduleResource
+    public function deactivate(AsignaturaTutoria $tutoring, Horario $schedule, ManageSchedule $action): TutoringScheduleResource
     {
         Gate::authorize('update', $tutoring);
         abort_unless($schedule->fk_asig_tutoria === $tutoring->getKey(), Response::HTTP_NOT_FOUND);
-        $schedule->update(['estado' => false]);
 
-        return TutoringScheduleResource::make($schedule->refresh());
+        return TutoringScheduleResource::make($action->deactivate($tutoring, $schedule));
     }
 }
