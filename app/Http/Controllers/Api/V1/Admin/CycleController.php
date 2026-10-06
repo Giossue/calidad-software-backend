@@ -38,6 +38,14 @@ class CycleController extends Controller
             });
         }
 
+        if ($facultyId = $request->integer('faculty_id')) {
+            $query->whereHas('carrera', fn (Builder $q) => $q->where('fk_facultad', $facultyId));
+        }
+
+        if ($status = $request->string('status')->toString()) {
+            $query->where('estado', $status === 'active');
+        }
+
         $scopedCount = fn (bool $active) => Ciclo::query()
             ->when($careerId, fn (Builder $q) => $q->where('fk_carrera', $careerId))
             ->where('estado', $active)

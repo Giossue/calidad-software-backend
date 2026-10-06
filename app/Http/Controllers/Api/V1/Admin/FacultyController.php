@@ -30,6 +30,10 @@ class FacultyController extends Controller
             $query->whereLike('nombre', "%{$search}%");
         }
 
+        if ($status = $request->string('status')->toString()) {
+            $query->where('estado', $status === 'active');
+        }
+
         if ($request->boolean('all')) {
             return FacultyResource::collection(
                 (clone $query)->where('estado', true)->orderBy('nombre')->get(),

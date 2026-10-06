@@ -44,6 +44,16 @@ class UserController extends Controller
             $query->whereHas('roles', fn (Builder $inner) => $inner->where('slug', $role));
         }
 
+        if ($status = $request->string('status')->toString()) {
+            $query->where('estado', $status === 'active');
+        }
+
+        if ($careerId = $request->integer('career_id')) {
+            $query->where(fn (Builder $inner) => $inner->where('fk_carrera', $careerId)
+                ->orWhereHas('coordinatedCareers', fn (Builder $q) => $q->where('carrera.id_carrera', $careerId))
+                ->orWhereHas('teachingCareers', fn (Builder $q) => $q->where('carrera.id_carrera', $careerId)));
+        }
+
         return UserResource::collection(
             $query->orderBy('nombre')->orderBy('id_usuario')->paginate($request->integer('per_page', 15)),
         )->additional(['meta' => [
