@@ -22,6 +22,9 @@ class StudentDegreeTopicSubmissionTest extends TestCase
     {
         parent::setUp();
 
+        // Fecha dentro del PAO de los fixtures: un período vencido se desactiva solo.
+        $this->travelTo('2026-09-15 12:00:00');
+
         $this->period = PeriodoAcademico::query()->create([
             'nombre' => 'PAO 2026-1',
             'fecha_inicio' => '2026-05-01',

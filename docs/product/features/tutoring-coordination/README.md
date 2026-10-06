@@ -18,13 +18,13 @@ React del repositorio `calidad-software-frontend`.
 | COOR-06 | Registrar docente | Valida cédula ecuatoriana, nombre, correo institucional y teléfono; asigna exclusivamente rol docente y envía contraseña provisional. |
 | COOR-07 | Actualizar docente | Edita una cuenta docente dentro del alcance autorizado. |
 | COOR-08 | Deshabilitar docente | Desactiva la cuenta y revoca sus tokens; mantiene asignaciones e historial. |
-| COOR-09 | Registrar tutoría | Asignatura vinculada a ciclo, período y modalidad activos; puede quedar inicialmente sin docente. |
+| COOR-09 | Registrar tutoría | Asignatura vinculada a ciclo, período y modalidad activos; un solo paralelo por tutoría. Tutoría, docente y horarios se registran en una sola transacción: el horario es obligatorio y, si el docente ya tiene tutoría a esa hora, no se crea nada. |
 | COOR-10 | Actualizar tutoría | Edita período y modalidad; protege el período si existen inscripciones. |
-| COOR-11 | Deshabilitar tutoría | Baja lógica; conserva horarios, inscripciones, asistencia e informes. |
+| COOR-11 | Deshabilitar tutoría | `2026-10-06`: una tutoría creada no se deshabilita manualmente; deja de estar activa cuando vence su PAO. Conserva horarios, inscripciones, asistencia e informes. |
 | COOR-12 | Asignar docente a tutoría | Tutoría activa y cuenta activa con rol docente. |
 | COOR-13 | Registrar horario | Día, inicio, fin y aula obligatorios; duración positiva y sin superposición activa en la misma tutoría. |
 | COOR-14 | Actualizar horario | El horario pertenece a la tutoría seleccionada; valida también los cambios parciales. |
-| COOR-15 | Deshabilitar horario | Baja lógica; un horario deshabilitado no bloquea su reemplazo. |
+| COOR-15 | Deshabilitar horario | Baja lógica; un horario deshabilitado no bloquea su reemplazo. No se puede retirar el último horario activo de una tutoría. |
 | COOR-16 | Consultar asistencia | Muestra solamente la asistencia registrada de la tutoría autorizada; solo lectura. |
 | COOR-17 | Revisar informes | Muestra autor, tipo, fecha, contenido disponible y resumen de la tutoría; solo lectura. |
 
@@ -152,21 +152,21 @@ permiso `403`.
 | PATCH | `/subjects/{subject}/deactivate` | Baja lógica. |
 | PUT | `/subjects/{subject}/cycles/{cycle}` | Vincular al ciclo indicado; sin cuerpo obligatorio. |
 | GET | `/teachers` | Cuentas vinculadas al alcance autorizado; filtros `search`, `career_id`, `page`, `per_page`; incluye `can_manage`. |
-| GET | `/available-teachers` | Docentes activos para seleccionar; filtro `search`, máximo 100 resultados. |
+| GET | `/available-teachers` | Docentes activos para seleccionar; filtro `search`, máximo 100 resultados. Incluye `busy_schedules` del período vigente. |
 | POST | `/teachers` | `career_id`, `identification`, `name`, `email`, `phone`. |
 | PATCH | `/teachers/{teacher}` | `identification`, `name`, `email`, `phone`. |
 | PATCH | `/teachers/{teacher}/deactivate` | Baja de cuenta y revocación de tokens. |
 | GET | `/tutorings` | Listado; filtros `search`, `career_id`, `page`, `per_page`. |
-| POST | `/tutorings` | `subject_id`, `cycle_id`, `period_id`, `modality_id`. |
+| POST | `/tutorings` | `subject_id`, `cycle_id`, `period_id`, `modality_id`, `parallel_ids` (máximo uno), `teacher_id`, `schedules[]` (`day`, `start_time`, `end_time`, `room` opcional; al menos uno, un día por horario). Atómico. |
 | PATCH | `/tutorings/{tutoring}` | `period_id`, `modality_id`. |
-| PATCH | `/tutorings/{tutoring}/deactivate` | Baja lógica. |
+| PUT | `/tutorings/{tutoring}/configuration` | `teacher_id`, `cycle_id` opcional, `schedules[]`. Actualiza docente, paralelo y horarios en una sola transacción. |
 | PATCH | `/tutorings/{tutoring}/activate` | Rehabilita una tutoría; exige período, ciclo y carrera activos y conserva docente e inscripciones. |
 | PUT | `/tutorings/{tutoring}/cycle` | `cycle_id`. |
 | PUT | `/tutorings/{tutoring}/teacher` | `teacher_id`. |
 | GET | `/tutorings/{tutoring}/schedules` | Horarios activos e históricos. |
 | POST | `/tutorings/{tutoring}/schedules` | `day`, `start_time`, `end_time`, `room`. |
 | PATCH | `/tutorings/{tutoring}/schedules/{schedule}` | Cambios parciales de día, horas y aula. |
-| PATCH | `/tutorings/{tutoring}/schedules/{schedule}/deactivate` | Baja lógica. |
+| PATCH | `/tutorings/{tutoring}/schedules/{schedule}/deactivate` | Baja lógica; rechaza el último horario activo. |
 | GET | `/tutorings/{tutoring}/attendance` | Asistencia; `page`, `per_page`. |
 | GET | `/tutorings/{tutoring}/reports` | Informes y resumen; `page`, `per_page`. |
 
@@ -336,3 +336,13 @@ No usar `migrate:fresh`, `db:wipe`, seeders de demostración ni rollbacks
 automáticos en producción. El registro anterior acredita la actualización del
 esquema; la publicación de la aplicación debe comprobarse por separado del
 estado de los commits y del push.
+
+## Choques de horario del docente — 2026-10-06
+
+Un docente no puede tener dos tutorías activas del mismo período con horarios
+superpuestos el mismo día. Franjas contiguas (10:00–12:00 y 12:00–13:00), otros
+días u otros docentes no chocan. La regla se aplica al crear o editar horarios
+(coordinador y docente), al asignar o cambiar el docente, al rehabilitar una
+tutoría y al cambiar su período. `GET /available-teachers` incluye
+`busy_schedules` del período vigente para que la interfaz avise antes de guardar;
+el servidor sigue siendo quien decide.

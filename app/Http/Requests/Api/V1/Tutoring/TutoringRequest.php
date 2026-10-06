@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\V1\Tutoring;
 
+use App\Http\Requests\Api\V1\Concerns\ValidatesScheduleList;
 use App\Models\AsignaturaTutoria;
 use App\Models\Ciclo;
 use App\Models\PeriodoAcademico;
@@ -12,6 +13,8 @@ use Illuminate\Validation\Rule;
 
 class TutoringRequest extends FormRequest
 {
+    use ValidatesScheduleList;
+
     public function authorize(): bool
     {
         $tutoring = $this->route('tutoring');
@@ -60,7 +63,8 @@ class TutoringRequest extends FormRequest
         return [
             'subject_id' => $creating ? ['required', 'integer', Rule::exists('subjects', 'id')->where('is_active', true)] : ['prohibited'],
             'cycle_id' => $creating ? ['required', 'integer', Rule::exists('ciclo', 'id_ciclo')->where('estado', true)] : ['prohibited'],
-            'parallel_ids' => ['nullable', 'array'],
+            // Cada paralelo es una tutoría propia con su docente y su horario.
+            'parallel_ids' => ['nullable', 'array', 'max:1'],
             'parallel_ids.*' => ['integer', Rule::exists('paralelo', 'id_paralelo')->where('estado', true)],
             'parallel_id' => ['nullable', 'integer', Rule::exists('paralelo', 'id_paralelo')->where('estado', true)],
             'period_id' => [($creating ? 'required' : 'sometimes'), 'integer', Rule::exists('periodo_academico', 'id_periodo')->where(
@@ -69,6 +73,19 @@ class TutoringRequest extends FormRequest
             'modality_id' => [($creating ? 'required' : 'sometimes'), 'integer', Rule::exists('modalidad', 'id_modalidad')->where(
                 fn (Builder $query) => $query->where('estado', true)->when($modalityId, fn (Builder $q) => $q->orWhere('id_modalidad', $modalityId)),
             )],
+            ...($creating ? [
+                'teacher_id' => ['nullable', 'integer', Rule::exists('usuario', 'id_usuario')->where('estado', true)],
+                ...$this->scheduleListRules(),
+            ] : []),
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function messages(): array
+    {
+        return [
+            'parallel_ids.max' => 'Selecciona un solo paralelo: cada paralelo es una tutoría con su propio docente y horario.',
+            ...$this->scheduleListMessages(),
         ];
     }
 }

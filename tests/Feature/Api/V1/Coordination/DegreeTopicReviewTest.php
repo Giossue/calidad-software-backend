@@ -14,6 +14,14 @@ class DegreeTopicReviewTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Fecha dentro del PAO de los fixtures: un período vencido se desactiva solo.
+        $this->travelTo('2026-09-15 12:00:00');
+    }
+
     public function test_coordinador_titulacion_can_list_pending_degree_topics_for_current_period_and_section(): void
     {
         $period = PeriodoAcademico::query()->create([

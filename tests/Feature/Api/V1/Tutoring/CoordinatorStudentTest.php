@@ -44,12 +44,15 @@ class CoordinatorStudentTest extends TutoringTestCase
         Notification::fake();
 
         $tutoring = $this->createTutoring($this->cycle);
+        // Con un segundo ciclo, el primero corresponde a tutorías.
+        $this->createCycle($this->career, number: 2);
 
         $response = $this->actingAs($this->coordinator)->postJson(self::API.'/students', [
             'identification' => '0926687856',
             'name' => 'Carlos Estudiante Nuevo',
             'email' => 'carlos.nuevo@ueb.edu.ec',
             'phone' => '0981112233',
+            'cycle_id' => $this->cycle->getKey(),
             'tutoring_id' => $tutoring->getKey(),
         ]);
 
@@ -60,6 +63,8 @@ class CoordinatorStudentTest extends TutoringTestCase
         $this->assertDatabaseHas('usuario', [
             'cedula' => '0926687856',
             'correo' => 'carlos.nuevo@ueb.edu.ec',
+            'fk_carrera' => $this->career->getKey(),
+            'ciclo_actual' => $this->cycle->numero,
         ]);
 
         Notification::assertSentTo(

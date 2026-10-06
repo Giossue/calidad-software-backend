@@ -3,6 +3,9 @@
 namespace Tests\Feature\Api\V1\Coordination;
 
 use App\Models\AsignacionDocente;
+use App\Models\Carrera;
+use App\Models\Facultad;
+use App\Models\Modalidad;
 use App\Models\PeriodoAcademico;
 use App\Models\TemaTitulacion;
 use App\Models\Usuario;
@@ -83,6 +86,35 @@ class TeacherSelectionTest extends TestCase
             'active_tutorships_count' => 0,
             'active_peer_reviews_count' => 1,
         ]);
+    }
+
+    public function test_coordinator_searches_teachers_of_every_career_and_faculty(): void
+    {
+        $modality = Modalidad::query()->create(['nombre' => 'Presencial', 'estado' => true]);
+        $engineering = Facultad::query()->create(['nombre' => 'Ingeniería', 'estado' => true]);
+        $health = Facultad::query()->create(['nombre' => 'Ciencias de la Salud', 'estado' => true]);
+        $software = Carrera::query()->create(['fk_facultad' => $engineering->getKey(), 'fk_modalidad' => $modality->getKey(), 'nombre' => 'Software', 'estado' => true]);
+        $nursing = Carrera::query()->create(['fk_facultad' => $health->getKey(), 'fk_modalidad' => $modality->getKey(), 'nombre' => 'Enfermería', 'estado' => true]);
+
+        $ana = Usuario::factory()->withRole('docente')->create(['nombre' => 'Ana Torres']);
+        $ana->teachingCareers()->attach($software, ['assigned_at' => now()]);
+        $luis = Usuario::factory()->withRole('docente')->create(['nombre' => 'Luis Paredes', 'fk_carrera' => $nursing->getKey()]);
+
+        // El coordinador pertenece a Software, pero ve docentes de otras facultades.
+        $coordinator = Usuario::factory()->withRole('coordinador_titulacion')->create(['fk_carrera' => $software->getKey()]);
+        Sanctum::actingAs($coordinator, ['access-api']);
+
+        $this->getJson('/api/v1/coordination/teachers')->assertOk()->assertJsonCount(2, 'data')
+            ->assertJsonPath('data.0.careers.0.name', 'Software')
+            ->assertJsonPath('data.0.careers.0.faculty_name', 'Ingeniería')
+            ->assertJsonPath('data.1.careers.0.name', 'Enfermería')
+            ->assertJsonPath('data.1.careers.0.faculty_name', 'Ciencias de la Salud');
+
+        $this->getJson('/api/v1/coordination/teachers?search=salud')->assertOk()
+            ->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $luis->getKey());
+        $this->getJson('/api/v1/coordination/teachers?search=torres%20software')->assertOk()
+            ->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $ana->getKey());
+        $this->getJson('/api/v1/coordination/teachers?search=torres%20enfermer')->assertOk()->assertJsonCount(0, 'data');
     }
 
     public function test_inactive_teachers_and_non_teachers_are_excluded(): void

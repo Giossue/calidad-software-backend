@@ -38,6 +38,9 @@ abstract class TutoringTestCase extends TestCase
     {
         parent::setUp();
 
+        // Fecha dentro del PAO de los fixtures: un período vencido se desactiva solo.
+        $this->travelTo('2026-09-15 12:00:00');
+
         $faculty = Facultad::query()->create(['nombre' => 'Ciencias', 'estado' => true]);
         $this->modality = Modalidad::query()->create(['nombre' => 'Presencial', 'estado' => true]);
         $this->period = PeriodoAcademico::query()->create([
@@ -99,6 +102,7 @@ abstract class TutoringTestCase extends TestCase
         return [
             'subject_id' => $subject->getKey(), 'cycle_id' => ($cycle ?? $this->cycle)->getKey(),
             'period_id' => $this->period->getKey(), 'modality_id' => $this->modality->getKey(),
+            'schedules' => [['day' => 'lunes', 'start_time' => '10:00', 'end_time' => '11:00', 'room' => 'Aula 101']],
         ];
     }
 

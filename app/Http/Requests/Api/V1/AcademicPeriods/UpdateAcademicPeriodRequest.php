@@ -31,7 +31,11 @@ class UpdateAcademicPeriodRequest extends FormRequest
         return [
             'nombre' => ['bail', 'required', 'string', 'max:100', Rule::unique('periodo_academico', 'nombre')->ignore($academicPeriod)],
             'fecha_inicio' => ['bail', 'required', 'date_format:Y-m-d'],
-            'fecha_fin' => ['bail', 'required', 'date_format:Y-m-d', 'after_or_equal:fecha_inicio'],
+            'fecha_fin' => array_filter([
+                'bail', 'required', 'date_format:Y-m-d', 'after_or_equal:fecha_inicio',
+                // Mover la fecha de fin al pasado equivaldría a desactivar manualmente el PAO activo.
+                $academicPeriod->estado ? 'after_or_equal:'.PeriodoAcademico::today() : null,
+            ]),
         ];
     }
 

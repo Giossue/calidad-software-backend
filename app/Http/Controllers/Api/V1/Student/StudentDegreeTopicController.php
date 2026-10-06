@@ -34,6 +34,7 @@ class StudentDegreeTopicController extends Controller
         $topics = TemaTitulacion::query()
             ->with(TemaTitulacion::REVIEW_RELATIONS)
             ->where('fk_id_usuario', $user->getKey())
+            ->withoutSupersededRejections()
             ->orderByDesc('fecha_propuesta')
             ->orderByDesc('id_tema_tit')
             ->get();

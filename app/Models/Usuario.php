@@ -24,6 +24,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property string $correo
  * @property bool $estado
  * @property int|null $fk_carrera
+ * @property int|null $ciclo_actual
  * @property Carbon|null $email_verified_at
  * @property string $password_hash
  * @property string|null $two_factor_secret
@@ -33,7 +34,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['cedula', 'nombre', 'correo', 'telefono', 'password_hash', 'estado', 'fk_carrera', 'email_verified_at'])]
+#[Fillable(['cedula', 'nombre', 'correo', 'telefono', 'password_hash', 'estado', 'fk_carrera', 'ciclo_actual', 'email_verified_at'])]
 #[Hidden(['password_hash', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class Usuario extends Authenticatable implements MustVerifyEmail
 {
@@ -187,6 +188,36 @@ class Usuario extends Authenticatable implements MustVerifyEmail
             'password_hash' => 'hashed',
             'estado' => 'boolean',
             'two_factor_confirmed_at' => 'datetime',
+            'ciclo_actual' => 'integer',
         ];
+    }
+
+    public const STAGE_TUTORING = 'tutorias';
+
+    public const STAGE_DEGREE = 'titulacion';
+
+    /**
+     * Etapa académica del estudiante según su ciclo: el último ciclo de su
+     * carrera es titulación y los anteriores son tutorías. Devuelve null si no
+     * es estudiante o aún no tiene ciclo y carrera registrados.
+     */
+    public function academicStage(): ?string
+    {
+        if ($this->ciclo_actual === null || $this->fk_carrera === null || ! $this->hasRole('estudiante')) {
+            return null;
+        }
+
+        $lastCycle = self::careerCycleCount($this->fk_carrera);
+        if ($lastCycle === 0) {
+            return null;
+        }
+
+        return $this->ciclo_actual >= $lastCycle ? self::STAGE_DEGREE : self::STAGE_TUTORING;
+    }
+
+    /** Número de ciclos de la carrera: el número de ciclo más alto registrado. */
+    public static function careerCycleCount(int $careerId): int
+    {
+        return (int) Ciclo::query()->where('fk_carrera', $careerId)->max('numero');
     }
 }

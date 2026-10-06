@@ -49,16 +49,16 @@ class TeacherSyncScheduleRequest extends TeacherMutationRequest
         });
     }
 
-    /** @return array<int, array{day: string, start_time: string, end_time: string, room: string|null}> */
+    /** @return list<array{day: string, start_time: string, end_time: string, room: string|null}> */
     public function validatedSchedules(): array
     {
         $raw = $this->validated('schedules', []);
 
-        return array_map(fn (array $item) => [
+        return array_values(array_map(fn (array $item) => [
             'day' => (string) $item['day'],
             'start_time' => substr((string) $item['start_time'], 0, 5),
             'end_time' => substr((string) $item['end_time'], 0, 5),
             'room' => isset($item['room']) && trim((string) $item['room']) !== '' ? trim((string) $item['room']) : null,
-        ], $raw);
+        ], $raw));
     }
 }

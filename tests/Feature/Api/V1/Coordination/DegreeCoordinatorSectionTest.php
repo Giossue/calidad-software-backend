@@ -13,6 +13,14 @@ class DegreeCoordinatorSectionTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Fecha dentro del PAO de los fixtures: un período vencido se desactiva solo.
+        $this->travelTo('2026-09-15 12:00:00');
+    }
+
     public function test_authenticated_user_can_retrieve_current_academic_period(): void
     {
         $activePeriod = PeriodoAcademico::query()->create([
