@@ -10,6 +10,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Coordination\ApproveDegreeTopicRequest;
 use App\Http\Requests\Api\V1\Coordination\ListDegreeTopicsRequest;
 use App\Http\Requests\Api\V1\Coordination\RejectDegreeTopicRequest;
+use App\Http\Requests\Api\V1\Coordination\StoreDegreeReportRequest;
 use App\Http\Requests\Api\V1\Coordination\StoreTopicObservationRequest;
 use App\Http\Requests\Api\V1\Coordination\UpdateAcademicPeersRequest;
 use App\Http\Resources\Api\V1\AcademicPeerResource;
@@ -321,13 +322,8 @@ class DegreeTopicController extends Controller
     /**
      * Registra un informe de titulación asociado a la ficha de seguimiento.
      */
-    public function storeReport(Request $request, TemaTitulacion $topic): JsonResponse
+    public function storeReport(StoreDegreeReportRequest $request, TemaTitulacion $topic): JsonResponse
     {
-        Gate::authorize('viewAny', TemaTitulacion::class);
-
-        $request->validate([
-            'observaciones_finales' => ['required', 'string', 'max:2000'],
-        ]);
 
         $ficha = FichaSeguimiento::query()->firstOrCreate(
             ['fk_tema_tit' => $topic->getKey()],

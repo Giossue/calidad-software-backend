@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api\V1\Teacher;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Teacher\StoreDegreeActivityRequest;
+use App\Http\Requests\Api\V1\Teacher\UpdateDegreeProgressRequest;
 use App\Http\Resources\Api\V1\DegreeTopicResource;
 use App\Models\ActividadAvance;
 use App\Models\AsignacionDocente;
@@ -65,16 +67,11 @@ class TeacherDegreeTrackingController extends Controller
     /**
      * Registra una nueva tarea/actividad de avance por parte del docente.
      */
-    public function storeActivity(Request $request, TemaTitulacion $topic): JsonResponse
+    public function storeActivity(StoreDegreeActivityRequest $request, TemaTitulacion $topic): JsonResponse
     {
         /** @var Usuario $teacher */
         $teacher = $request->user();
         $assignment = $this->authorizeTeacherOnTopic($teacher, $topic);
-
-        $request->validate([
-            'descripcion' => ['required', 'string', 'max:1000'],
-            'completada' => ['nullable', 'boolean'],
-        ]);
 
         $ficha = FichaSeguimiento::query()->firstOrCreate(
             ['fk_tema_tit' => $topic->getKey()],
@@ -154,14 +151,9 @@ class TeacherDegreeTrackingController extends Controller
     /**
      * Actualiza el porcentaje de avance de la ficha.
      */
-    public function updateProgress(Request $request, TemaTitulacion $topic): JsonResponse
+    public function updateProgress(UpdateDegreeProgressRequest $request, TemaTitulacion $topic): JsonResponse
     {
         $this->authorizeTeacherOnTopic($request->user(), $topic);
-
-        $request->validate([
-            'porcentaje_avance' => ['required', 'numeric', 'min:0', 'max:100'],
-            'estado' => ['nullable', 'string', 'max:50'],
-        ]);
 
         $ficha = FichaSeguimiento::query()->firstOrCreate(
             ['fk_tema_tit' => $topic->getKey()],
