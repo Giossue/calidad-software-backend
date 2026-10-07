@@ -82,6 +82,21 @@ class AccountFlowsTest extends TestCase
         Notification::assertSentTo($user, ResetPassword::class);
     }
 
+    public function test_account_emails_are_rendered_in_spanish(): void
+    {
+        $user = Usuario::factory()->unverified()->create();
+
+        $reset = (string) (new ResetPassword('token'))->toMail($user)->render();
+        $this->assertStringContainsString('Restablecer contraseña', $reset);
+        $this->assertStringContainsString('¡Hola!', $reset);
+        $this->assertStringContainsString('/reset-password?token=token', $reset);
+        $this->assertStringNotContainsString('Reset Password', $reset);
+
+        $verify = (string) (new VerifyEmail)->toMail($user)->render();
+        $this->assertStringContainsString('Verificar correo electrónico', $verify);
+        $this->assertStringContainsString('/verify-email?id=', $verify);
+    }
+
     public function test_user_can_reset_password_and_existing_tokens_are_revoked(): void
     {
         $user = Usuario::factory()->create();

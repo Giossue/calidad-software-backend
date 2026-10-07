@@ -45,11 +45,11 @@ SESSION_DRIVER=file
 FILESYSTEM_DISK=local
 
 MAIL_MAILER=smtp
+MAIL_SCHEME=smtp
 MAIL_HOST=replace-with-smtp-host
 MAIL_PORT=587
 MAIL_USERNAME=replace-with-user
 MAIL_PASSWORD=replace-with-secret
-MAIL_ENCRYPTION=tls
 MAIL_FROM_ADDRESS=no-reply@example.com
 MAIL_FROM_NAME="Calidad Software"
 ```
@@ -59,7 +59,11 @@ esa clave después de habilitar 2FA: protege secretos y códigos cifrados.
 
 `CORS_ALLOWED_ORIGINS` admite varios orígenes separados por comas, pero nunca
 debe contener `*` en producción. `FRONTEND_URL` se usa para enlaces enviados por
-correo. Las credenciales de la aplicación desplegada se configuran en
+correo (contraseña provisional, recuperación y verificación), así que debe ser
+la URL pública del frontend. Con el puerto 587 usa `MAIL_SCHEME=smtp` (STARTTLS);
+con 465 usa `smtps`. Laravel 13 ignora `MAIL_ENCRYPTION`. Si usas Gmail,
+`MAIL_PASSWORD` debe ser una contraseña de aplicación y `MAIL_FROM_ADDRESS` la
+misma cuenta. Las credenciales de la aplicación desplegada se configuran en
 Environment Settings; las credenciales administrativas locales se leen desde
 `/home/giossue/.pgpass`.
 
