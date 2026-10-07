@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Coordination;
 
+use App\Actions\Sections\RegisterPeriodSection;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Coordination\RegisterPeriodSectionRequest;
 use App\Http\Resources\Api\V1\AcademicPeriodResource;
@@ -58,7 +59,7 @@ class PeriodSectionController extends Controller
     /**
      * Registra un paralelo y lo vincula al período académico vigente.
      */
-    public function store(RegisterPeriodSectionRequest $request): JsonResponse
+    public function store(RegisterPeriodSectionRequest $request, RegisterPeriodSection $registerSection): JsonResponse
     {
         Gate::authorize('viewAny', TemaTitulacion::class);
 
@@ -70,17 +71,7 @@ class PeriodSectionController extends Controller
             ], Response::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        /** @var Paralelo $section */
-        $section = Paralelo::query()->firstOrCreate(
-            ['nombre' => $request->validated('name')],
-            ['estado' => true]
-        );
-
-        if (! $section->estado) {
-            $section->update(['estado' => true]);
-        }
-
-        $currentPeriod->paralelos()->syncWithoutDetaching([$section->getKey()]);
+        $section = $registerSection->handle($currentPeriod, $request->validated('name'));
 
         return response()->json([
             'data' => [

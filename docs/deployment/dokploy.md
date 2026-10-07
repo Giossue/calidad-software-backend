@@ -67,6 +67,15 @@ misma cuenta. Las credenciales de la aplicación desplegada se configuran en
 Environment Settings; las credenciales administrativas locales se leen desde
 `/home/giossue/.pgpass`.
 
+## Cola de trabajos
+
+Las importaciones masivas se procesan en la cola (`QUEUE_CONNECTION=database`).
+El entrypoint inicia un worker `queue:work` en segundo plano y lo reinicia si
+termina. Para atender la cola desde un servicio aparte de Dokploy, define
+`QUEUE_WORKER_ENABLED=false` en la aplicación web y ejecuta
+`php artisan queue:work --tries=3 --max-time=3600` en ese servicio con la misma
+imagen y variables. Comprueba que corre con `ps aux | grep queue:work`.
+
 ## Migraciones
 
 El entrypoint no modifica la base. El método habitual para migrar producción es

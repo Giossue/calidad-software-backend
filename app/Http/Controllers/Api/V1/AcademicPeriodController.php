@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Actions\AcademicPeriods\ActivateAcademicPeriod;
+use App\Actions\AcademicPeriods\CreateAcademicPeriod;
 use App\Actions\AcademicPeriods\DeactivateAcademicPeriod;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\AcademicPeriods\StoreAcademicPeriodRequest;
@@ -40,24 +41,11 @@ class AcademicPeriodController extends Controller
         ]]);
     }
 
-    public function store(StoreAcademicPeriodRequest $request): JsonResponse
+    public function store(StoreAcademicPeriodRequest $request, CreateAcademicPeriod $createAcademicPeriod): JsonResponse
     {
-        $data = $request->validated();
-        $today = now()->toDateString();
-        $isCurrent = $data['fecha_inicio'] <= $today && $data['fecha_fin'] >= $today;
+        $academicPeriod = $createAcademicPeriod->handle($request->validated());
 
-        if ($isCurrent) {
-            PeriodoAcademico::query()->where('estado', true)->update(['estado' => false]);
-            $data['estado'] = true;
-        } else {
-            $data['estado'] = false;
-        }
-
-        $academicPeriod = PeriodoAcademico::query()->create($data);
-
-        PeriodoAcademico::sincronizarVigencia();
-
-        return AcademicPeriodResource::make($academicPeriod->refresh())->response()->setStatusCode(Response::HTTP_CREATED);
+        return AcademicPeriodResource::make($academicPeriod)->response()->setStatusCode(Response::HTTP_CREATED);
     }
 
     public function update(UpdateAcademicPeriodRequest $request, PeriodoAcademico $academicPeriod): AcademicPeriodResource

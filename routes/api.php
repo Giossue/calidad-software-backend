@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AcademicPeriodController;
+use App\Http\Controllers\Api\V1\BulkImportController;
 use App\Http\Controllers\Api\V1\Admin\CareerController;
 use App\Http\Controllers\Api\V1\Admin\CoordinatorCareerAssignmentController;
 use App\Http\Controllers\Api\V1\Admin\CycleController;
@@ -82,6 +83,10 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
     });
 
     Route::middleware(['auth:sanctum', 'verified', CheckAbilities::class.':access-api', EnsureActiveAccount::class])->group(function (): void {
+        Route::get('imports/{type}/template', [BulkImportController::class, 'template'])->name('imports.template');
+        Route::post('imports/{type}', [BulkImportController::class, 'store'])->middleware('throttle:10,1')->name('imports.store');
+        Route::get('imports/{import}', [BulkImportController::class, 'show'])->whereNumber('import')->name('imports.show');
+
         Route::get('academic-periods/current', [PeriodSectionController::class, 'currentPeriod'])->name('academic-periods.current');
         Route::get('academic-periods/current/sections', [PeriodSectionController::class, 'index'])->name('academic-periods.current.sections.index');
         Route::post('academic-periods/current/sections', [PeriodSectionController::class, 'store'])->name('academic-periods.current.sections.store');

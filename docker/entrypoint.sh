@@ -28,4 +28,16 @@ chown -R www-data:www-data storage bootstrap/cache
 php artisan config:cache --no-interaction
 php artisan route:cache --no-interaction
 
+# Procesa importaciones masivas y correos encolados. El bucle reinicia el worker
+# si termina (por --max-time o por un error). Desactívalo con QUEUE_WORKER_ENABLED=false
+# si la cola se atiende desde otro servicio.
+if [ "${QUEUE_WORKER_ENABLED:-true}" != "false" ] && [ "${QUEUE_CONNECTION:-sync}" != "sync" ]; then
+    (
+        while true; do
+            su -s /bin/sh www-data -c "php artisan queue:work --tries=3 --backoff=30 --max-time=3600 --no-interaction" || true
+            sleep 5
+        done
+    ) &
+fi
+
 exec "$@"
