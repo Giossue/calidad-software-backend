@@ -28,12 +28,17 @@ class ProvisionalPasswordNotification extends Notification
      */
     public function toMail(Usuario $notifiable): MailMessage
     {
-        return (new MailMessage)
+        $message = (new MailMessage)
             ->subject('Acceso al Sistema de Tutorías y Titulación - Contraseña Provisional')
-            ->greeting("Hola, {$notifiable->nombre}")
+            ->greeting($notifiable->must_complete_profile ? 'Hola' : "Hola, {$notifiable->nombre}")
             ->line('Se ha registrado tu cuenta en el Sistema para el seguimiento de Tutorías y Titulación de la Universidad Estatal de Bolívar.')
-            ->line("Tu contraseña provisional de acceso es: **{$this->provisionalPassword}**")
-            ->line('Por razones de seguridad, te recomendamos iniciar sesión con esta clave y modificarla inmediatamente desde la configuración de tu cuenta.')
+            ->line("Tu contraseña provisional de acceso es: **{$this->provisionalPassword}**");
+
+        $message = $notifiable->must_complete_profile
+            ? $message->line('Al ingresar por primera vez deberás completar tus datos personales y elegir una nueva contraseña.')
+            : $message->line('Por razones de seguridad, te recomendamos iniciar sesión con esta clave y modificarla inmediatamente desde la configuración de tu cuenta.');
+
+        return $message
             ->action('Iniciar Sesión', rtrim((string) config('app.frontend_url'), '/').'/login')
             ->line('Gracias por formar parte de nuestra comunidad académica.');
     }

@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Middleware\EnsureProfileCompleted;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Auth\AuthenticationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
@@ -19,7 +21,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->redirectGuestsTo(fn (Request $request) => null);
 
         // CAL-005 & CAL-008: Security headers and internal healthcheck protection
-        $middleware->append(\App\Http\Middleware\SecurityHeaders::class);
+        $middleware->append(SecurityHeaders::class);
+
+        // Las cuentas importadas deben completar su perfil antes de usar la API.
+        $middleware->appendToGroup('api', EnsureProfileCompleted::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
@@ -52,4 +57,3 @@ return Application::configure(basePath: dirname(__DIR__))
             }
         });
     })->create();
-

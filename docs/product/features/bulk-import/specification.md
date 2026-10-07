@@ -35,6 +35,12 @@ Las columnas entre corchetes son opcionales.
 | `academic-periods` | nombre, fecha_inicio, fecha_fin (AAAA-MM-DD) |
 | `subjects` | carrera, nombre, [codigo], [ciclo], [modalidad] |
 | `sections` | nombre |
+| `users` (admin) | correo, rol, [carrera]¹, [cedula], [nombre], [telefono] |
+| `teachers` (coordinador) | correo, carrera, [cedula], [nombre], [telefono] |
+| `students` (coordinador) | correo, carrera, [cedula], [nombre], [telefono] |
+
+¹ Obligatoria salvo para el rol `administrador`. Docentes y estudiantes requieren
+correo `@ueb.edu.ec` y una carrera coordinada por quien importa.
 
 ## Reglas de negocio
 
@@ -47,6 +53,22 @@ Las columnas entre corchetes son opcionales.
 - Separador `,` o `;`, codificación UTF-8 (con o sin BOM) o Windows-1252
   (CSV de Excel). Máximo 2 MB y 1000 filas.
 - Solo el autor puede consultar su importación.
+
+## Cuentas importadas y primer ingreso
+
+- Se crean activas, con correo verificado y `must_complete_profile = true`.
+  Sin cédula queda `NULL`; sin nombre se usa uno provisional derivado del correo.
+- Si Excel quitó el cero inicial, se restituye en celulares (`991234567`) y en
+  cédulas de 9 dígitos que solo son válidas con el cero (`201234567`).
+- La contraseña provisional se envía con `QueuedProvisionalPasswordNotification`
+  (cola cifrada, porque el payload contiene la clave).
+- `EnsureProfileCompleted` responde `403` con `code: profile_incomplete` en toda
+  la API salvo `auth/user`, `auth/logout` y `PUT auth/profile/complete`.
+- `PUT /api/v1/auth/profile/complete` exige cédula o pasaporte, nombre, teléfono
+  y una contraseña nueva distinta de la provisional; apaga el indicador y revoca
+  los demás tokens del usuario.
+- Gmail personal limita a unos 500 correos diarios; las importaciones grandes de
+  usuarios deben repartirse en varios días o usar un proveedor transaccional.
 
 ## Datos
 

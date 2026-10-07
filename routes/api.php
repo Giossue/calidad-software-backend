@@ -1,17 +1,18 @@
 <?php
 
 use App\Http\Controllers\Api\V1\AcademicPeriodController;
-use App\Http\Controllers\Api\V1\BulkImportController;
 use App\Http\Controllers\Api\V1\Admin\CareerController;
 use App\Http\Controllers\Api\V1\Admin\CoordinatorCareerAssignmentController;
 use App\Http\Controllers\Api\V1\Admin\CycleController;
 use App\Http\Controllers\Api\V1\Admin\FacultyController;
 use App\Http\Controllers\Api\V1\Admin\UserController;
+use App\Http\Controllers\Api\V1\Auth\CompleteProfileController;
 use App\Http\Controllers\Api\V1\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\V1\Auth\PasswordController;
 use App\Http\Controllers\Api\V1\Auth\RegistrationController;
 use App\Http\Controllers\Api\V1\Auth\TokenController;
 use App\Http\Controllers\Api\V1\Auth\TwoFactorChallengeController;
+use App\Http\Controllers\Api\V1\BulkImportController;
 use App\Http\Controllers\Api\V1\Coordination\DegreeTopicController;
 use App\Http\Controllers\Api\V1\Coordination\PeriodSectionController;
 use App\Http\Controllers\Api\V1\Coordination\TeacherCoordinationController;
@@ -59,6 +60,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::middleware('auth:sanctum')->group(function (): void {
             Route::get('user', [TokenController::class, 'show'])->name('user');
             Route::delete('logout', [TokenController::class, 'destroy'])->name('logout');
+            Route::put('profile/complete', CompleteProfileController::class)
+                ->middleware('throttle:10,1')->name('profile.complete');
             Route::post('email/verification-notification', [EmailVerificationController::class, 'send'])
                 ->middleware('throttle:3,1')->name('verification.send');
         });

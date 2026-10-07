@@ -17,24 +17,25 @@ class CedulaEcuatoriana implements ValidationRule
             return;
         }
 
-        $province = (int) substr($value, 0, 2);
-        if ($province < 1 || ($province > 24 && $province !== 30)) {
+        if (! self::isValid($value)) {
             $fail('El campo :attribute no corresponde a una cédula ecuatoriana válida.');
+        }
+    }
 
-            return;
+    public static function isValid(string $value): bool
+    {
+        if (! preg_match('/^\d{10}$/', $value)) {
+            return false;
         }
 
-        if ((int) $value[2] > 6) {
-            $fail('El campo :attribute no corresponde a una cédula ecuatoriana válida.');
-
-            return;
+        $province = (int) substr($value, 0, 2);
+        if ($province < 1 || ($province > 24 && $province !== 30) || (int) $value[2] > 6) {
+            return false;
         }
 
         $digits = array_map('intval', str_split(substr($value, 0, 9)));
 
-        if (self::checkDigit($digits) !== (int) $value[9]) {
-            $fail('El campo :attribute no corresponde a una cédula ecuatoriana válida.');
-        }
+        return self::checkDigit($digits) === (int) $value[9];
     }
 
     /** @param array<int, int> $firstNineDigits */

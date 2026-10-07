@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Admin;
 
+use App\Actions\Users\CreateAccount;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Admin\StoreUserRequest;
 use App\Http\Requests\Api\V1\Admin\UpdateUserRequest;
@@ -16,8 +17,6 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
@@ -67,34 +66,17 @@ class UserController extends Controller
         ]]);
     }
 
-    public function store(StoreUserRequest $request): JsonResponse
+    public function store(StoreUserRequest $request, CreateAccount $createAccount): JsonResponse
     {
-        $provisionalPassword = Str::password(20, true, true, true, false);
-
-        $user = DB::transaction(function () use ($request, $provisionalPassword): Usuario {
-            $roleSlug = $request->validated('role');
-            $careerId = $roleSlug !== 'administrador' ? $request->validated('career_id') : null;
-
-            $user = Usuario::query()->create([
-                'cedula' => $request->validated('identification'),
-                'nombre' => $request->validated('name'),
-                'correo' => $request->validated('email'),
-                'telefono' => $request->validated('phone'),
-                'password_hash' => Hash::make($provisionalPassword),
-                'estado' => true,
-                'email_verified_at' => now(),
-                'fk_carrera' => $careerId,
-            ])->refresh();
-
-            $user->roles()->sync(Role::query()->where('slug', $roleSlug)->value('id'));
-
-            if ($careerId) {
-                if ($roleSlug === 'coordinador_carrera') {
-                    $user->coordinatedCareers()->syncWithoutDetaching([$careerId => ['assigned_at' => now()]]);
-                } elseif ($roleSlug === 'docente') {
-                    $user->teachingCareers()->syncWithoutDetaching([$careerId => ['assigned_at' => now()]]);
-                }
-            }
+        $user = DB::transaction(function () use ($request, $createAccount): Usuario {
+            [$user, $provisionalPassword] = $createAccount->handle([
+                'identification' => $request->validated('identification'),
+                'name' => $request->validated('name'),
+                'email' => $request->validated('email'),
+                'phone' => $request->validated('phone'),
+                'role' => $request->validated('role'),
+                'career_id' => $request->validated('career_id'),
+            ]);
 
             $user->notify(new ProvisionalPasswordNotification($provisionalPassword));
 

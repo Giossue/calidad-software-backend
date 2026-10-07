@@ -7,7 +7,10 @@ use App\Imports\Importers\CareersImporter;
 use App\Imports\Importers\CyclesImporter;
 use App\Imports\Importers\FacultiesImporter;
 use App\Imports\Importers\SectionsImporter;
+use App\Imports\Importers\StudentsImporter;
 use App\Imports\Importers\SubjectsImporter;
+use App\Imports\Importers\TeachersImporter;
+use App\Imports\Importers\UsersImporter;
 
 class ImporterRegistry
 {
@@ -19,6 +22,9 @@ class ImporterRegistry
         'academic-periods' => AcademicPeriodsImporter::class,
         'subjects' => SubjectsImporter::class,
         'sections' => SectionsImporter::class,
+        'users' => UsersImporter::class,
+        'teachers' => TeachersImporter::class,
+        'students' => StudentsImporter::class,
     ];
 
     public function resolve(string $type): Importer
