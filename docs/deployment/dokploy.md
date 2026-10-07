@@ -40,7 +40,7 @@ DB_USERNAME=calidad_software_app
 DB_PASSWORD=replace-with-a-secret
 
 CACHE_STORE=file
-QUEUE_CONNECTION=sync
+QUEUE_CONNECTION=database
 SESSION_DRIVER=file
 FILESYSTEM_DISK=local
 
@@ -69,7 +69,9 @@ Environment Settings; las credenciales administrativas locales se leen desde
 
 ## Cola de trabajos
 
-Las importaciones masivas se procesan en la cola (`QUEUE_CONNECTION=database`).
+Las importaciones masivas y sus correos se procesan en la cola
+(`QUEUE_CONNECTION=database`, tablas `jobs` y `failed_jobs`). Las sesiones no
+usan base de datos: mantén `SESSION_DRIVER=file` (la tabla `sessions` no existe).
 El entrypoint inicia un worker `queue:work` en segundo plano y lo reinicia si
 termina. Para atender la cola desde un servicio aparte de Dokploy, define
 `QUEUE_WORKER_ENABLED=false` en la aplicación web y ejecuta

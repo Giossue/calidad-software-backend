@@ -19,7 +19,10 @@ el estado.
 
 Reason: bcrypt y el envío SMTP por usuario superan el `max_execution_time` de 60 s.
 
-Consequences: producción necesita un worker (`queue:work`), iniciado por el entrypoint.
+Consequences: producción necesita un worker (`queue:work`), iniciado por el
+entrypoint, y las tablas `jobs` y `failed_jobs`, que la consolidación de identidad
+había eliminado y `2026_10_07_100200_restore_queue_tables` vuelve a crear. El
+registro de la importación y su job se crean en la misma transacción.
 
 ### `2026-10-07` - Cédula opcional y nombre provisional
 

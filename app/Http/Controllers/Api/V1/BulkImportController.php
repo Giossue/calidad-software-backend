@@ -12,6 +12,7 @@ use App\Models\Usuario;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\DB;
 
 class BulkImportController extends Controller
 {
@@ -40,15 +41,19 @@ class BulkImportController extends Controller
 
         $rows = $reader->read((string) $request->file('file')->get(), $importer->columns());
 
-        $import = BulkImport::query()->create([
-            'type' => $type,
-            'user_id' => $user->getKey(),
-            'status' => BulkImport::STATUS_PENDING,
-            'total_rows' => count($rows),
-            'rows' => $rows,
-        ]);
+        $import = DB::transaction(function () use ($type, $user, $rows): BulkImport {
+            $import = BulkImport::query()->create([
+                'type' => $type,
+                'user_id' => $user->getKey(),
+                'status' => BulkImport::STATUS_PENDING,
+                'total_rows' => count($rows),
+                'rows' => $rows,
+            ]);
 
-        ProcessBulkImport::dispatch($import);
+            ProcessBulkImport::dispatch($import);
+
+            return $import;
+        });
 
         return BulkImportResource::make($import->refresh())->response()->setStatusCode(Response::HTTP_ACCEPTED);
     }

@@ -16,7 +16,9 @@ conservar únicamente las tablas auxiliares que necesita la API Laravel.
   `job_batches`, `failed_jobs` y `passkeys` después de comprobar que no contienen
   información que deba conservarse.
 - Sesión y caché usan archivos; las colas son síncronas hasta configurar servicios
-  externos persistentes.
+  externos persistentes. Actualización 2026-10-07: la carga masiva restauró
+  `jobs` y `failed_jobs` y usa `QUEUE_CONNECTION=database`
+  (ver `docs/product/features/bulk-import/decisions.md`).
 - Las pruebas del flujo de autenticación permanecen en verde.
 
 ## Despliegue
