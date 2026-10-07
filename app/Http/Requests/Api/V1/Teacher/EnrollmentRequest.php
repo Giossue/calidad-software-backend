@@ -2,7 +2,7 @@
 
 namespace App\Http\Requests\Api\V1\Teacher;
 
-use App\Rules\CedulaEcuatoriana;
+use App\Rules\CedulaOPasaporte;
 use Illuminate\Validation\Rule;
 
 class EnrollmentRequest extends TeacherMutationRequest
@@ -31,7 +31,7 @@ class EnrollmentRequest extends TeacherMutationRequest
 
         return [
             'student_id' => ['nullable', 'integer', Rule::exists('usuario', 'id_usuario')->where('estado', true)],
-            'identification' => [$existing, 'required_without:student_id', 'digits:10', new CedulaEcuatoriana, Rule::unique('usuario', 'cedula')],
+            'identification' => [$existing, 'required_without:student_id', 'string', new CedulaOPasaporte, Rule::unique('usuario', 'cedula')],
             'name' => [$existing, 'required_without:student_id', 'string', 'max:150', 'regex:/^[\pL\s]+$/u'],
             'email' => [$existing, 'required_without:student_id', 'email:rfc', 'max:150', 'ends_with:@ueb.edu.ec', Rule::unique('usuario', 'correo')],
             'phone' => [$existing, 'nullable', 'digits:10'],
@@ -41,7 +41,7 @@ class EnrollmentRequest extends TeacherMutationRequest
     /** @return array<string, string> */
     public function attributes(): array
     {
-        return ['student_id' => 'estudiante', 'identification' => 'cédula', 'name' => 'nombre', 'email' => 'correo institucional', 'phone' => 'teléfono'];
+        return ['student_id' => 'estudiante', 'identification' => 'cédula o pasaporte', 'name' => 'nombre', 'email' => 'correo institucional', 'phone' => 'teléfono'];
     }
 
     /** @return array<string, string> */
@@ -49,7 +49,6 @@ class EnrollmentRequest extends TeacherMutationRequest
     {
         return [
             'phone.digits' => 'El teléfono debe tener exactamente 10 dígitos numéricos.',
-            'identification.digits' => 'La cédula debe tener exactamente 10 dígitos numéricos.',
             'email.ends_with' => 'El correo institucional debe pertenecer al dominio @ueb.edu.ec.',
             'name.regex' => 'El nombre solo puede contener letras y espacios.',
         ];

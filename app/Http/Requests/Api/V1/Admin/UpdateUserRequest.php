@@ -4,7 +4,7 @@ namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\Role;
 use App\Models\Usuario;
-use App\Rules\CedulaEcuatoriana;
+use App\Rules\CedulaOPasaporte;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -27,7 +27,7 @@ class UpdateUserRequest extends FormRequest
     {
         return [
             'identification' => [
-                'sometimes', 'digits:10', new CedulaEcuatoriana,
+                'sometimes', 'string', new CedulaOPasaporte,
                 Rule::unique('usuario', 'cedula')->ignore($this->route('user')),
             ],
             'name' => ['sometimes', 'string', 'max:150', 'regex:/^[\pL\s]+$/u'],
@@ -47,7 +47,7 @@ class UpdateUserRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'identification' => 'cédula',
+            'identification' => 'cédula o pasaporte',
             'name' => 'nombre',
             'email' => 'correo electrónico',
             'phone' => 'teléfono',
@@ -63,7 +63,6 @@ class UpdateUserRequest extends FormRequest
     {
         return [
             'phone.digits' => 'El teléfono debe tener exactamente 10 dígitos numéricos.',
-            'identification.digits' => 'La cédula debe tener exactamente 10 dígitos numéricos.',
             'name.regex' => 'El nombre solo puede contener letras y espacios.',
         ];
     }

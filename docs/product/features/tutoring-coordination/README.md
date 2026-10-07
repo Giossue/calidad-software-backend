@@ -15,7 +15,7 @@ React del repositorio `calidad-software-frontend`.
 | COOR-03 | Deshabilitar asignatura | Baja lógica; conserva vínculos con ciclos y tutorías anteriores. |
 | COOR-04 | Asignar asignatura a ciclo | Asignatura y ciclo activos, de la misma carrera; repetir la asignación no duplica el vínculo. |
 | COOR-05 | Asignar tutoría a ciclo | Ciclo compatible dentro de la carrera; actualiza el paralelo y registra el vínculo ciclo/período. |
-| COOR-06 | Registrar docente | Valida cédula ecuatoriana, nombre, correo institucional y teléfono; asigna exclusivamente rol docente y envía contraseña provisional. |
+| COOR-06 | Registrar docente | Valida cédula ecuatoriana o pasaporte extranjero, nombre, correo institucional y teléfono; asigna exclusivamente rol docente y envía contraseña provisional. |
 | COOR-07 | Actualizar docente | Edita una cuenta docente dentro del alcance autorizado. |
 | COOR-08 | Deshabilitar docente | Desactiva la cuenta y revoca sus tokens; mantiene asignaciones e historial. |
 | COOR-09 | Registrar tutoría | Asignatura vinculada a ciclo, período y modalidad activos; puede quedar inicialmente sin docente. |

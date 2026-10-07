@@ -4,7 +4,7 @@ namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Models\Role;
 use App\Models\Usuario;
-use App\Rules\CedulaEcuatoriana;
+use App\Rules\CedulaOPasaporte;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -22,7 +22,7 @@ class StoreUserRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'identification' => ['required', 'digits:10', new CedulaEcuatoriana, Rule::unique('usuario', 'cedula')],
+            'identification' => ['required', 'string', new CedulaOPasaporte, Rule::unique('usuario', 'cedula')],
             'name' => ['required', 'string', 'max:150', 'regex:/^[\pL\s]+$/u'],
             'email' => ['required', 'string', 'email:rfc', 'max:150', Rule::unique('usuario', 'correo')],
             'phone' => ['required', 'digits:10'],
@@ -36,7 +36,7 @@ class StoreUserRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'identification' => 'cédula',
+            'identification' => 'cédula o pasaporte',
             'name' => 'nombre',
             'email' => 'correo electrónico',
             'phone' => 'teléfono',
@@ -51,7 +51,6 @@ class StoreUserRequest extends FormRequest
     {
         return [
             'phone.digits' => 'El teléfono debe tener exactamente 10 dígitos numéricos.',
-            'identification.digits' => 'La cédula debe tener exactamente 10 dígitos numéricos.',
             'name.regex' => 'El nombre solo puede contener letras y espacios.',
         ];
     }

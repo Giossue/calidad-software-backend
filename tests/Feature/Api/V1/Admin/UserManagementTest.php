@@ -9,6 +9,7 @@ use App\Notifications\ProvisionalPasswordNotification;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\Sanctum;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 class UserManagementTest extends TestCase
@@ -113,6 +114,47 @@ class UserManagementTest extends TestCase
             'identification' => '0102030405',
             'name' => 'Luis Pérez',
             'email' => 'luis@example.com',
+            'phone' => '0991234567',
+            'role' => 'estudiante',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['identification']);
+    }
+
+    public function test_admin_can_register_a_foreign_user_with_a_passport(): void
+    {
+        Notification::fake();
+
+        $this->postJson('/api/v1/users', [
+            'identification' => 'AB1234567',
+            'name' => 'John Smith',
+            'email' => 'john@example.com',
+            'phone' => '0991234567',
+            'role' => 'estudiante',
+        ])->assertCreated()
+            ->assertJsonPath('data.identification', 'AB1234567');
+
+        $this->assertDatabaseHas('usuario', ['cedula' => 'AB1234567']);
+    }
+
+    /** @return array<string, array{string}> */
+    public static function invalidIdentifications(): array
+    {
+        return [
+            'pasaporte de más de 9 caracteres' => ['AB12345678'],
+            'pasaporte de menos de 6 caracteres' => ['AB123'],
+            'pasaporte en minúsculas' => ['ab1234567'],
+            'pasaporte con símbolos' => ['AB-12345'],
+            'cédula numérica de 11 dígitos' => ['09266878561'],
+        ];
+    }
+
+    #[DataProvider('invalidIdentifications')]
+    public function test_registering_a_user_rejects_invalid_passports(string $identification): void
+    {
+        $this->postJson('/api/v1/users', [
+            'identification' => $identification,
+            'name' => 'John Smith',
+            'email' => 'john@example.com',
             'phone' => '0991234567',
             'role' => 'estudiante',
         ])->assertUnprocessable()

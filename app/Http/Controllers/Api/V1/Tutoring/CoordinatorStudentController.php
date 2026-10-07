@@ -10,7 +10,7 @@ use App\Models\InscripcionTutoria;
 use App\Models\Role;
 use App\Models\Usuario;
 use App\Notifications\ProvisionalPasswordNotification;
-use App\Rules\CedulaEcuatoriana;
+use App\Rules\CedulaOPasaporte;
 use App\Support\TutoringCoordinatorAccess;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -106,7 +106,7 @@ class CoordinatorStudentController extends Controller
         }
 
         $data = $request->validate([
-            'identification' => ['required', 'digits:10', new CedulaEcuatoriana, Rule::unique('usuario', 'cedula')],
+            'identification' => ['required', 'string', new CedulaOPasaporte, Rule::unique('usuario', 'cedula')],
             'name' => ['required', 'string', 'max:150', 'regex:/^[\pL\s]+$/u'],
             'email' => ['required', 'email:rfc', 'max:150', 'ends_with:@ueb.edu.ec', Rule::unique('usuario', 'correo')],
             'phone' => ['nullable', 'digits:10'],

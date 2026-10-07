@@ -21,6 +21,10 @@ Una cuenta puede tener varios roles. Los datos exclusivos de un actor viven en
 un perfil asociado solo si aparecen atributos adicionales reales; cédula,
 nombre y correo no se duplican en tablas por rol.
 
+El campo `cedula` guarda la identificación: una cédula ecuatoriana válida de 10
+dígitos o, para usuarios extranjeros, un pasaporte de 6 a 9 caracteres
+alfanuméricos en mayúsculas (regla `CedulaOPasaporte`).
+
 ## Agregados y entidades
 
 ### AcademicPeriod

@@ -11,7 +11,7 @@ use App\Models\InscripcionTutoria;
 use App\Models\Role;
 use App\Models\Usuario;
 use App\Notifications\ProvisionalPasswordNotification;
-use App\Rules\CedulaEcuatoriana;
+use App\Rules\CedulaOPasaporte;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -143,7 +143,7 @@ class CoordinatorEnrollmentController extends Controller
 
         return $request->validate([
             'student_id' => ['nullable', 'integer', Rule::exists('usuario', 'id_usuario')->where('estado', true)],
-            'identification' => [$existing, 'required_without:student_id', 'digits:10', new CedulaEcuatoriana, Rule::unique('usuario', 'cedula')],
+            'identification' => [$existing, 'required_without:student_id', 'string', new CedulaOPasaporte, Rule::unique('usuario', 'cedula')],
             'name' => [$existing, 'required_without:student_id', 'string', 'max:150', 'regex:/^[\pL\s]+$/u'],
             'email' => [$existing, 'required_without:student_id', 'email:rfc', 'max:150', 'ends_with:@ueb.edu.ec', Rule::unique('usuario', 'correo')],
             'phone' => [$existing, 'nullable', 'digits:10'],

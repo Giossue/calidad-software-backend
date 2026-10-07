@@ -3,7 +3,7 @@
 namespace App\Http\Requests\Api\V1\Tutoring;
 
 use App\Models\Usuario;
-use App\Rules\CedulaEcuatoriana;
+use App\Rules\CedulaOPasaporte;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -33,7 +33,7 @@ class TeacherRequest extends FormRequest
 
         return [
             'career_id' => $creating ? ['required', 'integer', Rule::exists('carrera', 'id_carrera')->where('estado', true)] : ['prohibited'],
-            'identification' => [($creating ? 'required' : 'sometimes'), 'digits:10', new CedulaEcuatoriana,
+            'identification' => [($creating ? 'required' : 'sometimes'), 'string', new CedulaOPasaporte,
                 Rule::unique('usuario', 'cedula')->ignore($teacher)],
             'name' => [($creating ? 'required' : 'sometimes'), 'string', 'max:150', 'regex:/^[\pL\s]+$/u'],
             'email' => [($creating ? 'required' : 'sometimes'), 'email:rfc', 'max:150', 'ends_with:@ueb.edu.ec',
@@ -46,7 +46,7 @@ class TeacherRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'identification' => 'cédula',
+            'identification' => 'cédula o pasaporte',
             'name' => 'nombre completo',
             'email' => 'correo institucional',
             'phone' => 'teléfono',
@@ -59,7 +59,6 @@ class TeacherRequest extends FormRequest
     {
         return [
             'phone.digits' => 'El teléfono debe tener exactamente 10 dígitos numéricos.',
-            'identification.digits' => 'La cédula debe tener exactamente 10 dígitos numéricos.',
             'email.ends_with' => 'El correo institucional debe pertenecer al dominio @ueb.edu.ec.',
             'name.regex' => 'El nombre completo solo puede contener letras y espacios.',
         ];
