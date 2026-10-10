@@ -16,7 +16,7 @@ class CompleteProfileRequest extends FormRequest
     {
         $user = $this->user();
 
-        return $user instanceof Usuario && $user->must_complete_profile;
+        return $user instanceof Usuario && $user->needsProfileCompletion();
     }
 
     protected function prepareForValidation(): void
@@ -37,7 +37,8 @@ class CompleteProfileRequest extends FormRequest
             'identification' => ['required', 'string', new CedulaOPasaporte, Rule::unique('usuario', 'cedula')->ignore($user)],
             'name' => ['required', 'string', 'max:150', 'regex:/^[\pL\s]+$/u'],
             'phone' => ['required', 'digits:10'],
-            'password' => ['required', 'string', Password::default(), 'confirmed',
+            // Solo las cuentas con contraseña provisional están obligadas a cambiarla.
+            'password' => [$user->must_complete_profile ? 'required' : 'nullable', 'string', Password::default(), 'confirmed',
                 function (string $attribute, mixed $value, Closure $fail) use ($user): void {
                     if (is_string($value) && Hash::check($value, $user->password_hash)) {
                         $fail('La nueva contraseña debe ser distinta de la contraseña provisional.');

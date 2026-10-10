@@ -17,14 +17,19 @@ class CompleteProfileController extends Controller
         $user = $request->user();
 
         DB::transaction(function () use ($request, $user): void {
-            $user->update([
+            $user->update(array_filter([
                 'cedula' => $request->validated('identification'),
                 'nombre' => $request->validated('name'),
                 'telefono' => $request->validated('phone'),
                 'password_hash' => $request->validated('password'),
                 'must_complete_profile' => false,
-            ]);
+            ], fn (mixed $value): bool => $value !== null));
 
+            if ($request->validated('password') === null) {
+                return;
+            }
+
+            // Al cambiar la contraseña se cierran las demás sesiones.
             $current = $user->currentAccessToken();
             $user->tokens()
                 ->when($current instanceof PersonalAccessToken, fn ($query) => $query->whereKeyNot($current->getKey()))

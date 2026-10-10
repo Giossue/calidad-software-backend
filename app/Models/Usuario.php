@@ -94,6 +94,15 @@ class Usuario extends Authenticatable implements MustVerifyEmail
             ->withPivot('assigned_at');
     }
 
+    /**
+     * La cuenta debe completar su perfil antes de usar el sistema: las creadas por
+     * carga masiva (contraseña provisional) y cualquiera que aún no tenga cédula.
+     */
+    public function needsProfileCompletion(): bool
+    {
+        return $this->must_complete_profile || blank($this->cedula);
+    }
+
     public function hasRole(string $slug): bool
     {
         return $this->roles->contains('slug', $slug);

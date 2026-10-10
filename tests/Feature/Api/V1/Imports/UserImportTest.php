@@ -124,6 +124,30 @@ class UserImportTest extends TutoringTestCase
         $this->withToken($token)->putJson('/api/v1/auth/profile/complete', [])->assertForbidden();
     }
 
+    public function test_an_account_without_identification_must_register_it_without_changing_its_password(): void
+    {
+        $user = Usuario::factory()->withRole('administrador')->create(['cedula' => null, 'must_complete_profile' => false, 'password_hash' => 'Clave-Actual-2026']);
+        $token = $user->createToken('web', ['*'])->plainTextToken;
+
+        $this->withToken($token)->getJson('/api/v1/users')
+            ->assertForbidden()
+            ->assertJsonPath('code', 'profile_incomplete');
+        $this->withToken($token)->getJson('/api/v1/auth/user')
+            ->assertOk()
+            ->assertJsonPath('data.must_complete_profile', true)
+            ->assertJsonPath('data.must_change_password', false);
+
+        $this->withToken($token)->putJson('/api/v1/auth/profile/complete', [
+            'identification' => '0926687856', 'name' => 'Ana Torres', 'phone' => '0991234567',
+        ])->assertOk()
+            ->assertJsonPath('data.must_complete_profile', false)
+            ->assertJsonPath('data.identification', '0926687856');
+
+        $this->assertTrue(password_verify('Clave-Actual-2026', $user->refresh()->password_hash));
+        $this->app['auth']->forgetGuards();
+        $this->withToken($token)->getJson('/api/v1/users')->assertOk();
+    }
+
     private function upload(string $type, string $contents): TestResponse
     {
         return $this->post('/api/v1/imports/'.$type, [

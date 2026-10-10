@@ -8,8 +8,8 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Las cuentas creadas por carga masiva deben completar sus datos y cambiar la
- * contraseña provisional antes de usar el resto de la API.
+ * Las cuentas creadas por carga masiva, o sin cédula, deben completar sus datos
+ * (y cambiar la contraseña provisional, si la tienen) antes de usar el resto de la API.
  */
 class EnsureProfileCompleted
 {
@@ -24,7 +24,7 @@ class EnsureProfileCompleted
     {
         $user = $request->user('sanctum');
 
-        if ($user instanceof Usuario && $user->must_complete_profile && ! $request->routeIs(...self::ALLOWED_ROUTES)) {
+        if ($user instanceof Usuario && $user->needsProfileCompletion() && ! $request->routeIs(...self::ALLOWED_ROUTES)) {
             return response()->json([
                 'message' => 'Debes completar tus datos y cambiar la contraseña provisional antes de continuar.',
                 'code' => 'profile_incomplete',
