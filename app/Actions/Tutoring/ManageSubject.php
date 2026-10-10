@@ -87,6 +87,8 @@ class ManageSubject
     /** @param array{code?: string|null, name?: string, modality_id?: int|null} $data */
     public function update(Subject $subject, array $data): Subject
     {
+        $originalName = $subject->name;
+
         $subject->fill(array_filter([
             'code' => array_key_exists('code', $data) ? ($data['code'] !== null && trim($data['code']) !== '' ? trim($data['code']) : null) : null,
             'name' => isset($data['name']) ? SubjectRequest::normalizeName($data['name']) : null,
@@ -99,6 +101,11 @@ class ManageSubject
 
         if (array_key_exists('modality_id', $data) && empty($data['modality_id'])) {
             $subject->forceFill(['modality_id' => null])->save();
+        }
+
+        // Las tutorías guardan una copia del nombre de la asignatura.
+        if ($subject->name !== $originalName) {
+            AsignaturaTutoria::query()->where('subject_id', $subject->getKey())->update(['nombre' => $subject->name]);
         }
 
         return $subject->refresh();

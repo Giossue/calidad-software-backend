@@ -36,6 +36,18 @@ class SubjectAndTeacherTest extends TutoringTestCase
         $this->assertDatabaseCount('subject_cycle', 1);
     }
 
+    public function test_renaming_a_subject_updates_the_name_of_its_tutorings(): void
+    {
+        Sanctum::actingAs($this->coordinator, ['*']);
+        $subject = $this->createSubject($this->cycle);
+        $tutoring = $this->createTutoring(subject: $subject);
+
+        $this->patchJson(self::API.'/subjects/'.$subject->getKey(), ['name' => 'Cálculo i'])->assertOk()
+            ->assertJsonPath('data.name', 'CALCULO I');
+
+        $this->assertDatabaseHas('asignatura_tutoria', ['id_asig_tutoria' => $tutoring->getKey(), 'nombre' => 'CALCULO I']);
+    }
+
     public function test_coordinator_can_unassign_a_cycle_but_not_while_an_active_tutoring_uses_it(): void
     {
         $subject = $this->createSubject();
