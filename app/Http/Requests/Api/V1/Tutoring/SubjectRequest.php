@@ -31,7 +31,7 @@ class SubjectRequest extends FormRequest
     }
 
     /**
-     * Normalize a subject name: strip accents and convert to lowercase.
+     * Normalize a subject name: strip accents and convert to uppercase.
      * This prevents duplicates like "Matemáticas" vs "matematicas" vs "MATEMATICAS".
      */
     public static function normalizeName(string $name): string
@@ -41,7 +41,7 @@ class SubjectRequest extends FormRequest
         $normalized = Normalizer::normalize($name, Normalizer::FORM_D);
         // Remove non-spacing marks (accents)
         $normalized = preg_replace('/\p{Mn}/u', '', $normalized ?? $name);
-        return mb_strtolower($normalized ?? $name);
+        return mb_strtoupper($normalized ?? $name);
     }
 
     /** @return array<string, array<int, mixed>> */
