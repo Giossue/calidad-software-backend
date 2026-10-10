@@ -11,6 +11,7 @@ use App\Models\Role;
 use App\Models\Usuario;
 use App\Notifications\ProvisionalPasswordNotification;
 use App\Rules\CedulaOPasaporte;
+use App\Support\ProvisionalPassword;
 use App\Support\TutoringCoordinatorAccess;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -18,7 +19,6 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -113,7 +113,7 @@ class CoordinatorStudentController extends Controller
             'tutoring_id' => ['nullable', 'integer', Rule::exists('asignatura_tutoria', 'id_asig_tutoria')],
         ]);
 
-        $password = Str::password(20, true, true, true, false);
+        $password = ProvisionalPassword::generate();
         $student = DB::transaction(function () use ($data, $password, $careerIds): Usuario {
             $student = Usuario::query()->create([
                 'cedula' => $data['identification'],

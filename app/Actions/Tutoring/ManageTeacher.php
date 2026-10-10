@@ -5,16 +5,16 @@ namespace App\Actions\Tutoring;
 use App\Models\Role;
 use App\Models\Usuario;
 use App\Notifications\ProvisionalPasswordNotification;
+use App\Support\ProvisionalPassword;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class ManageTeacher
 {
     /** @param array{career_id: int, identification: string, name: string, email: string, phone: string} $data */
     public function create(array $data): Usuario
     {
-        $provisionalPassword = Str::password(20, true, true, true, false);
+        $provisionalPassword = ProvisionalPassword::generate();
 
         return DB::transaction(function () use ($data, $provisionalPassword): Usuario {
             $teacher = Usuario::query()->create([

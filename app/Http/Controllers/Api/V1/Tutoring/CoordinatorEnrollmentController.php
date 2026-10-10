@@ -12,13 +12,13 @@ use App\Models\Role;
 use App\Models\Usuario;
 use App\Notifications\ProvisionalPasswordNotification;
 use App\Rules\CedulaOPasaporte;
+use App\Support\ProvisionalPassword;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -73,7 +73,7 @@ class CoordinatorEnrollmentController extends Controller
                     throw ValidationException::withMessages(['student_id' => 'Selecciona un estudiante activo del paralelo de esta tutoría.']);
                 }
             } else {
-                $password = Str::password(20, true, true, true, false);
+                $password = ProvisionalPassword::generate();
                 $student = Usuario::query()->create([
                     'cedula' => $data['identification'], 'nombre' => $data['name'],
                     'correo' => $data['email'], 'telefono' => $data['phone'] ?? null,

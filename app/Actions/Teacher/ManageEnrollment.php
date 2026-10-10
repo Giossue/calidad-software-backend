@@ -7,9 +7,9 @@ use App\Models\InscripcionTutoria;
 use App\Models\Role;
 use App\Models\Usuario;
 use App\Notifications\ProvisionalPasswordNotification;
+use App\Support\ProvisionalPassword;
 use App\Support\TeacherWorkspace;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class ManageEnrollment
@@ -28,7 +28,7 @@ class ManageEnrollment
                     throw ValidationException::withMessages(['student_id' => 'Selecciona un estudiante activo del paralelo de esta tutoría.']);
                 }
             } else {
-                $password = Str::password(20, true, true, true, false);
+                $password = ProvisionalPassword::generate();
                 $student = Usuario::query()->create([
                     'cedula' => $data['identification'], 'nombre' => $data['name'],
                     'correo' => $data['email'], 'telefono' => $data['phone'] ?? null,

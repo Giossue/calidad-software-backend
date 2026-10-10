@@ -4,6 +4,7 @@ namespace App\Actions\Users;
 
 use App\Models\Role;
 use App\Models\Usuario;
+use App\Support\ProvisionalPassword;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -18,7 +19,7 @@ class CreateAccount
      */
     public function handle(array $data): array
     {
-        $provisionalPassword = Str::password(20, true, true, true, false);
+        $provisionalPassword = ProvisionalPassword::generate();
         $careerId = $data['role'] !== 'administrador' ? $data['career_id'] : null;
 
         $user = Usuario::query()->create([
