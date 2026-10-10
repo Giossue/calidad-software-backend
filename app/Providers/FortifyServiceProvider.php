@@ -82,5 +82,13 @@ class FortifyServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by($throttleKey);
         });
 
+        // Inicio de sesión de la API: los intentos se cuentan por correo e IP, para que
+        // varias personas (o varias cuentas desde un mismo equipo) no compartan el límite.
+        RateLimiter::for('api-login', function (Request $request) {
+            $throttleKey = Str::transliterate(Str::lower((string) $request->input('email')).'|'.$request->ip());
+
+            return Limit::perMinute(5)->by($throttleKey);
+        });
+
     }
 }

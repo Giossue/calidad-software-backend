@@ -46,6 +46,26 @@ class TokenAuthenticationTest extends TestCase
         $this->assertDatabaseCount('personal_access_tokens', 0);
     }
 
+    public function test_login_attempts_are_limited_per_email_and_not_shared_between_accounts(): void
+    {
+        $user = Usuario::factory()->create();
+        $other = Usuario::factory()->create(['password_hash' => 'password']);
+        $attempt = fn (string $email, string $password) => $this->postJson('/api/v1/auth/login', [
+            'email' => $email,
+            'password' => $password,
+            'device_name' => 'frontend-web',
+        ]);
+
+        foreach (range(1, 5) as $ignored) {
+            $attempt($user->correo, 'incorrecta')->assertUnprocessable();
+        }
+
+        $attempt($user->correo, 'incorrecta')->assertTooManyRequests()
+            ->assertJsonPath('message', fn (string $message) => str_starts_with($message, 'Demasiados intentos.'));
+
+        $attempt($other->correo, 'password')->assertOk();
+    }
+
     public function test_two_factor_account_does_not_bypass_its_challenge(): void
     {
         $user = Usuario::factory()->create([

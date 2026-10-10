@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -17,6 +18,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // La aplicación corre detrás de un proxy inverso: se toma la IP real del cliente
+        // de X-Forwarded-For para que el límite de intentos no sea compartido por todos.
+        $middleware->trustProxies(at: '*');
         $middleware->encryptCookies();
         $middleware->redirectGuestsTo(fn (Request $request) => null);
 
@@ -46,6 +50,16 @@ return Application::configure(basePath: dirname(__DIR__))
                 return response()->json([
                     'message' => 'Recurso no encontrado.',
                 ], 404);
+            }
+        });
+
+        $exceptions->render(function (ThrottleRequestsException $e, Request $request) {
+            if ($request->is('api/*') || $request->expectsJson()) {
+                $seconds = (int) ($e->getHeaders()['Retry-After'] ?? 60);
+
+                return response()->json([
+                    'message' => "Demasiados intentos. Espera {$seconds} segundos e inténtalo de nuevo.",
+                ], 429, $e->getHeaders());
             }
         });
 

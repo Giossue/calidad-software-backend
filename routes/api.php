@@ -47,7 +47,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::post('register', [RegistrationController::class, 'store'])
             ->middleware('throttle:3,1')->name('register');
         Route::post('login', [TokenController::class, 'store'])
-            ->middleware('throttle:5,1')->name('login');
+            ->middleware('throttle:api-login')->name('login');
         Route::post('two-factor-challenge', [TwoFactorChallengeController::class, 'store'])
             ->middleware(['auth:sanctum', 'throttle:5,1'])->name('two-factor.challenge');
         Route::post('forgot-password', [PasswordController::class, 'forgot'])
