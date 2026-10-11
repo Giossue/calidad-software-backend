@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\V1\Coordination\TeacherCoordinationController;
 use App\Http\Controllers\Api\V1\ModalityController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\SectionController;
+use App\Http\Controllers\Api\V1\Student\StudentAbsenceNoticeController;
 use App\Http\Controllers\Api\V1\Student\StudentDegreeTopicController;
 use App\Http\Controllers\Api\V1\Student\StudentTutoringController;
 use App\Http\Controllers\Api\V1\Teacher\ContentController as TeacherContentController;
@@ -138,6 +139,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::get('tutoring/{tutoring}/topics', [StudentTutoringController::class, 'topics'])->name('tutoring.topics');
             Route::get('tutoring/{tutoring}/topics/{topic}', [StudentTutoringController::class, 'topicDetail'])->name('tutoring.topics.show');
             Route::get('tutoring/{tutoring}/sessions', [StudentTutoringController::class, 'sessions'])->name('tutoring.sessions');
+            Route::get('tutoring/{tutoring}/absence-notices', [StudentAbsenceNoticeController::class, 'index'])->name('tutoring.absence-notices.index');
+            Route::post('tutoring/{tutoring}/absence-notices', [StudentAbsenceNoticeController::class, 'store'])->name('tutoring.absence-notices.store');
         });
 
         Route::prefix('teacher')->name('teacher.')->group(function (): void {
@@ -172,6 +175,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
             Route::get('tutorings/{tutoring}/sessions', [SessionController::class, 'index'])->name('sessions.index');
             Route::get('tutorings/{tutoring}/attendance', [SessionController::class, 'attendance'])->name('attendance.index');
+            Route::get('tutorings/{tutoring}/absence-notices', [SessionController::class, 'absenceNotices'])->name('absence-notices.index');
             Route::put('tutorings/{tutoring}/sessions', [SessionController::class, 'store'])->name('sessions.store');
             Route::patch('tutorings/{tutoring}/sessions/{session}/topics', [SessionController::class, 'updateTopics'])->name('sessions.topics.update');
             Route::get('tutorings/{tutoring}/reports', [TeacherReportController::class, 'index'])->name('reports.index');

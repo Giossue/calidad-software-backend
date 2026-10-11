@@ -8,6 +8,7 @@ use App\Http\Requests\Api\V1\Teacher\SessionRequest;
 use App\Http\Requests\Api\V1\Teacher\TeacherListRequest;
 use App\Http\Resources\Api\V1\Teacher\SessionResource;
 use App\Http\Resources\Api\V1\TutoringAttendanceResource;
+use App\Models\AbsenceNotice;
 use App\Models\AsignaturaTutoria;
 use App\Models\Asistencia;
 use App\Models\Tema;
@@ -29,6 +30,23 @@ class SessionController extends Controller
         }
 
         return TutoringAttendanceResource::collection($query->orderByDesc('fecha')->orderBy('id_asistencia')->paginate($request->integer('per_page', 15)));
+    }
+
+    /** Avisos de inasistencia de los estudiantes para una fecha (se muestran al tomar lista). */
+    public function absenceNotices(TeacherListRequest $request, AsignaturaTutoria $tutoring): JsonResponse
+    {
+        $request->validate(['date' => ['required', 'date_format:Y-m-d']]);
+        $notices = AbsenceNotice::query()->whereDate('date', $request->string('date')->toString())
+            ->whereHas('enrollment', fn (Builder $query) => $query->where('fk_asig_tutoria', $tutoring->getKey()))
+            ->with('enrollment.estudiante')->get();
+
+        return response()->json(['data' => $notices->map(fn (AbsenceNotice $notice) => [
+            'id' => $notice->getKey(),
+            'enrollment_id' => $notice->enrollment_id,
+            'student_name' => $notice->enrollment?->estudiante?->nombre ?? '',
+            'date' => $notice->date->toDateString(),
+            'reason' => $notice->reason,
+        ])->all()]);
     }
 
     public function index(TeacherListRequest $request, AsignaturaTutoria $tutoring): AnonymousResourceCollection
