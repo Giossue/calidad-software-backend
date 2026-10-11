@@ -349,6 +349,21 @@ class UserManagementTest extends TestCase
         $this->assertFalse($activeIds->contains($inactive->getKey()));
     }
 
+    public function test_user_index_separates_accounts_that_have_not_completed_their_profile(): void
+    {
+        $complete = Usuario::factory()->withRole('estudiante')->create();
+        $invited = Usuario::factory()->withRole('estudiante')->create(['cedula' => null, 'must_complete_profile' => true]);
+        $withoutIdentification = Usuario::factory()->withRole('estudiante')->create(['cedula' => null]);
+
+        $pendingIds = collect($this->getJson('/api/v1/users?status=pending&per_page=100')->assertOk()->json('data'))->pluck('id');
+        $this->assertEqualsCanonicalizing([$invited->getKey(), $withoutIdentification->getKey()], $pendingIds->all());
+
+        $activeIds = collect($this->getJson('/api/v1/users?status=active&per_page=100')->assertOk()->json('data'))->pluck('id');
+        $this->assertTrue($activeIds->contains($complete->getKey()));
+        $this->assertFalse($activeIds->contains($invited->getKey()));
+        $this->assertFalse($activeIds->contains($withoutIdentification->getKey()));
+    }
+
     public function test_deactivated_user_cannot_login(): void
     {
         $user = Usuario::factory()->create();

@@ -43,9 +43,14 @@ class UserController extends Controller
             $query->whereHas('roles', fn (Builder $inner) => $inner->where('slug', $role));
         }
 
-        if ($status = $request->string('status')->toString()) {
-            $query->where('estado', $status === 'active');
-        }
+        // "active" son las cuentas habilitadas que ya completaron sus datos; "pending", las
+        // habilitadas que aún no ingresan a completarlos (p. ej. recibieron el correo de acceso).
+        match ($request->string('status')->toString()) {
+            'active' => $query->where('estado', true)->where('must_complete_profile', false)->whereNotNull('cedula')->where('cedula', '!=', ''),
+            'pending' => $query->where('estado', true)->where(fn (Builder $inner) => $inner->where('must_complete_profile', true)->orWhereNull('cedula')->orWhere('cedula', '')),
+            'inactive' => $query->where('estado', false),
+            default => null,
+        };
 
         if ($careerId = $request->integer('career_id')) {
             $query->where(fn (Builder $inner) => $inner->where('fk_carrera', $careerId)
