@@ -42,9 +42,10 @@ class CatalogImportTest extends TutoringTestCase
             ->assertJsonPath('data.status', BulkImport::STATUS_DONE)
             ->assertJsonPath('data.total_rows', 4)
             ->assertJsonPath('data.created_count', 2)
-            ->assertJsonPath('data.failed_count', 2)
-            ->assertJsonPath('data.errors.0.row', 4)
-            ->assertJsonPath('data.errors.1.row', 5);
+            ->assertJsonPath('data.failed_count', 0)
+            ->assertJsonPath('data.skipped_count', 2)
+            ->assertJsonPath('data.warnings.0.row', 4)
+            ->assertJsonPath('data.warnings.1.row', 5);
 
         $this->assertDatabaseHas('facultad', ['nombre' => 'Facultad de Educación']);
         $this->assertNull(BulkImport::query()->findOrFail($response->json('data.id'))->rows);

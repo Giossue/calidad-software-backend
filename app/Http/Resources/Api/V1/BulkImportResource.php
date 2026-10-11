@@ -18,8 +18,10 @@ class BulkImportResource extends JsonResource
             'status' => $this->status,
             'total_rows' => $this->total_rows,
             'created_count' => $this->created_count,
+            'skipped_count' => $this->skipped_count,
             'failed_count' => $this->failed_count,
             'errors' => $this->errors ?? [],
+            'warnings' => $this->warnings ?? [],
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

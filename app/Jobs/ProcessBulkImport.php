@@ -32,6 +32,7 @@ class ProcessBulkImport implements ShouldQueue
 
         $created = 0;
         $errors = [];
+        $warnings = [];
         foreach ($import->rows ?? [] as $index => $row) {
             try {
                 if (! $user->estado || ! $importer->authorize($user)) {
@@ -40,7 +41,12 @@ class ProcessBulkImport implements ShouldQueue
                 DB::transaction(fn () => $importer->import($row['values'], $user));
                 $created++;
             } catch (ValidationException $exception) {
-                $errors[] = ['row' => $row['line'], 'messages' => array_values(array_unique(Arr::flatten($exception->errors())))];
+                $entry = ['row' => $row['line'], 'messages' => array_values(array_unique(Arr::flatten($exception->errors())))];
+                if (self::isAlreadyRegistered($exception)) {
+                    $warnings[] = $entry;
+                } else {
+                    $errors[] = $entry;
+                }
             } catch (AuthorizationException|HttpExceptionInterface) {
                 $errors[] = ['row' => $row['line'], 'messages' => ['No tienes permiso para registrar este elemento.']];
             } catch (Throwable $exception) {
@@ -49,17 +55,30 @@ class ProcessBulkImport implements ShouldQueue
             }
 
             if (($index + 1) % 10 === 0) {
-                $import->update(['created_count' => $created, 'failed_count' => count($errors), 'errors' => $errors]);
+                $import->update(['created_count' => $created, 'skipped_count' => count($warnings), 'failed_count' => count($errors), 'errors' => $errors, 'warnings' => $warnings]);
             }
         }
 
         $import->update([
             'status' => BulkImport::STATUS_DONE,
             'created_count' => $created,
+            'skipped_count' => count($warnings),
             'failed_count' => count($errors),
             'errors' => $errors,
+            'warnings' => $warnings,
             'rows' => null,
         ]);
+    }
+
+    /**
+     * La fila solo falló porque sus datos ya existen en el sistema (reglas unique):
+     * se informa como aviso y no como error.
+     */
+    private static function isAlreadyRegistered(ValidationException $exception): bool
+    {
+        $failedRules = collect($exception->validator->failed())->flatMap(fn (array $rules): array => array_keys($rules));
+
+        return $failedRules->isNotEmpty() && $failedRules->every(fn (string $rule): bool => $rule === 'Unique');
     }
 
     public function failed(?Throwable $exception): void

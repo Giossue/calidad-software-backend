@@ -15,13 +15,15 @@ use Illuminate\Support\Carbon;
  * @property string $status
  * @property int $total_rows
  * @property int $created_count
+ * @property int $skipped_count
  * @property int $failed_count
  * @property array<int, array{row: int, messages: array<int, string>}>|null $errors
+ * @property array<int, array{row: int, messages: array<int, string>}>|null $warnings
  * @property array<int, array{line: int, values: array<string, string|null>}>|null $rows
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['type', 'user_id', 'status', 'total_rows', 'created_count', 'failed_count', 'errors', 'rows'])]
+#[Fillable(['type', 'user_id', 'status', 'total_rows', 'created_count', 'skipped_count', 'failed_count', 'errors', 'warnings', 'rows'])]
 #[Hidden(['rows'])]
 class BulkImport extends Model
 {
@@ -43,6 +45,7 @@ class BulkImport extends Model
     {
         return [
             'errors' => 'array',
+            'warnings' => 'array',
             'rows' => 'encrypted:array',
         ];
     }

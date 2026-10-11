@@ -39,9 +39,11 @@ class UserImportTest extends TutoringTestCase
 
         $this->getJson('/api/v1/imports/'.$id)
             ->assertJsonPath('data.created_count', 3)
+            ->assertJsonPath('data.failed_count', 1)
             ->assertJsonPath('data.errors.0.row', 5)
-            ->assertJsonPath('data.errors.1.row', 6)
-            ->assertJsonPath('data.errors.1.messages.0', 'El correo existente@ueb.edu.ec ya está registrado.');
+            ->assertJsonPath('data.skipped_count', 1)
+            ->assertJsonPath('data.warnings.0.row', 6)
+            ->assertJsonPath('data.warnings.0.messages.0', 'El correo existente@ueb.edu.ec ya está registrado.');
 
         $student = Usuario::query()->where('correo', 'ana.torres@ueb.edu.ec')->firstOrFail();
         $this->assertNull($student->cedula);
