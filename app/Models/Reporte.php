@@ -6,7 +6,9 @@
 
 namespace App\Models;
 
+use App\Observers\TutoringReportObserver;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -15,6 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property CarbonInterface $fecha_generacion
  * @property array<string, mixed>|null $summary
  */
+#[ObservedBy([TutoringReportObserver::class])]
 class Reporte extends Model
 {
     protected $table = 'reporte';

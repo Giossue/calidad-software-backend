@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\V1\Coordination\DegreeTopicController;
 use App\Http\Controllers\Api\V1\Coordination\PeriodSectionController;
 use App\Http\Controllers\Api\V1\Coordination\TeacherCoordinationController;
 use App\Http\Controllers\Api\V1\ModalityController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Controllers\Api\V1\SectionController;
 use App\Http\Controllers\Api\V1\Student\StudentDegreeTopicController;
 use App\Http\Controllers\Api\V1\Student\StudentTutoringController;
@@ -68,6 +69,13 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
     });
 
     Route::middleware('auth:sanctum')->group(function (): void {
+        Route::prefix('notifications')->name('notifications.')->group(function (): void {
+            Route::get('/', [NotificationController::class, 'index'])->name('index');
+            Route::get('unread-count', [NotificationController::class, 'unreadCount'])->name('unread-count');
+            Route::patch('read-all', [NotificationController::class, 'markAllAsRead'])->name('read-all');
+            Route::patch('{notification}/read', [NotificationController::class, 'markAsRead'])->whereUuid('notification')->name('read');
+        });
+
         Route::prefix('users')->name('users.')->group(function (): void {
             Route::get('/', [UserController::class, 'index'])->name('index');
             Route::post('/', [UserController::class, 'store'])->name('store');

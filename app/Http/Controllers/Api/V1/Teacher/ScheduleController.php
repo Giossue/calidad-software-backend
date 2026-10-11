@@ -11,6 +11,7 @@ use App\Http\Requests\Api\V1\Teacher\TeacherSyncScheduleRequest;
 use App\Http\Resources\Api\V1\TutoringScheduleResource;
 use App\Models\AsignaturaTutoria;
 use App\Models\Horario;
+use App\Support\ActionNotifier;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Response;
@@ -68,6 +69,7 @@ class ScheduleController extends Controller
 
             return $locked->horarios()->where('estado', true)->orderBy('dia_semana')->orderBy('hora_inicio')->get();
         }, 3);
+        ActionNotifier::tutoringScheduleChanged($tutoring);
 
         return TutoringScheduleResource::collection($result);
     }
@@ -75,6 +77,7 @@ class ScheduleController extends Controller
     public function store(TeacherScheduleRequest $request, AsignaturaTutoria $tutoring, ManageSchedule $action): JsonResponse
     {
         $created = $action->create($tutoring, $request->scheduleData());
+        ActionNotifier::tutoringScheduleChanged($tutoring);
 
         return TutoringScheduleResource::make($created)->response()->setStatusCode(Response::HTTP_CREATED);
     }
@@ -83,6 +86,7 @@ class ScheduleController extends Controller
     {
         abort_unless($schedule->fk_asig_tutoria === $tutoring->getKey(), Response::HTTP_NOT_FOUND);
         $updated = $action->update($tutoring, $schedule, $request->scheduleData($schedule->room));
+        ActionNotifier::tutoringScheduleChanged($tutoring);
 
         return TutoringScheduleResource::make($updated);
     }
@@ -91,6 +95,7 @@ class ScheduleController extends Controller
     {
         abort_unless($schedule->fk_asig_tutoria === $tutoring->getKey(), Response::HTTP_NOT_FOUND);
         $schedule->update(['estado' => false]);
+        ActionNotifier::tutoringScheduleChanged($tutoring);
 
         return TutoringScheduleResource::make($schedule->refresh());
     }

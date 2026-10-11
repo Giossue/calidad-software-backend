@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api\V1\Imports;
 
 use App\Models\Usuario;
+use App\Notifications\ActionNotification;
 use App\Notifications\QueuedProvisionalPasswordNotification;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -44,6 +45,8 @@ class UserImportTest extends TutoringTestCase
             ->assertJsonPath('data.skipped_count', 1)
             ->assertJsonPath('data.warnings.0.row', 6)
             ->assertJsonPath('data.warnings.0.messages.0', 'El correo existente@ueb.edu.ec ya está registrado.');
+        Notification::assertSentTo($this->admin, ActionNotification::class,
+            fn (ActionNotification $notification): bool => $notification->body === '3 registros creados, 1 ya estaba registrado y 1 con errores.' && $notification->url === '/panel/users');
 
         $student = Usuario::query()->where('correo', 'ana.torres@ueb.edu.ec')->firstOrFail();
         $this->assertNull($student->cedula);
@@ -60,7 +63,7 @@ class UserImportTest extends TutoringTestCase
 
         Notification::assertSentTo($student, QueuedProvisionalPasswordNotification::class,
             fn (QueuedProvisionalPasswordNotification $notification): bool => password_verify($notification->provisionalPassword, $student->password_hash));
-        Notification::assertCount(3);
+        Notification::assertCount(4); // 3 contraseñas provisionales + el aviso de carga masiva terminada
     }
 
     public function test_provisional_password_notification_is_queued_and_encrypted(): void

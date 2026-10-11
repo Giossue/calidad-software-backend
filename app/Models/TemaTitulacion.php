@@ -6,7 +6,9 @@
 
 namespace App\Models;
 
+use App\Observers\DegreeTopicObserver;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -33,6 +35,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property-read Collection<int, ObservacionTitulacion> $observaciones
  * @property-read FichaSeguimiento|null $fichaSeguimiento
  */
+#[ObservedBy([DegreeTopicObserver::class])]
 class TemaTitulacion extends Model
 {
     public const REVIEW_RELATIONS = [

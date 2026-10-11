@@ -6,7 +6,9 @@
 
 namespace App\Models;
 
+use App\Observers\TeacherAssignmentObserver;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -22,6 +24,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read TemaTitulacion|null $temaTitulacion
  * @property-read Usuario|null $docente
  */
+#[ObservedBy([TeacherAssignmentObserver::class])]
 class AsignacionDocente extends Model
 {
     protected $table = 'asignacion_docente';

@@ -6,7 +6,9 @@
 
 namespace App\Models;
 
+use App\Observers\DegreeTopicObservationObserver;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -21,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read TemaTitulacion|null $temaTitulacion
  * @property-read Usuario|null $coordinador
  */
+#[ObservedBy([DegreeTopicObservationObserver::class])]
 class ObservacionTitulacion extends Model
 {
     protected $table = 'observacion_titulacion';

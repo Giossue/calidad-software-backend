@@ -22,6 +22,7 @@ use App\Models\InformeTitulacion;
 use App\Models\PeriodoAcademico;
 use App\Models\TemaTitulacion;
 use App\Models\Usuario;
+use App\Support\ActionNotifier;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -183,6 +184,8 @@ class DegreeTopicController extends Controller
 
         $peerIds = array_map('intval', (array) $request->input('peer_ids'));
         $peers = $updateAcademicPeers->handle($topic, $peerIds);
+        ActionNotifier::send($topic->estudiante, 'degree_peers_updated', 'Pares académicos actualizados',
+            "La coordinación actualizó los pares académicos de «{$topic->titulo}».", '/panel/student-degree-assignments');
 
         return AcademicPeerResource::collection($peers);
     }
@@ -308,6 +311,7 @@ class DegreeTopicController extends Controller
             'porcentaje_avance' => $request->float('porcentaje_avance'),
             'estado' => $request->input('estado', $ficha->estado),
         ]);
+        ActionNotifier::degreeProgressUpdated($topic, (float) $ficha->porcentaje_avance);
 
         return response()->json([
             'message' => 'Avance actualizado exitosamente.',

@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Imports\ImporterRegistry;
 use App\Models\BulkImport;
+use App\Support\ActionNotifier;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -16,6 +17,19 @@ use Throwable;
 class ProcessBulkImport implements ShouldQueue
 {
     use Queueable;
+
+    /** Pantalla a la que lleva el aviso de importación terminada. */
+    private const SECTION_URLS = [
+        'users' => '/panel/users',
+        'faculties' => '/panel/faculties',
+        'careers' => '/panel/careers',
+        'cycles' => '/panel/careers',
+        'academic-periods' => '/panel/periods',
+        'subjects' => '/panel/tutoring-subjects',
+        'teachers' => '/panel/tutoring-teachers',
+        'students' => '/panel/tutoring-students',
+        'sections' => '/panel/degree-students',
+    ];
 
     public int $tries = 1;
 
@@ -68,6 +82,13 @@ class ProcessBulkImport implements ShouldQueue
             'warnings' => $warnings,
             'rows' => null,
         ]);
+
+        ActionNotifier::send($user, 'bulk_import_finished', 'Carga masiva terminada', sprintf(
+            '%d %s, %d ya %s y %d con errores.',
+            $created, $created === 1 ? 'registro creado' : 'registros creados',
+            count($warnings), count($warnings) === 1 ? 'estaba registrado' : 'estaban registrados',
+            count($errors),
+        ), self::SECTION_URLS[$import->type] ?? null, includeActor: true);
     }
 
     /**

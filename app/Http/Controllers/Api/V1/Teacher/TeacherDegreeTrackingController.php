@@ -11,6 +11,7 @@ use App\Models\AsignacionDocente;
 use App\Models\FichaSeguimiento;
 use App\Models\TemaTitulacion;
 use App\Models\Usuario;
+use App\Support\ActionNotifier;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -165,6 +166,7 @@ class TeacherDegreeTrackingController extends Controller
             $data['estado'] = $request->string('estado')->value();
         }
         $ficha->update($data);
+        ActionNotifier::degreeProgressUpdated($topic, (float) $ficha->porcentaje_avance);
 
         return response()->json([
             'message' => 'Porcentaje de avance actualizado.',

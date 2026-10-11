@@ -6,11 +6,14 @@
 
 namespace App\Models;
 
+use App\Observers\GradeObserver;
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /** @property CarbonInterface $fecha_registro */
+#[ObservedBy([GradeObserver::class])]
 class Nota extends Model
 {
     protected $table = 'nota';
