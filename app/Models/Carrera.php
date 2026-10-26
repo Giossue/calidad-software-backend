@@ -8,6 +8,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Carrera extends Model
@@ -45,5 +46,14 @@ class Carrera extends Model
     public function ciclos(): HasMany
     {
         return $this->hasMany(Ciclo::class, 'fk_carrera');
+    }
+
+    /**
+     * @return BelongsToMany<Usuario, $this>
+     */
+    public function coordinators(): BelongsToMany
+    {
+        return $this->belongsToMany(Usuario::class, 'career_coordinator', 'career_id', 'user_id')
+            ->withPivot('assigned_at');
     }
 }

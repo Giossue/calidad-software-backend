@@ -180,6 +180,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::patch('tutorings/{tutoring}/sessions/{session}/topics', [SessionController::class, 'updateTopics'])->name('sessions.topics.update');
             Route::get('tutorings/{tutoring}/reports', [TeacherReportController::class, 'index'])->name('reports.index');
             Route::post('tutorings/{tutoring}/reports', [TeacherReportController::class, 'store'])->name('reports.store');
+            Route::get('tutorings/{tutoring}/reports/diagnostic/preview', [TeacherReportController::class, 'previewDiagnostic'])->name('reports.diagnostic.preview');
+            Route::post('tutorings/{tutoring}/reports/diagnostic', [TeacherReportController::class, 'storeDiagnostic'])->name('reports.diagnostic.store');
 
             Route::get('tutorings/{tutoring}/schedules', [TeacherScheduleController::class, 'index'])->name('schedules.index');
             Route::put('tutorings/{tutoring}/schedules', [TeacherScheduleController::class, 'sync'])->name('schedules.sync');

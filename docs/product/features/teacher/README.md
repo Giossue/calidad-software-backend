@@ -26,6 +26,7 @@ de coordinación.
 | DOC-15 | Contenido | Actualizar la descripción de una metodología. |
 | DOC-16 | Contenido | Deshabilitar metodologías mediante baja lógica. |
 | DOC-17 | Informes | Generar un consolidado y dejarlo disponible al Coordinador de Carrera. |
+| DOC-19 | Informes | Generar el Reporte de la Evaluación Diagnóstica con el formato oficial y enviarlo a coordinación. |
 | DOC-18 | Titulación | Consultar las asignaciones propias vigentes como tutor o par académico. |
 
 ## Acceso y permisos
@@ -71,25 +72,38 @@ de coordinación.
 8. En **Informes**, enviar título y observaciones. El servidor genera el
    consolidado, lo conserva y lo hace accesible desde la supervisión de tutorías
    del Coordinador de Carrera. **Leer informe** muestra el contenido enviado.
+   **Reporte de evaluación diagnóstica** abre el formato oficial calculado con las
+   notas diagnósticas registradas: encabezado (facultad, carrera, fecha, docente,
+   asignatura, ciclo, período y paralelo), estudiantes *en la lista* (inscripciones
+   activas) y *en el aula* (con nota), número y porcentaje por métrica sobre los
+   evaluados, plan de acción, observaciones, firmas del docente y del coordinador
+   de carrera y, como anexo, las calificaciones («No asiste» si no hay nota). El
+   docente elige la fecha y escribe las observaciones, revisa la vista previa, puede
+   **Imprimir o guardar PDF** y lo envía con **Enviar a coordinación**. Se exige al
+   menos una nota diagnóstica.
 9. En **Titulación**, buscar por tema o estudiante, filtrar por tutor/par académico
    y abrir el detalle de las asignaciones propias.
 
 ## Calificación y clasificación
 
-La planificación no establece una escala ni los umbrales de los grupos. La
-configuración provisional está en `config/teaching.php`:
+La escala oficial proviene del formato «1. Reporte Evaluación Diagnóstica» del
+Plan de Tutorías Académicas y está en `config/teaching.php`, junto con el plan de
+acción de cada nivel:
 
-| Grupo | Intervalo inclusivo |
-| --- | --- |
-| Bajo | 0–3,99 |
-| Medio | 4–6,99 |
-| Alto | 7–10 |
+| Grupo | Formato oficial | Intervalo inclusivo (nota /10) | Plan de acción |
+| --- | --- | --- | --- |
+| Bajo | 0% – 50% | 0–5,00 | Semana de adaptación de Conocimientos; Tutorías adicionales obligatorias; Estudio Autónomo |
+| Medio | 51% – 69% | 5,01–6,99 | Semana de adaptación de Conocimientos; Tutorías adicionales obligatorias |
+| Alto | 70% – 100% | 7,00–10 | Semana de adaptación de Conocimientos |
 
+Con dos decimales, cualquier nota superior al 50 % (5,01) se clasifica como Medio.
 Las notas admiten hasta dos decimales, con mínimo 0 y máximo 10. La interfaz
 obtiene esa misma configuración de `/api/v1/teacher/grade-settings`; no decide
-la clasificación. Antes de adoptar otra escala, actualizar mínimo, máximo y
+la clasificación. Antes de cambiar la escala, actualizar mínimo, máximo y
 grupos conjuntamente, sin huecos ni superposiciones, y ejecutar las pruebas.
-Cambiar la configuración no reclasifica automáticamente diagnósticos anteriores.
+Cambiar la configuración no reclasifica automáticamente diagnósticos anteriores;
+la migración `2026_10_26_100000_reclassify_knowledge_metrics_with_official_ranges`
+reclasificó los registrados con la escala provisional anterior (Bajo < 4).
 
 La clasificación se guarda en `metrica_conocimiento.enrollment_id`. Un
 estudiante puede pertenecer a grupos diferentes en distintas tutorías. Registrar
@@ -114,7 +128,9 @@ grupo diagnóstico.
 - El informe guarda un resumen y texto consolidados al enviarse: cambios
   posteriores en la tutoría no modifican un informe anterior. Un reintento
   idéntico devuelve el mismo informe. Su entrega consiste en disponibilidad en el
-  módulo de supervisión, sin correo externo ni exportación PDF.
+  módulo de supervisión, sin correo externo. El reporte de evaluación diagnóstica
+  se imprime o guarda en PDF desde el navegador, con el anexo de calificaciones
+  en una página aparte.
 - La consulta mantiene notas anteriores de cualquier tipo y asistencias sin
   sesión. Estas últimas muestran `topics_covered: null`; al guardar su fecha se
   vinculan a la sesión sin duplicarse.
@@ -152,6 +168,8 @@ falta de permiso, `403`; elementos anidados ajenos, `404`.
 | PUT | `/tutorings/{tutoring}/sessions` | `date`, `topics_covered`, `topic_ids`, `attendance: [{enrollment_id, present}]`. |
 | GET | `/tutorings/{tutoring}/reports` | Informes conservados; `page`, `per_page`. |
 | POST | `/tutorings/{tutoring}/reports` | `title`, `observations` opcional; el servidor calcula `summary` y `content`. |
+| GET | `/tutorings/{tutoring}/reports/diagnostic/preview` | `date` opcional (hoy por defecto); devuelve el reporte diagnóstico calculado sin guardarlo. |
+| POST | `/tutorings/{tutoring}/reports/diagnostic` | `date` (hasta hoy), `observations` opcional; guarda el reporte con `summary.format = diagnostic_evaluation`. |
 
 `status` admite `active` e `inactive`; `role`, `tutor` y `par_academico`;
 `date`, `YYYY-MM-DD`. `per_page` admite 1–100. Las sesiones limitan una petición
