@@ -71,7 +71,7 @@ class SupervisionController extends Controller
             $query->where(function (Builder $sub) use ($search) {
                 $sub->whereLike('tipo_reporte', "%{$search}%")
                     ->orWhereLike('content', "%{$search}%")
-                    ->orWhereHas('generadoPor', fn (Builder $q) => $q->whereLike('nombre', "%{$search}%")->orWhereLike('apellido', "%{$search}%"))
+                    ->orWhereHas('generadoPor', fn (Builder $q) => $q->whereLike('nombre', "%{$search}%"))
                     ->orWhereHas('asignaturaTutoria', fn (Builder $q) => $q->whereLike('nombre', "%{$search}%"));
             });
         }
