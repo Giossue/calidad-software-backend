@@ -27,6 +27,8 @@ de coordinación.
 | DOC-16 | Contenido | Deshabilitar metodologías mediante baja lógica. |
 | DOC-17 | Informes | Generar un consolidado y dejarlo disponible al Coordinador de Carrera. |
 | DOC-19 | Informes | Generar el Reporte de la Evaluación Diagnóstica con el formato oficial y enviarlo a coordinación. |
+| DOC-20 | Informes | Generar el Reporte de Seguimiento a las Tutorías Académicas de un parcial con el formato oficial y enviarlo a coordinación. |
+| DOC-21 | Informes | Generar el Informe final PAO (ejecución de tutorías) de sus asignaturas del período con el formato oficial y enviarlo a coordinación. |
 | DOC-18 | Titulación | Consultar las asignaciones propias vigentes como tutor o par académico. |
 
 ## Acceso y permisos
@@ -81,6 +83,40 @@ de coordinación.
    docente elige la fecha y escribe las observaciones, revisa la vista previa, puede
    **Imprimir o guardar PDF** y lo envía con **Enviar a coordinación**. Se exige al
    menos una nota diagnóstica.
+   **Reporte de seguimiento** genera el «Reporte de Seguimiento a las Tutorías
+   Académicas» de un parcial. El docente elige el parcial (primero o segundo), el
+   rango de fechas de las tutorías y la fecha de presentación, y escribe la
+   observación. El servidor calcula: datos informativos, antecedentes, actividades
+   programadas (por cada tutoría del rango, sus temas abordados con las actividades
+   y metodologías activas), estudiantes que asisten y estudiantes que mejoraron su
+   rendimiento. Se exige al menos una tutoría registrada en el rango.
+
+   - *Riesgo académico*: diagnóstico en grupo Bajo o Medio. *Sin riesgo*: grupo Alto.
+     Los inscritos sin diagnóstico no entran en ninguna columna; si asisten, se
+     informa aparte.
+   - *Asiste*: tiene al menos una asistencia marcada como presente en el rango.
+   - *Mejoró su rendimiento*: nota del parcial elegido mayor que su nota
+     diagnóstica (primer parcial: `partial`; segundo: `partial_two`).
+
+   **Informe final PAO** genera el informe de ejecución de tutorías académicas del
+   período. Incluye las tutorías del docente del mismo período y carrera (la actual
+   siempre; las demás, a elección). El docente indica la fecha y, si quiere, el
+   número de informe (por defecto `NN-TA-AAAA`: se conserva el del informe ya
+   enviado para ese PAO o se toma el siguiente correlativo del año), escribe la
+   observación de cada asignatura, las conclusiones y las recomendaciones. El
+   servidor calcula los datos generales, el horario, la matriz de
+   operacionalización y los anexos (estudiantes que mejoraron al segundo parcial y
+   registro de tutorías). Reglas de la matriz, acordadas con coordinación:
+
+   - *Horas por semana*: suma de los horarios activos. *Horas realizadas*: por cada
+     tutoría registrada, las horas de los horarios de ese día de la semana (si no
+     hay, el promedio de los horarios).
+   - *Riesgo académico*: diagnóstico Bajo o Medio. *Asiste*: al menos una
+     asistencia como presente.
+   - *Aprobó*: promedio de los dos parciales ≥ `teaching.passing_grade` (7).
+   - *Mejoró su rendimiento*: segundo parcial mayor que el primero (igual que el
+     Anexo 1).
+   - *% Efectividad*: con riesgo que asistieron y aprobaron ÷ con riesgo que asisten.
 9. En **Titulación**, buscar por tema o estudiante, filtrar por tutor/par académico
    y abrir el detalle de las asignaciones propias.
 
@@ -128,9 +164,9 @@ grupo diagnóstico.
 - El informe guarda un resumen y texto consolidados al enviarse: cambios
   posteriores en la tutoría no modifican un informe anterior. Un reintento
   idéntico devuelve el mismo informe. Su entrega consiste en disponibilidad en el
-  módulo de supervisión, sin correo externo. El reporte de evaluación diagnóstica
-  se imprime o guarda en PDF desde el navegador, con el anexo de calificaciones
-  en una página aparte.
+  módulo de supervisión, sin correo externo. Los reportes de evaluación diagnóstica,
+  de seguimiento y el informe final PAO se imprimen o guardan en PDF desde el navegador; el anexo de
+  calificaciones del reporte diagnóstico va en una página aparte.
 - La consulta mantiene notas anteriores de cualquier tipo y asistencias sin
   sesión. Estas últimas muestran `topics_covered: null`; al guardar su fecha se
   vinculan a la sesión sin duplicarse.
@@ -170,6 +206,10 @@ falta de permiso, `403`; elementos anidados ajenos, `404`.
 | POST | `/tutorings/{tutoring}/reports` | `title`, `observations` opcional; el servidor calcula `summary` y `content`. |
 | GET | `/tutorings/{tutoring}/reports/diagnostic/preview` | `date` opcional (hoy por defecto); devuelve el reporte diagnóstico calculado sin guardarlo. |
 | POST | `/tutorings/{tutoring}/reports/diagnostic` | `date` (hasta hoy), `observations` opcional; guarda el reporte con `summary.format = diagnostic_evaluation`. |
+| GET | `/tutorings/{tutoring}/reports/follow-up/preview` | `partial` (1 o 2), `from`, `to` (hasta hoy, no anterior a `from`), `date`; devuelve el reporte de seguimiento sin guardarlo. |
+| POST | `/tutorings/{tutoring}/reports/follow-up` | Igual que la vista previa más `observations` opcional; guarda el reporte con `summary.format = tutoring_follow_up`. |
+| GET | `/tutorings/{tutoring}/reports/final-pao/preview` | `date`; `tutoring_ids[]` opcional (por defecto, todas las elegibles); devuelve el informe y `available_tutorings` sin guardarlo. |
+| POST | `/tutorings/{tutoring}/reports/final-pao` | `date`, `tutoring_ids[]` (propias, mismo período y carrera, incluida la actual), `report_number`, `observations` por id, `conclusions` y `recommendations` opcionales; `summary.format = final_pao`. |
 
 `status` admite `active` e `inactive`; `role`, `tutor` y `par_academico`;
 `date`, `YYYY-MM-DD`. `per_page` admite 1–100. Las sesiones limitan una petición

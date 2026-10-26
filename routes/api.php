@@ -182,6 +182,10 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::post('tutorings/{tutoring}/reports', [TeacherReportController::class, 'store'])->name('reports.store');
             Route::get('tutorings/{tutoring}/reports/diagnostic/preview', [TeacherReportController::class, 'previewDiagnostic'])->name('reports.diagnostic.preview');
             Route::post('tutorings/{tutoring}/reports/diagnostic', [TeacherReportController::class, 'storeDiagnostic'])->name('reports.diagnostic.store');
+            Route::get('tutorings/{tutoring}/reports/follow-up/preview', [TeacherReportController::class, 'previewFollowUp'])->name('reports.follow-up.preview');
+            Route::post('tutorings/{tutoring}/reports/follow-up', [TeacherReportController::class, 'storeFollowUp'])->name('reports.follow-up.store');
+            Route::get('tutorings/{tutoring}/reports/final-pao/preview', [TeacherReportController::class, 'previewFinalPao'])->name('reports.final-pao.preview');
+            Route::post('tutorings/{tutoring}/reports/final-pao', [TeacherReportController::class, 'storeFinalPao'])->name('reports.final-pao.store');
 
             Route::get('tutorings/{tutoring}/schedules', [TeacherScheduleController::class, 'index'])->name('schedules.index');
             Route::put('tutorings/{tutoring}/schedules', [TeacherScheduleController::class, 'sync'])->name('schedules.sync');

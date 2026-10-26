@@ -9,6 +9,7 @@ use App\Models\Reporte;
 use App\Models\Usuario;
 use App\Support\KnowledgeScale;
 use App\Support\TeacherWorkspace;
+use App\Support\TutoringReportHeader;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -27,9 +28,6 @@ class DiagnosticEvaluationReport
     /** @return array<string, mixed> */
     public function build(Usuario $teacher, AsignaturaTutoria $tutoring, string $date, ?string $observations = null): array
     {
-        $tutoring->loadMissing(['ciclo.carrera.facultad', 'ciclo.carrera.coordinators', 'periodo', 'paralelo']);
-        $career = $tutoring->ciclo?->carrera;
-
         $enrollments = $tutoring->inscripciones()
             ->where('estado', true)
             ->with(['estudiante', 'notas' => fn ($query) => $query->where('tipo', 'diagnostic')->orderByDesc('id_nota')])
@@ -65,25 +63,16 @@ class DiagnosticEvaluationReport
             ];
         })->all();
 
-        $coordinator = $career?->coordinators->firstWhere('estado', true);
-
         return [
             'format' => self::FORMAT,
-            'faculty' => $career?->facultad?->nombre,
-            'career' => $career?->nombre,
+            ...TutoringReportHeader::for($tutoring),
             'date' => $date,
             'teacher' => $teacher->nombre,
-            'subject' => $tutoring->nombre,
-            'cycle' => $tutoring->ciclo?->numero,
-            'cycle_name' => $tutoring->ciclo?->nombre,
-            'academic_period' => $tutoring->periodo?->nombre,
-            'section' => $tutoring->paralelo?->nombre,
             'students_listed' => $enrollments->count(),
             'students_evaluated' => $evaluated,
             'groups' => $groups,
             'observations' => filled($observations) ? trim((string) $observations) : null,
             'grades' => $grades->all(),
-            'coordinator' => $coordinator?->nombre,
         ];
     }
 
