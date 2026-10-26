@@ -62,7 +62,7 @@ class EnrollmentAndGradeTest extends TeacherTestCase
     public function test_diagnostic_boundaries_classify_and_a_correction_replaces_the_grade(): void
     {
         $enrollment = $this->enrollment();
-        foreach ([[0, 'Bajo'], [3.99, 'Bajo'], [4, 'Medio'], [6.99, 'Medio'], [7, 'Alto'], [10, 'Alto']] as [$value, $group]) {
+        foreach ([[0, 'Bajo'], [4.5, 'Bajo'], [5, 'Bajo'], [5.01, 'Medio'], [6.99, 'Medio'], [7, 'Alto'], [10, 'Alto']] as [$value, $group]) {
             $this->putJson($this->path('/students/'.$enrollment->getKey().'/grades/diagnostic'), ['value' => $value])->assertOk()->assertJsonPath('data.knowledge_group', $group);
         }
         // Una sola nota por etapa: las correcciones reemplazan el valor, no crean historial.

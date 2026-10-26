@@ -7,8 +7,8 @@ use App\Models\InscripcionTutoria;
 use App\Models\MetricaConocimiento;
 use App\Models\Nota;
 use App\Models\Usuario;
+use App\Support\KnowledgeScale;
 use App\Support\TeacherWorkspace;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Validation\ValidationException;
 
 class RegisterGrade
@@ -31,7 +31,7 @@ class RegisterGrade
                 $current->update(['valor' => $value, 'fecha_registro' => today()]);
             }
             if ($type === 'diagnostic') {
-                $group = collect(Config::array('teaching.groups'))->first(fn (array $item) => (float) $value >= $item['min'] && (float) $value <= $item['max']);
+                $group = KnowledgeScale::classify((float) $value);
                 if (! $group) {
                     throw ValidationException::withMessages(['value' => 'La calificación no tiene un grupo de conocimiento configurado.']);
                 }
