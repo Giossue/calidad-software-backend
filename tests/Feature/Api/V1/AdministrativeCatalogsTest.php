@@ -64,7 +64,7 @@ class AdministrativeCatalogsTest extends TestCase
 
     public function test_administrator_can_create_update_and_deactivate_an_academic_period(): void
     {
-        Sanctum::actingAs($this->administrator());
+        Sanctum::actingAs($this->administrator(), ['*']);
 
         $created = $this->postJson('/api/v1/academic-periods', [
             'nombre' => '  2026-A  ',
@@ -93,7 +93,7 @@ class AdministrativeCatalogsTest extends TestCase
 
     public function test_academic_period_index_paginates_searches_and_reports_catalog_wide_counts(): void
     {
-        Sanctum::actingAs($this->administrator());
+        Sanctum::actingAs($this->administrator(), ['*']);
 
         $this->postJson('/api/v1/academic-periods', ['nombre' => '2026-A', 'fecha_inicio' => '2026-04-01', 'fecha_fin' => '2026-08-31'])->assertCreated();
         $this->postJson('/api/v1/academic-periods', ['nombre' => '2026-B', 'fecha_inicio' => '2026-09-01', 'fecha_fin' => '2027-02-28'])->assertCreated();
@@ -116,7 +116,7 @@ class AdministrativeCatalogsTest extends TestCase
 
     public function test_academic_period_rejects_an_end_date_before_its_start_date(): void
     {
-        Sanctum::actingAs($this->administrator());
+        Sanctum::actingAs($this->administrator(), ['*']);
 
         $this->postJson('/api/v1/academic-periods', [
             'nombre' => '2026-A',
@@ -127,7 +127,7 @@ class AdministrativeCatalogsTest extends TestCase
 
     public function test_only_one_academic_period_can_be_active_at_the_same_time(): void
     {
-        Sanctum::actingAs($this->administrator());
+        Sanctum::actingAs($this->administrator(), ['*']);
 
         // Período 1 vigente
         $period1 = $this->postJson('/api/v1/academic-periods', [
@@ -156,7 +156,7 @@ class AdministrativeCatalogsTest extends TestCase
 
     public function test_academic_period_rejects_overlapping_dates_with_another_period(): void
     {
-        Sanctum::actingAs($this->administrator());
+        Sanctum::actingAs($this->administrator(), ['*']);
 
         $this->postJson('/api/v1/academic-periods', [
             'nombre' => 'PAO I 2026',
@@ -177,7 +177,7 @@ class AdministrativeCatalogsTest extends TestCase
 
     public function test_activating_an_expired_academic_period_is_rejected(): void
     {
-        Sanctum::actingAs($this->administrator());
+        Sanctum::actingAs($this->administrator(), ['*']);
 
         // Período ya finalizado (cerrado en su fecha de fin)
         $expired = $this->postJson('/api/v1/academic-periods', [
@@ -195,7 +195,7 @@ class AdministrativeCatalogsTest extends TestCase
 
     public function test_administrator_can_create_update_and_deactivate_a_modality(): void
     {
-        Sanctum::actingAs($this->administrator());
+        Sanctum::actingAs($this->administrator(), ['*']);
 
         $created = $this->postJson('/api/v1/modalities', ['nombre' => '  Virtual  '])
             ->assertCreated()->assertJsonPath('data.name', 'Virtual');
@@ -218,7 +218,7 @@ class AdministrativeCatalogsTest extends TestCase
 
     public function test_non_administrator_cannot_manage_administrative_catalogs(): void
     {
-        Sanctum::actingAs($this->user('docente'));
+        Sanctum::actingAs($this->user('docente'), ['*']);
 
         $this->postJson('/api/v1/modalities', ['nombre' => 'Virtual'])->assertForbidden();
         $this->getJson('/api/v1/academic-periods')->assertForbidden();

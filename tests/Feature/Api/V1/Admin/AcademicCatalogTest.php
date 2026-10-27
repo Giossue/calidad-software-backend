@@ -6,9 +6,9 @@ use App\Models\Carrera;
 use App\Models\Ciclo;
 use App\Models\Facultad;
 use App\Models\Modalidad;
-use App\Models\Paralelo;
 use App\Models\Usuario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class AcademicCatalogTest extends TestCase
@@ -145,7 +145,7 @@ class AcademicCatalogTest extends TestCase
             'estado' => true,
         ]);
 
-        $this->actingAs(Usuario::factory()->withRole('estudiante')->create(), 'sanctum');
+        Sanctum::actingAs(Usuario::factory()->withRole('estudiante')->create(), ['*']);
 
         $this->postJson('/api/v1/admin/careers', [
             'faculty_id' => $faculty->getKey(),
@@ -416,7 +416,7 @@ class AcademicCatalogTest extends TestCase
 
     public function test_only_administrators_can_manage_sections(): void
     {
-        $this->actingAs(Usuario::factory()->withRole('estudiante')->create(), 'sanctum');
+        Sanctum::actingAs(Usuario::factory()->withRole('estudiante')->create(), ['*']);
 
         $this->postJson('/api/v1/admin/sections', ['name' => 'Paralelo A'])->assertForbidden();
         $this->getJson('/api/v1/admin/sections')->assertForbidden();
@@ -425,7 +425,7 @@ class AcademicCatalogTest extends TestCase
     private function actingAsAdministrator(): Usuario
     {
         $administrator = Usuario::factory()->withRole('administrador')->create();
-        $this->actingAs($administrator, 'sanctum');
+        Sanctum::actingAs($administrator, ['*']);
 
         return $administrator;
     }

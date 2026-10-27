@@ -157,4 +157,39 @@ class AccountFlowsTest extends TestCase
             'name' => 'frontend-web',
         ]);
     }
+
+    public function test_two_factor_challenge_token_cannot_be_used_as_a_session_token(): void
+    {
+        $admin = Usuario::factory()->withRole('administrador')->create([
+            'password_hash' => 'password',
+            'two_factor_secret' => Fortify::currentEncrypter()->encrypt('secret'),
+            'two_factor_recovery_codes' => Fortify::currentEncrypter()->encrypt(json_encode(['recovery-code'])),
+            'two_factor_confirmed_at' => now(),
+        ]);
+
+        // Solo con la contraseña se obtiene el token del desafío, no una sesión.
+        $challengeToken = $this->postJson('/api/v1/auth/login', [
+            'email' => $admin->correo,
+            'password' => 'password',
+            'device_name' => 'frontend-web',
+        ])->json('data.challenge_token');
+
+        foreach ([
+            ['GET', '/api/v1/auth/user'],
+            ['GET', '/api/v1/users'],
+            ['POST', '/api/v1/users'],
+            ['GET', '/api/v1/faculties'],
+            ['GET', '/api/v1/notifications'],
+            ['GET', '/api/v1/academic-periods'],
+            ['GET', '/api/v1/admin/careers'],
+            ['PUT', '/api/v1/auth/profile/complete'],
+        ] as [$method, $uri]) {
+            $this->app['auth']->forgetGuards();
+            $this->withToken($challengeToken)->json($method, $uri)->assertForbidden();
+        }
+        $this->assertSame(1, Usuario::query()->count());
+
+        $this->app['auth']->forgetGuards();
+        $this->withToken($challengeToken)->postJson('/api/v1/auth/two-factor-challenge', ['recovery_code' => 'recovery-code'])->assertOk();
+    }
 }

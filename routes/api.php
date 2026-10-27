@@ -60,7 +60,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         Route::get('email/verify/{id}/{hash}', [EmailVerificationController::class, 'verify'])
             ->middleware(['signed', 'throttle:6,1'])->name('verification.verify');
 
-        Route::middleware('auth:sanctum')->group(function (): void {
+        // El token del desafío 2FA solo sirve para two-factor-challenge: aquí se exige uno de sesión.
+        Route::middleware(['auth:sanctum', CheckAbilities::class.':access-api'])->group(function (): void {
             Route::get('user', [TokenController::class, 'show'])->name('user');
             Route::delete('logout', [TokenController::class, 'destroy'])->name('logout');
             Route::put('profile/complete', CompleteProfileController::class)
@@ -71,7 +72,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         });
     });
 
-    Route::middleware('auth:sanctum')->group(function (): void {
+    Route::middleware(['auth:sanctum', CheckAbilities::class.':access-api'])->group(function (): void {
         Route::prefix('notifications')->name('notifications.')->group(function (): void {
             Route::get('/', [NotificationController::class, 'index'])->name('index');
             Route::get('unread-count', [NotificationController::class, 'unreadCount'])->name('unread-count');
@@ -197,7 +198,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
         });
     });
 
-    Route::middleware('auth:sanctum')->group(function (): void {
+    Route::middleware(['auth:sanctum', CheckAbilities::class.':access-api'])->group(function (): void {
         Route::get('academic-periods', [AcademicPeriodController::class, 'index'])->name('academic-periods.index.legacy');
         Route::post('academic-periods', [AcademicPeriodController::class, 'store'])->name('academic-periods.store.legacy');
         Route::patch('academic-periods/{academicPeriod}', [AcademicPeriodController::class, 'update'])->name('academic-periods.update.legacy');
@@ -276,12 +277,11 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::delete('degree-students/{student}/unenroll', [CoordinatorDegreeEnrollmentController::class, 'unenroll'])->name('degree-students.unenroll');
         });
 
-    Route::middleware(['auth:sanctum', 'verified'])
+    Route::middleware(['auth:sanctum', 'verified', CheckAbilities::class.':access-api'])
         ->prefix('admin')
         ->name('admin.')
         ->group(function (): void {
-            Route::put('users/{user}/careers', [CoordinatorCareerAssignmentController::class, 'update'])
-                ->middleware(CheckAbilities::class.':access-api')->name('users.careers.update');
+            Route::put('users/{user}/careers', [CoordinatorCareerAssignmentController::class, 'update'])->name('users.careers.update');
             Route::get('faculties', [FacultyController::class, 'index'])->name('faculties.index');
             Route::get('careers', [CareerController::class, 'index'])->name('careers.index');
             Route::post('careers', [CareerController::class, 'store'])->name('careers.store');

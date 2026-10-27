@@ -23,7 +23,7 @@ class UserManagementTest extends TestCase
         parent::setUp();
 
         $this->admin = Usuario::factory()->withRole('administrador')->create(['nombre' => 'Zzz Admin']);
-        Sanctum::actingAs($this->admin);
+        Sanctum::actingAs($this->admin, ['*']);
     }
 
     public function test_admin_can_list_active_and_deactivated_users(): void
@@ -41,7 +41,7 @@ class UserManagementTest extends TestCase
 
     public function test_non_administrator_cannot_list_users(): void
     {
-        Sanctum::actingAs(Usuario::factory()->withRole('docente')->create());
+        Sanctum::actingAs(Usuario::factory()->withRole('docente')->create(), ['*']);
 
         $this->getJson('/api/v1/users')->assertForbidden();
     }

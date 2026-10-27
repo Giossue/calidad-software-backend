@@ -44,6 +44,9 @@ job payloads, imported files, and configuration.
 - Keep session cookies HTTP-only, Secure, and same-site.
 - Do not leak account existence through differing error messages or response timing.
 - Invalidate the server session on logout and on credential change.
+- Every `auth:sanctum` route group also requires `CheckAbilities:access-api`. Session tokens carry `*`;
+  the password-only 2FA challenge token carries `two-factor:challenge` and is accepted only by
+  `POST auth/two-factor-challenge`. A new authenticated group must include the ability check.
 
 ## Secrets
 
