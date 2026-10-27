@@ -13,6 +13,7 @@ use App\Models\Usuario;
 use App\Notifications\ProvisionalPasswordNotification;
 use App\Rules\CedulaOPasaporte;
 use App\Support\ProvisionalPassword;
+use App\Support\StudentCycle;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -49,6 +50,7 @@ class CoordinatorEnrollmentController extends Controller
         $query = Usuario::query()->where('estado', true)->whereHas('roles', fn (Builder $query) => $query->where('slug', 'estudiante'))
             ->whereHas('paralelos', fn (Builder $query) => $query->where('paralelo.id_paralelo', $tutoring->fk_paralelo)->where('usuario_paralelo.estado', true))
             ->whereDoesntHave('inscripciones', fn (Builder $query) => $query->where('fk_asig_tutoria', $tutoring->getKey())->where('estado', true));
+        StudentCycle::scopeTutoringStage($query);
         if ($request->filled('search')) {
             $search = '%'.$request->string('search').'%';
             $query->where(fn (Builder $query) => $query->whereLike('nombre', $search)->orWhereLike('cedula', $search)->orWhereLike('correo', $search));
@@ -72,6 +74,7 @@ class CoordinatorEnrollmentController extends Controller
                 if (! $student->estado || ! $student->hasRole('estudiante') || ! $student->paralelos()->whereKey($locked->fk_paralelo)->wherePivot('estado', true)->exists()) {
                     throw ValidationException::withMessages(['student_id' => 'Selecciona un estudiante activo del paralelo de esta tutoría.']);
                 }
+                app(StudentCycle::class)->assertCanTakeTutorings($student);
             } else {
                 $password = ProvisionalPassword::generate();
                 $student = Usuario::query()->create([
@@ -82,6 +85,10 @@ class CoordinatorEnrollmentController extends Controller
                 $student->roles()->attach(Role::query()->where('slug', 'estudiante')->valueOrFail('id'));
                 $student->paralelos()->attach($locked->fk_paralelo, ['fecha_asignacion' => today(), 'estado' => true]);
                 DB::afterCommit(fn () => $student->notify(new ProvisionalPasswordNotification($password)));
+            }
+            // Un estudiante sin ciclo registrado pasa a cursar el ciclo de la tutoría.
+            if ($student->fk_ciclo === null && $locked->ciclo !== null) {
+                app(StudentCycle::class)->assign($student, $locked->ciclo);
             }
 
             $enrollment = InscripcionTutoria::query()->firstOrNew(['fk_asig_tutoria' => $locked->getKey(), 'fk_id_usuario' => $student->getKey()]);

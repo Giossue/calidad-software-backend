@@ -12,6 +12,7 @@ use App\Http\Resources\Api\V1\Teacher\EnrollmentResource;
 use App\Models\AsignaturaTutoria;
 use App\Models\InscripcionTutoria;
 use App\Models\Usuario;
+use App\Support\StudentCycle;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -39,6 +40,7 @@ class EnrollmentController extends Controller
         $query = Usuario::query()->where('estado', true)->whereHas('roles', fn (Builder $query) => $query->where('slug', 'estudiante'))
             ->whereHas('paralelos', fn (Builder $query) => $query->where('paralelo.id_paralelo', $tutoring->fk_paralelo)->where('usuario_paralelo.estado', true))
             ->whereDoesntHave('inscripciones', fn (Builder $query) => $query->where('fk_asig_tutoria', $tutoring->getKey())->where('estado', true));
+        StudentCycle::scopeTutoringStage($query);
         if ($request->filled('search')) {
             $search = '%'.$request->string('search').'%';
             $query->where(fn (Builder $query) => $query->whereLike('nombre', $search)->orWhereLike('cedula', $search)->orWhereLike('correo', $search));

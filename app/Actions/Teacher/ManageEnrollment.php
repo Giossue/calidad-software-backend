@@ -28,6 +28,7 @@ class ManageEnrollment
                 if (! $student->estado || ! $student->hasRole('estudiante') || ! $student->paralelos()->whereKey($locked->fk_paralelo)->wherePivot('estado', true)->exists()) {
                     throw ValidationException::withMessages(['student_id' => 'Selecciona un estudiante activo del paralelo de esta tutoría.']);
                 }
+                $this->cycles->assertCanTakeTutorings($student);
             } else {
                 $password = ProvisionalPassword::generate();
                 $student = Usuario::query()->create([

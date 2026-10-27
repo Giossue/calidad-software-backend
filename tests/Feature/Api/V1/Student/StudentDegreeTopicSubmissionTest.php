@@ -2,6 +2,10 @@
 
 namespace Tests\Feature\Api\V1\Student;
 
+use App\Models\Carrera;
+use App\Models\Ciclo;
+use App\Models\Facultad;
+use App\Models\MatriculaTitulacion;
 use App\Models\Paralelo;
 use App\Models\PeriodoAcademico;
 use App\Models\TemaTitulacion;
@@ -17,6 +21,8 @@ class StudentDegreeTopicSubmissionTest extends TestCase
     private PeriodoAcademico $period;
 
     private Paralelo $section;
+
+    private Ciclo $degreeCycle;
 
     protected function setUp(): void
     {
@@ -35,11 +41,51 @@ class StudentDegreeTopicSubmissionTest extends TestCase
         ]);
 
         $this->period->paralelos()->attach($this->section->getKey());
+
+        // Titulación: desde 6.º ciclo y con matrícula en el período activo.
+        $faculty = Facultad::query()->create(['nombre' => 'Ciencias', 'estado' => true]);
+        $career = Carrera::query()->create(['fk_facultad' => $faculty->getKey(), 'nombre' => 'Software', 'estado' => true]);
+        $this->degreeCycle = Ciclo::query()->create(['fk_carrera' => $career->getKey(), 'nombre' => 'Sexto', 'numero' => 6, 'estado' => true]);
+    }
+
+    /** @param array<string, mixed> $attributes */
+    private function degreeStudent(array $attributes = []): Usuario
+    {
+        $student = Usuario::factory()->withRole('estudiante')->create([
+            'fk_carrera' => $this->degreeCycle->fk_carrera,
+            'fk_ciclo' => $this->degreeCycle->getKey(),
+            ...$attributes,
+        ]);
+        MatriculaTitulacion::query()->create([
+            'fk_estudiante' => $student->getKey(), 'fk_periodo' => $this->period->getKey(),
+            'fk_carrera' => $this->degreeCycle->fk_carrera, 'fecha_matricula' => today(), 'estado' => true,
+        ]);
+
+        return $student;
+    }
+
+    public function test_only_enrolled_students_from_the_sixth_cycle_can_submit_a_topic(): void
+    {
+        $payload = ['title' => 'Sistema de evaluación', 'description' => 'Plataforma de análisis de código.'];
+        $fifth = Ciclo::query()->create(['fk_carrera' => $this->degreeCycle->fk_carrera, 'nombre' => 'Quinto', 'numero' => 5, 'estado' => true]);
+
+        // Matriculado pero en 5.º ciclo.
+        Sanctum::actingAs($this->degreeStudent(['fk_ciclo' => $fifth->getKey()]), ['access-api']);
+        $this->postJson('/api/v1/student/degree-topics', $payload)->assertForbidden();
+
+        // En 6.º ciclo pero sin matrícula (la validación de la solicitud ya lo rechaza).
+        $unenrolled = Usuario::factory()->withRole('estudiante')->create(['fk_ciclo' => $this->degreeCycle->getKey()]);
+        Sanctum::actingAs($unenrolled, ['access-api']);
+        $this->postJson('/api/v1/student/degree-topics', $payload)->assertUnprocessable();
+        $this->getJson('/api/v1/student/degree-enrollment-status')->assertOk()
+            ->assertJsonPath('is_enrolled', false)->assertJsonPath('is_degree_stage', true);
+
+        $this->assertDatabaseCount('tema_titulacion', 0);
     }
 
     public function test_student_can_submit_degree_topic_proposal_successfully(): void
     {
-        $student = Usuario::factory()->withRole('estudiante')->create([
+        $student = $this->degreeStudent([
             'nombre' => 'Estudiante Titulante',
             'correo' => 'titulante@mail.com',
         ]);
@@ -74,7 +120,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
 
     public function test_student_can_submit_proposal_specifying_section_explicitly(): void
     {
-        $student = Usuario::factory()->withRole('estudiante')->create();
+        $student = $this->degreeStudent();
         Sanctum::actingAs($student, ['access-api']);
 
         $response = $this->postJson('/api/v1/student/degree-topics', [
@@ -95,7 +141,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
 
     public function test_coordination_can_see_submitted_proposal_in_pending_list(): void
     {
-        $student = Usuario::factory()->withRole('estudiante')->create();
+        $student = $this->degreeStudent();
         $student->paralelos()->attach($this->section->getKey(), ['fecha_asignacion' => now()]);
 
         Sanctum::actingAs($student, ['access-api']);
@@ -119,7 +165,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
 
     public function test_student_cannot_submit_when_already_has_pending_proposal(): void
     {
-        $student = Usuario::factory()->withRole('estudiante')->create();
+        $student = $this->degreeStudent();
         Sanctum::actingAs($student, ['access-api']);
 
         // Primer propuesta
@@ -141,7 +187,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
 
     public function test_student_cannot_submit_when_already_has_approved_proposal(): void
     {
-        $student = Usuario::factory()->withRole('estudiante')->create();
+        $student = $this->degreeStudent();
 
         // Tema previamente aprobado
         TemaTitulacion::query()->create([
@@ -167,7 +213,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
 
     public function test_student_can_submit_new_proposal_if_previous_was_rejected(): void
     {
-        $student = Usuario::factory()->withRole('estudiante')->create();
+        $student = $this->degreeStudent();
 
         // Tema previamente rechazado
         TemaTitulacion::query()->create([
@@ -195,7 +241,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
 
     public function test_validation_fails_with_invalid_or_missing_title(): void
     {
-        $student = Usuario::factory()->withRole('estudiante')->create();
+        $student = $this->degreeStudent();
         Sanctum::actingAs($student, ['access-api']);
 
         $response = $this->postJson('/api/v1/student/degree-topics', [
@@ -224,7 +270,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
 
     public function test_student_without_section_is_automatically_assigned_to_section_when_submitting_proposal(): void
     {
-        $student = Usuario::factory()->withRole('estudiante')->create();
+        $student = $this->degreeStudent();
         // Verificar que el estudiante arranca sin paralelos
         $this->assertDatabaseMissing('usuario_paralelo', [
             'fk_usuario' => $student->getKey(),
@@ -249,7 +295,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
 
     public function test_student_can_replace_pending_proposal_with_alternative_using_replace_pending_flag(): void
     {
-        $student = Usuario::factory()->withRole('estudiante')->create();
+        $student = $this->degreeStudent();
         Sanctum::actingAs($student, ['access-api']);
 
         // Primer propuesta
@@ -278,7 +324,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
 
     public function test_student_can_modify_pending_degree_topic_proposal_directly(): void
     {
-        $student = Usuario::factory()->withRole('estudiante')->create();
+        $student = $this->degreeStudent();
         Sanctum::actingAs($student, ['access-api']);
 
         $topic = $this->postJson('/api/v1/student/degree-topics', [
@@ -305,7 +351,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
 
     public function test_student_cannot_modify_approved_or_rejected_topic_via_patch(): void
     {
-        $student = Usuario::factory()->withRole('estudiante')->create();
+        $student = $this->degreeStudent();
 
         $approvedTopic = TemaTitulacion::query()->create([
             'fk_id_usuario' => $student->getKey(),
@@ -338,7 +384,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
 
     public function test_student_cannot_modify_discarded_topic_via_patch(): void
     {
-        $student = Usuario::factory()->withRole('estudiante')->create();
+        $student = $this->degreeStudent();
 
         $discardedTopic = TemaTitulacion::query()->create([
             'fk_id_usuario' => $student->getKey(),
@@ -362,8 +408,8 @@ class StudentDegreeTopicSubmissionTest extends TestCase
 
     public function test_student_cannot_modify_topic_belonging_to_another_student(): void
     {
-        $studentA = Usuario::factory()->withRole('estudiante')->create();
-        $studentB = Usuario::factory()->withRole('estudiante')->create();
+        $studentA = $this->degreeStudent();
+        $studentB = $this->degreeStudent();
 
         $topicA = TemaTitulacion::query()->create([
             'fk_id_usuario' => $studentA->getKey(),

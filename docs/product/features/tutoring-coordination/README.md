@@ -342,11 +342,11 @@ estado de los commits y del push.
 - Cada estudiante registra el ciclo que cursa en `usuario.fk_ciclo`. El paralelo no
   lo identifica: un paralelo («A») es compartido por los ciclos de todas las carreras.
 - La pantalla **Estudiantes** muestra una pestaña por ciclo de la carrera, más
-  **Sin ciclo**. El último ciclo es titulación: su pestaña gestiona la matrícula en
-  titulación en lugar de tutorías.
+  **Sin ciclo**. Las pestañas desde 6.º ciclo son de titulación: gestionan la
+  matrícula en titulación en lugar de tutorías.
 - **Nuevo estudiante** registra al estudiante en el ciclo de la pestaña (si el ciclo
   tiene varios paralelos, se elige uno) y lo ubica en el paralelo de ese ciclo. La
-  tutoría inicial opcional debe ser del mismo ciclo; el ciclo de titulación no la admite.
+  tutoría inicial opcional debe ser del mismo ciclo; los ciclos de titulación no la admiten.
 - **Cambiar ciclo / Asignar ciclo** (`PATCH /students/{student}/cycle`) mueve al
   estudiante a otro ciclo de una carrera coordinada; conserva sus tutorías.
 - Un estudiante sin ciclo toma el de su primera tutoría al inscribirse (coordinación
@@ -357,3 +357,17 @@ estado de los commits y del push.
 - La migración `2026_10_27_100000_add_cycle_to_usuario_table` crea la columna y la
   rellena con el ciclo de la inscripción activa más reciente o, si no hay, con el único
   ciclo de la carrera que use alguno de los paralelos del estudiante.
+
+## Etapas académicas: tutorías y titulación
+
+`teaching.degree_from_cycle` (6) separa las etapas; el servidor las valida:
+
+- **Tutorías (1.º a 5.º ciclo):** solo se crean tutorías en esos ciclos y solo se
+  inscriben estudiantes sin ciclo o de esos ciclos (coordinación y docente). Los
+  listados de estudiantes disponibles para una tutoría excluyen a los de titulación.
+- **Titulación (desde 6.º ciclo):** solo se matriculan estudiantes desde 6.º ciclo.
+  El estudiante accede al módulo de titulación (estado `is_enrolled`, presentar o
+  cambiar su tema) si está desde 6.º ciclo **y** matriculado en el período vigente;
+  `degree-enrollment-status` informa además `is_degree_stage`.
+- **Coordinador de titulación:** `GET /coordination/degree-students` (y el de
+  coordinación de carrera) lista solo estudiantes desde 6.º ciclo.

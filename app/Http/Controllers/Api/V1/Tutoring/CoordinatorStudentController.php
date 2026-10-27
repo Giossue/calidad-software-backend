@@ -170,6 +170,10 @@ class CoordinatorStudentController extends Controller
     public function availableTutorings(Request $request, Usuario $student, TutoringCoordinatorAccess $access): AnonymousResourceCollection
     {
         Gate::authorize('viewAny', AsignaturaTutoria::class);
+        // Desde el ciclo de titulación el estudiante ya no recibe tutorías.
+        if (app(StudentCycle::class)->isDegreeStudent($student)) {
+            return TutoringResource::collection(collect());
+        }
 
         $careerIds = $request->user()->coordinatedCareers()->pluck('carrera.id_carrera');
         $enrolledTutoringIds = $student->inscripciones()->where('estado', true)->pluck('fk_asig_tutoria');
@@ -195,6 +199,7 @@ class CoordinatorStudentController extends Controller
         $data = $request->validate([
             'tutoring_id' => ['required', 'integer', Rule::exists('asignatura_tutoria', 'id_asig_tutoria')],
         ]);
+        app(StudentCycle::class)->assertCanTakeTutorings($student, 'tutoring_id');
 
         $tutoring = AsignaturaTutoria::query()->with(self::TUTORING_RELATIONS)->findOrFail((int) $data['tutoring_id']);
         Gate::authorize('view', $tutoring);

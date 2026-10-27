@@ -10,6 +10,7 @@ use App\Models\Paralelo;
 use App\Models\PeriodoAcademico;
 use App\Models\Subject;
 use App\Models\Usuario;
+use App\Support\StudentCycle;
 use App\Support\TutoringCoordinatorAccess;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
@@ -419,6 +420,9 @@ class ManageTutoring
     {
         if (! $cycle->estado || ! $cycle->carrera->estado) {
             throw ValidationException::withMessages(['cycle_id' => 'Selecciona un ciclo y una carrera activos.']);
+        }
+        if (app(StudentCycle::class)->isDegreeCycle($cycle)) {
+            throw ValidationException::withMessages(['cycle_id' => 'Las tutorías son para los ciclos anteriores a '.StudentCycle::degreeFromCycle().'.º; desde ese ciclo los estudiantes están en titulación.']);
         }
         if ($subject && (! $subject->is_active || $subject->career_id !== $cycle->fk_carrera)) {
             throw ValidationException::withMessages(['cycle_id' => 'La asignatura y el ciclo deben estar activos y pertenecer a la misma carrera.']);

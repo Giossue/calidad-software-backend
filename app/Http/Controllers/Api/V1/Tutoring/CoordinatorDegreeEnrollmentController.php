@@ -93,6 +93,9 @@ class CoordinatorDegreeEnrollmentController extends Controller
                     ->where('fk_periodo', $currentPeriod->getKey()),
             ]);
 
+        // Solo los estudiantes en la etapa de titulación (desde el ciclo configurado).
+        StudentCycle::scopeDegreeStage($query);
+
         if ($cycleNumber = $request->integer('cycle_number')) {
             $query->whereHas('ciclo', fn (Builder $q) => $q->whereIn('fk_carrera', $careerIds)->where('numero', $cycleNumber));
         }
@@ -156,6 +159,11 @@ class CoordinatorDegreeEnrollmentController extends Controller
         $user = $request->user();
         $this->authorizeCoordinator($user);
         abort_unless($student->hasRole('estudiante') && $student->estado, 422, 'El usuario no es un estudiante activo.');
+        abort_unless(
+            app(StudentCycle::class)->isDegreeStudent($student),
+            422,
+            'Solo se matriculan en titulación los estudiantes desde '.StudentCycle::degreeFromCycle().'.º ciclo.'
+        );
 
         $currentPeriod = PeriodoAcademico::query()->where('estado', true)->firstOrFail();
 

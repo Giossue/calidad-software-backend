@@ -12,6 +12,7 @@ use App\Models\MatriculaTitulacion;
 use App\Models\PeriodoAcademico;
 use App\Models\TemaTitulacion;
 use App\Models\Usuario;
+use App\Support\StudentCycle;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -73,6 +74,7 @@ class StudentDegreeTopicController extends Controller
     ): JsonResponse {
         /** @var Usuario $user */
         $user = $request->user();
+        $this->authorizeDegreeAccess($user);
 
         $topic = $submitDegreeTopic->handle(
             student: $user,
@@ -102,6 +104,10 @@ class StudentDegreeTopicController extends Controller
         TemaTitulacion $topic,
         SubmitDegreeTopic $submitDegreeTopic,
     ): JsonResponse {
+        /** @var Usuario $user */
+        $user = $request->user();
+        $this->authorizeDegreeAccess($user);
+
         $updatedTopic = $submitDegreeTopic->update(
             topic: $topic,
             title: $request->resolvedTitle(),
@@ -230,6 +236,7 @@ class StudentDegreeTopicController extends Controller
         if (! $user || (! $user->hasRole('estudiante') && ! $user->hasRole('administrador'))) {
             return response()->json([
                 'is_enrolled' => false,
+                'is_degree_stage' => false,
                 'period_id' => null,
                 'period_name' => null,
             ]);
@@ -239,6 +246,7 @@ class StudentDegreeTopicController extends Controller
         if (! $currentPeriod) {
             return response()->json([
                 'is_enrolled' => false,
+                'is_degree_stage' => app(StudentCycle::class)->isDegreeStudent($user),
                 'period_id' => null,
                 'period_name' => null,
             ]);
@@ -249,11 +257,22 @@ class StudentDegreeTopicController extends Controller
             ->where('fk_periodo', $currentPeriod->getKey())
             ->where('estado', true)
             ->exists();
+        $inDegreeStage = app(StudentCycle::class)->isDegreeStudent($user);
 
         return response()->json([
-            'is_enrolled' => $enrolled,
+            // Titulación se habilita desde el ciclo configurado y con matrícula vigente.
+            'is_enrolled' => $enrolled && $inDegreeStage,
+            'is_degree_stage' => $inDegreeStage,
             'period_id' => $currentPeriod->getKey(),
             'period_name' => $currentPeriod->nombre,
         ]);
+    }
+
+    /** El estudiante presenta o cambia su tema solo desde el ciclo de titulación y con matrícula vigente. */
+    private function authorizeDegreeAccess(Usuario $user): void
+    {
+        if ($user->hasRole('estudiante') && ! app(StudentCycle::class)->hasDegreeAccess($user)) {
+            abort(Response::HTTP_FORBIDDEN, 'Titulación está disponible desde '.StudentCycle::degreeFromCycle().'.º ciclo y con matrícula en titulación del período vigente.');
+        }
     }
 }

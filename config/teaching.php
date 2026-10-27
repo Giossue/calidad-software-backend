@@ -9,6 +9,9 @@ return [
     'grade_max' => 10,
     // Informe final PAO: aprueba quien obtiene un promedio de los dos parciales igual o mayor.
     'passing_grade' => 7,
+    // Etapas académicas: los ciclos anteriores reciben tutorías; desde este ciclo, titulación
+    // (a la que se accede además con matrícula en el período vigente).
+    'degree_from_cycle' => 6,
     'groups' => [
         [
             'key' => 'low', 'label' => 'Bajo', 'range_label' => '0% - 50%', 'min' => 0, 'max' => 5,

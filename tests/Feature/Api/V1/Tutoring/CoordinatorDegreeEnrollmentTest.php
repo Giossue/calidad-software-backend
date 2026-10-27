@@ -3,6 +3,7 @@
 namespace Tests\Feature\Api\V1\Tutoring;
 
 use App\Models\Carrera;
+use App\Models\Ciclo;
 use App\Models\Facultad;
 use App\Models\MatriculaTitulacion;
 use App\Models\PeriodoAcademico;
@@ -22,6 +23,8 @@ class CoordinatorDegreeEnrollmentTest extends TestCase
     private Usuario $coordinator;
 
     private Usuario $student;
+
+    private Ciclo $degreeCycle;
 
     protected function setUp(): void
     {
@@ -48,13 +51,36 @@ class CoordinatorDegreeEnrollmentTest extends TestCase
         ]);
         $this->coordinator->coordinatedCareers()->attach($this->career->getKey());
 
+        // Titulación es desde 6.º ciclo.
+        $this->degreeCycle = Ciclo::query()->create(['fk_carrera' => $this->career->getKey(), 'nombre' => 'Sexto', 'numero' => 6, 'estado' => true]);
         $this->student = Usuario::factory()->withRole('estudiante')->create([
             'nombre' => 'Estudiante Titulando',
             'correo' => 'titulando@ueb.edu.ec',
             'cedula' => '0201234567',
             'fk_carrera' => $this->career->getKey(),
+            'fk_ciclo' => $this->degreeCycle->getKey(),
             'estado' => true,
         ]);
+    }
+
+    public function test_only_students_from_the_sixth_cycle_are_listed_and_can_be_enrolled(): void
+    {
+        $fifth = Ciclo::query()->create(['fk_carrera' => $this->career->getKey(), 'nombre' => 'Quinto', 'numero' => 5, 'estado' => true]);
+        $eighth = Ciclo::query()->create(['fk_carrera' => $this->career->getKey(), 'nombre' => 'Octavo', 'numero' => 8, 'estado' => true]);
+        $inTutorings = Usuario::factory()->withRole('estudiante')->create(['fk_carrera' => $this->career->getKey(), 'fk_ciclo' => $fifth->getKey()]);
+        $withoutCycle = Usuario::factory()->withRole('estudiante')->create(['fk_carrera' => $this->career->getKey()]);
+        $eighthStudent = Usuario::factory()->withRole('estudiante')->create(['fk_carrera' => $this->career->getKey(), 'fk_ciclo' => $eighth->getKey()]);
+
+        // El coordinador de titulación ve solo a los estudiantes desde 6.º ciclo.
+        $degreeCoordinator = Usuario::factory()->withRole('coordinador_titulacion')->create(['fk_carrera' => $this->career->getKey()]);
+        Sanctum::actingAs($degreeCoordinator, ['access-api']);
+        $ids = collect($this->getJson('/api/v1/coordination/degree-students')->assertOk()->json('data'))->pluck('student_id');
+        $this->assertEqualsCanonicalizing([$this->student->getKey(), $eighthStudent->getKey()], $ids->all());
+
+        $this->postJson("/api/v1/coordination/degree-students/{$inTutorings->getKey()}/enroll")->assertStatus(422);
+        $this->postJson("/api/v1/coordination/degree-students/{$withoutCycle->getKey()}/enroll")->assertStatus(422);
+        $this->postJson("/api/v1/coordination/degree-students/{$eighthStudent->getKey()}/enroll")->assertOk();
+        $this->assertDatabaseMissing('matricula_titulacion', ['fk_estudiante' => $inTutorings->getKey()]);
     }
 
     public function test_coordinator_can_list_students_and_their_degree_enrollment_status(): void
@@ -148,6 +174,7 @@ class CoordinatorDegreeEnrollmentTest extends TestCase
             'correo' => 'comunicacion@ueb.edu.ec',
             'cedula' => '0209991111',
             'fk_carrera' => $otherCareer->getKey(),
+            'fk_ciclo' => Ciclo::query()->create(['fk_carrera' => $otherCareer->getKey(), 'nombre' => 'Sexto', 'numero' => 6, 'estado' => true])->getKey(),
             'estado' => true,
         ]);
 

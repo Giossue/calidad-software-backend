@@ -43,8 +43,6 @@ class CoordinatorStudentTest extends TutoringTestCase
     {
         Notification::fake();
 
-        // El último ciclo de la carrera es titulación y no admite tutorías.
-        $this->createCycle($this->career, null, 2);
         $tutoring = $this->createTutoring($this->cycle);
 
         $response = $this->actingAs($this->coordinator)->postJson(self::API.'/students', [
@@ -112,7 +110,7 @@ class CoordinatorStudentTest extends TutoringTestCase
     {
         // El paralelo "A" es compartido por ciclos de varias carreras; no debe mezclar listas.
         $section = $this->cycle->paralelo;
-        $second = $this->createCycle($this->career, $section, 2);
+        $second = $this->createCycle($this->career, $section, 6);
         $first = Usuario::factory()->withRole('estudiante')->create(['nombre' => 'Primer Ciclo', 'fk_carrera' => $this->career->getKey(), 'fk_ciclo' => $this->cycle->getKey()]);
         $first->paralelos()->attach($section, ['fecha_asignacion' => today(), 'estado' => true]);
         Usuario::factory()->withRole('estudiante')->create(['nombre' => 'Segundo Ciclo', 'fk_carrera' => $this->career->getKey(), 'fk_ciclo' => $second->getKey()]);
@@ -125,7 +123,7 @@ class CoordinatorStudentTest extends TutoringTestCase
             ->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.name', 'Primer Ciclo')
             ->assertJsonPath('data.0.cycle_number', 1)->assertJsonPath('data.0.section_name', 'A')
             ->assertJsonPath('data.0.academic_stage', 'tutorias');
-        $this->actingAs($this->coordinator)->getJson($base.'&cycle_number=2')->assertOk()
+        $this->actingAs($this->coordinator)->getJson($base.'&cycle_number=6')->assertOk()
             ->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.name', 'Segundo Ciclo')
             ->assertJsonPath('data.0.academic_stage', 'titulacion');
         $this->actingAs($this->coordinator)->getJson($base.'&without_cycle=1')->assertOk()
@@ -154,12 +152,12 @@ class CoordinatorStudentTest extends TutoringTestCase
     public function test_coordinator_assigns_or_changes_the_cycle_of_a_student(): void
     {
         $student = Usuario::factory()->withRole('estudiante')->create(['fk_carrera' => $this->career->getKey()]);
-        $second = $this->createCycle($this->career, null, 2);
+        $second = $this->createCycle($this->career, null, 6);
         $path = self::API."/students/{$student->getKey()}/cycle";
 
         $this->actingAs($this->coordinator)->patchJson($path, ['cycle_id' => $this->cycle->getKey()])->assertOk()->assertJsonPath('data.cycle_number', 1);
         $this->actingAs($this->coordinator)->patchJson($path, ['cycle_id' => $second->getKey()])->assertOk()
-            ->assertJsonPath('data.cycle_number', 2)->assertJsonPath('data.academic_stage', 'titulacion');
+            ->assertJsonPath('data.cycle_number', 6)->assertJsonPath('data.academic_stage', 'titulacion');
         $this->assertDatabaseHas('usuario', ['id_usuario' => $student->getKey(), 'fk_ciclo' => $second->getKey()]);
 
         $this->actingAs($this->coordinator)->patchJson($path, ['cycle_id' => $this->otherCycle->getKey()])->assertForbidden();
@@ -171,12 +169,33 @@ class CoordinatorStudentTest extends TutoringTestCase
 
     public function test_degree_students_can_be_filtered_by_cycle(): void
     {
-        $degreeCycle = $this->createCycle($this->career, null, 2);
+        $degreeCycle = $this->createCycle($this->career, null, 6);
         Usuario::factory()->withRole('estudiante')->create(['nombre' => 'En Titulacion', 'fk_carrera' => $this->career->getKey(), 'fk_ciclo' => $degreeCycle->getKey()]);
         Usuario::factory()->withRole('estudiante')->create(['nombre' => 'En Tutorias', 'fk_carrera' => $this->career->getKey(), 'fk_ciclo' => $this->cycle->getKey()]);
 
-        $this->actingAs($this->coordinator)->getJson('/api/v1/tutoring-coordination/degree-students?career_id='.$this->career->getKey().'&cycle_number=2')->assertOk()
+        $this->actingAs($this->coordinator)->getJson('/api/v1/tutoring-coordination/degree-students?career_id='.$this->career->getKey().'&cycle_number=6')->assertOk()
             ->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.name', 'En Titulacion')
             ->assertJsonPath('data.0.academic_stage', 'titulacion');
+    }
+
+    public function test_students_from_the_sixth_cycle_cannot_be_enrolled_in_tutorings(): void
+    {
+        $sixth = $this->createCycle($this->career, $this->cycle->paralelo, 6);
+        $student = Usuario::factory()->withRole('estudiante')->create(['fk_carrera' => $this->career->getKey(), 'fk_ciclo' => $sixth->getKey()]);
+        $student->paralelos()->attach($this->cycle->fk_paralelo, ['fecha_asignacion' => today(), 'estado' => true]);
+        $tutoring = $this->createTutoring($this->cycle);
+
+        $this->actingAs($this->coordinator)->getJson(self::API."/students/{$student->getKey()}/available-tutorings")->assertOk()->assertJsonCount(0, 'data');
+        $this->actingAs($this->coordinator)->postJson(self::API."/students/{$student->getKey()}/enroll", ['tutoring_id' => $tutoring->getKey()])
+            ->assertUnprocessable()->assertJsonValidationErrors('tutoring_id');
+        $this->actingAs($this->coordinator)->getJson(self::API."/tutorings/{$tutoring->getKey()}/available-students")->assertOk()->assertJsonCount(0, 'data');
+        $this->actingAs($this->coordinator)->postJson(self::API."/tutorings/{$tutoring->getKey()}/students", ['student_id' => $student->getKey()])
+            ->assertUnprocessable()->assertJsonValidationErrors('student_id');
+        $this->assertDatabaseCount('inscripcion_tutoria', 0);
+
+        // Tampoco se crean tutorías en ciclos de titulación.
+        $subject = $this->createSubject($sixth, 'CS-600');
+        $this->actingAs($this->coordinator)->postJson(self::API.'/tutorings', $this->tutoringPayload($subject, $sixth))
+            ->assertUnprocessable()->assertJsonValidationErrors('cycle_id');
     }
 }
