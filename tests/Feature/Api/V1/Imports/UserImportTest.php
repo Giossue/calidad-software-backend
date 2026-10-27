@@ -25,45 +25,62 @@ class UserImportTest extends TutoringTestCase
         Notification::fake();
     }
 
-    public function test_admin_imports_users_with_only_email_role_and_career(): void
+    public function test_admin_imports_users_with_names_faculty_career_and_cycle(): void
     {
         Usuario::factory()->create(['correo' => 'existente@ueb.edu.ec']);
         Sanctum::actingAs($this->admin, ['*']);
 
-        $csv = "correo;rol;carrera;cedula;nombre;telefono\n"
-            ."Ana.Torres@ueb.edu.ec;estudiante;software;;;\n"
-            ."luis@ueb.edu.ec;Docente;Software;926687856;Luis Pérez;991234567\n"
-            ."jefa@ueb.edu.ec;administrador;;;;\n"
-            ."x@ueb.edu.ec;rector;Software;;;\n"
-            ."existente@ueb.edu.ec;estudiante;Software;;;\n";
+        $csv = "Correo;Cédula;Nombres;Apellidos;Rol;Facultad;Carrera;Ciclo;Teléfono\n"
+            ."Ana.Torres@ueb.edu.ec;;;;estudiante;ciencias;software;1;\n"
+            ."luis@ueb.edu.ec;926687856;Luis Alberto;Pérez  Mora;Docente;Ciencias;Software;;991234567\n"
+            ."jefa@ueb.edu.ec;;;;administrador;;;;\n"
+            ."x@ueb.edu.ec;;;;rector;Ciencias;Software;;\n"
+            ."existente@ueb.edu.ec;;;;estudiante;Ciencias;Software;1;\n"
+            ."sin.ciclo@ueb.edu.ec;;;;estudiante;Ciencias;Software;;\n"
+            ."otra.facultad@ueb.edu.ec;;;;docente;Medicina;Software;;\n"
+            ."ciclo.9@ueb.edu.ec;;;;estudiante;Ciencias;Software;9;\n";
         $id = $this->upload('users', $csv)->json('data.id');
 
         $this->getJson('/api/v1/imports/'.$id)
             ->assertJsonPath('data.created_count', 3)
-            ->assertJsonPath('data.failed_count', 1)
+            ->assertJsonPath('data.failed_count', 4)
             ->assertJsonPath('data.errors.0.row', 5)
+            ->assertJsonPath('data.errors.1.messages.0', 'El ciclo es obligatorio para los estudiantes.')
+            ->assertJsonPath('data.errors.2.messages.0', 'La facultad «Medicina» no existe o está inactiva.')
+            ->assertJsonPath('data.errors.3.messages.0', 'El ciclo «9» no existe en la carrera indicada.')
             ->assertJsonPath('data.skipped_count', 1)
             ->assertJsonPath('data.warnings.0.row', 6)
             ->assertJsonPath('data.warnings.0.messages.0', 'El correo existente@ueb.edu.ec ya está registrado.');
         Notification::assertSentTo($this->admin, ActionNotification::class,
-            fn (ActionNotification $notification): bool => $notification->body === '3 registros creados, 1 ya estaba registrado y 1 con errores.' && $notification->url === '/panel/users');
+            fn (ActionNotification $notification): bool => $notification->body === '3 registros creados, 1 ya estaba registrado y 4 con errores.' && $notification->url === '/panel/users');
 
         $student = Usuario::query()->where('correo', 'ana.torres@ueb.edu.ec')->firstOrFail();
         $this->assertNull($student->cedula);
         $this->assertSame('Ana Torres', $student->nombre);
         $this->assertTrue($student->must_complete_profile);
         $this->assertTrue($student->hasRole('estudiante'));
-        $this->assertSame($this->career->getKey(), $student->fk_carrera);
+        $this->assertSame([$this->career->getKey(), $this->cycle->getKey()], [$student->fk_carrera, $student->fk_ciclo]);
+        $this->assertTrue($student->paralelos()->whereKey($this->cycle->fk_paralelo)->exists());
         $this->assertNotNull($student->email_verified_at);
 
         $teacher = Usuario::query()->where('correo', 'luis@ueb.edu.ec')->firstOrFail();
+        $this->assertSame('Pérez Mora Luis Alberto', $teacher->nombre);
         $this->assertSame('0926687856', $teacher->cedula);
         $this->assertSame('0991234567', $teacher->telefono);
+        $this->assertNull($teacher->fk_ciclo);
         $this->assertTrue($teacher->teachingCareers()->whereKey($this->career->getKey())->exists());
 
         Notification::assertSentTo($student, QueuedProvisionalPasswordNotification::class,
             fn (QueuedProvisionalPasswordNotification $notification): bool => password_verify($notification->provisionalPassword, $student->password_hash));
         Notification::assertCount(4); // 3 contraseñas provisionales + el aviso de carga masiva terminada
+    }
+
+    public function test_account_template_lists_the_shared_columns(): void
+    {
+        Sanctum::actingAs($this->admin, ['*']);
+
+        $this->get('/api/v1/imports/users/template')->assertOk()->assertSee('correo;cedula;nombres;apellidos;rol;facultad;carrera;ciclo;telefono', false);
+        $this->get('/api/v1/imports/students/template')->assertOk()->assertSee('estudiante;"Ciencias Administrativas";Software;1;0991234567', false);
     }
 
     public function test_provisional_password_notification_is_queued_and_encrypted(): void
@@ -79,15 +96,22 @@ class UserImportTest extends TutoringTestCase
     {
         Sanctum::actingAs($this->coordinator, ['*']);
 
-        $id = $this->upload('teachers', "correo,carrera\ndocente1@ueb.edu.ec,Software\ndocente2@gmail.com,Software\ndocente3@ueb.edu.ec,Administración\n")->json('data.id');
+        $id = $this->upload('teachers', "correo,facultad,carrera\ndocente1@ueb.edu.ec,Ciencias,Software\ndocente2@gmail.com,Ciencias,Software\ndocente3@ueb.edu.ec,Ciencias,Administración\n")->json('data.id');
         $this->getJson('/api/v1/imports/'.$id)
             ->assertJsonPath('data.created_count', 1)
             ->assertJsonPath('data.errors.0.messages.0', 'El correo debe ser institucional (@ueb.edu.ec).')
             ->assertJsonPath('data.errors.1.messages.0', 'No tienes permiso para registrar este elemento.');
         $this->assertTrue(Usuario::query()->where('correo', 'docente1@ueb.edu.ec')->firstOrFail()->hasRole('docente'));
 
-        $this->upload('students', "correo,carrera\nalumno@ueb.edu.ec,Software\n")->assertAccepted();
-        $this->assertTrue(Usuario::query()->where('correo', 'alumno@ueb.edu.ec')->firstOrFail()->hasRole('estudiante'));
+        $this->upload('students', "correo,carrera\nalumno@ueb.edu.ec,Software\n")
+            ->assertUnprocessable()->assertJsonValidationErrors(['file' => 'Faltan columnas obligatorias en el CSV: facultad, ciclo.']);
+        $id = $this->upload('students', "correo,nombres,apellidos,rol,facultad,carrera,ciclo\nalumno@ueb.edu.ec,Rosa,Vera,estudiante,Ciencias,Software,1.º\notro@ueb.edu.ec,,,docente,Ciencias,Software,1\n")->json('data.id');
+        $this->getJson('/api/v1/imports/'.$id)
+            ->assertJsonPath('data.created_count', 1)
+            ->assertJsonPath('data.errors.0.messages.0', 'En esta carga todas las cuentas son de rol estudiante.');
+        $student = Usuario::query()->where('correo', 'alumno@ueb.edu.ec')->firstOrFail();
+        $this->assertTrue($student->hasRole('estudiante'));
+        $this->assertSame(['Vera Rosa', $this->cycle->getKey()], [$student->nombre, $student->fk_ciclo]);
 
         $this->upload('users', "correo,rol,carrera\nx@ueb.edu.ec,estudiante,Software\n")->assertForbidden();
     }

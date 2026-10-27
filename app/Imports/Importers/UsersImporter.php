@@ -9,14 +9,18 @@ use Illuminate\Validation\ValidationException;
 
 class UsersImporter extends AccountImporter
 {
-    public function columns(): array
+    /** Facultad y carrera son obligatorias salvo para administradores; el ciclo, para estudiantes. */
+    protected function requiredColumns(): array
     {
-        return ['correo' => true, 'rol' => true, 'carrera' => false, 'cedula' => false, 'nombre' => false, 'telefono' => false];
+        return ['rol'];
     }
 
     public function example(): array
     {
-        return ['correo' => 'ana.torres@ueb.edu.ec', 'rol' => 'estudiante', 'carrera' => 'Software', 'cedula' => '', 'nombre' => '', 'telefono' => ''];
+        return self::exampleRow([
+            'correo' => 'ana.torres@ueb.edu.ec', 'cedula' => '0201234567', 'nombres' => 'Ana María', 'apellidos' => 'Torres Vera',
+            'rol' => 'estudiante', 'facultad' => 'Ciencias Administrativas', 'carrera' => 'Software', 'ciclo' => '1', 'telefono' => '0991234567',
+        ]);
     }
 
     public function authorize(Usuario $user): bool
@@ -37,11 +41,5 @@ class UsersImporter extends AccountImporter
         }
 
         return $role;
-    }
-
-    /** @param  array<string, string|null>  $row */
-    protected function careerId(array $row, Usuario $user, string $role): ?int
-    {
-        return $role === 'administrador' ? null : $this->lookup->careerId($row['carrera']);
     }
 }

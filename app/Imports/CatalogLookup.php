@@ -22,6 +22,12 @@ class CatalogLookup
         return $this->find(Carrera::query()->where('estado', true)->get(['id_carrera', 'nombre']), $name, $column, 'La carrera');
     }
 
+    /** Carrera dentro de una facultad: los nombres de carrera solo son únicos por facultad. */
+    public function careerIdInFaculty(int $facultyId, ?string $name, string $column = 'carrera'): int
+    {
+        return $this->find(Carrera::query()->where('estado', true)->where('fk_facultad', $facultyId)->get(['id_carrera', 'nombre']), $name, $column, 'La carrera');
+    }
+
     public function facultyId(?string $name, string $column = 'facultad'): int
     {
         return $this->find(Facultad::query()->where('estado', true)->get(['id_facultad', 'nombre']), $name, $column, 'La facultad');

@@ -35,12 +35,23 @@ Las columnas entre corchetes son opcionales.
 | `academic-periods` | nombre, fecha_inicio, fecha_fin (AAAA-MM-DD) |
 | `subjects` | carrera, nombre, [codigo], [ciclo], [modalidad] |
 | `sections` | nombre |
-| `users` (admin) | correo, rol, [carrera]¹, [cedula], [nombre], [telefono] |
-| `teachers` (coordinador) | correo, carrera, [cedula], [nombre], [telefono] |
-| `students` (coordinador) | correo, carrera, [cedula], [nombre], [telefono] |
+| `users` (admin) | correo, [cedula], [nombres], [apellidos], rol, [facultad]¹, [carrera]¹, [ciclo]², [telefono] |
+| `teachers` (coordinador) | correo, [cedula], [nombres], [apellidos], [rol]³, facultad, carrera, [ciclo], [telefono] |
+| `students` (coordinador) | correo, [cedula], [nombres], [apellidos], [rol]³, facultad, carrera, ciclo, [telefono] |
 
-¹ Obligatoria salvo para el rol `administrador`. Docentes y estudiantes requieren
-correo `@ueb.edu.ec` y una carrera coordinada por quien importa.
+Las tres cargas de cuentas comparten el formato y la plantilla trae las nueve columnas.
+
+¹ Obligatorias salvo para el rol `administrador`. La carrera se busca dentro de la
+facultad. Docentes y estudiantes requieren correo `@ueb.edu.ec` y una carrera
+coordinada por quien importa.
+² Obligatorio para estudiantes: número del ciclo dentro de la carrera (se acepta
+`6`, `6.º` o `6to`). El estudiante queda asignado a ese ciclo y a su paralelo con
+`StudentCycle::assign`; si la carrera tiene varios ciclos con ese número, se toma
+el primero activo. Docentes y coordinadores ignoran la columna.
+³ Si se indica, debe coincidir con el rol de la pantalla.
+
+`apellidos` y `nombres` se guardan en el único campo de nombre como
+«Apellidos Nombres»; si ambos faltan, se usa un nombre provisional derivado del correo.
 
 ## Reglas de negocio
 
@@ -57,7 +68,7 @@ correo `@ueb.edu.ec` y una carrera coordinada por quien importa.
 ## Cuentas importadas y primer ingreso
 
 - Se crean activas, con correo verificado y `must_complete_profile = true`.
-  Sin cédula queda `NULL`; sin nombre se usa uno provisional derivado del correo.
+  Sin cédula queda `NULL`; sin nombres ni apellidos se usa uno provisional derivado del correo.
 - Si Excel quitó el cero inicial, se restituye en celulares (`991234567`) y en
   cédulas de 9 dígitos que solo son válidas con el cero (`201234567`).
 - La contraseña provisional se envía con `QueuedProvisionalPasswordNotification`

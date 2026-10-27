@@ -7,14 +7,17 @@ use App\Support\TutoringCoordinatorAccess;
 
 class TeachersImporter extends AccountImporter
 {
-    public function columns(): array
+    protected function requiredColumns(): array
     {
-        return ['correo' => true, 'carrera' => true, 'cedula' => false, 'nombre' => false, 'telefono' => false];
+        return ['facultad', 'carrera'];
     }
 
     public function example(): array
     {
-        return ['correo' => 'docente@ueb.edu.ec', 'carrera' => 'Software', 'cedula' => '', 'nombre' => '', 'telefono' => ''];
+        return self::exampleRow([
+            'correo' => 'luis.mora@ueb.edu.ec', 'cedula' => '0201234567', 'nombres' => 'Luis', 'apellidos' => 'Mora',
+            'rol' => 'docente', 'facultad' => 'Ciencias Administrativas', 'carrera' => 'Software', 'telefono' => '0991234567',
+        ]);
     }
 
     public function authorize(Usuario $user): bool
@@ -25,16 +28,12 @@ class TeachersImporter extends AccountImporter
     /** @param  array<string, string|null>  $row */
     protected function role(array $row): string
     {
-        return 'docente';
+        return self::assertRole($row, 'docente');
     }
 
-    /** @param  array<string, string|null>  $row */
-    protected function careerId(array $row, Usuario $user, string $role): ?int
+    protected function authorizeCareer(Usuario $user, int $careerId): void
     {
-        $careerId = $this->lookup->careerId($row['carrera']);
         app(TutoringCoordinatorAccess::class)->authorizeCareer($user, $careerId);
-
-        return $careerId;
     }
 
     protected function extraRules(): array
