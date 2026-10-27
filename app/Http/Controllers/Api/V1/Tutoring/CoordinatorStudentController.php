@@ -6,12 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\Teacher\EnrollmentResource;
 use App\Http\Resources\Api\V1\TutoringResource;
 use App\Models\AsignaturaTutoria;
+use App\Models\Ciclo;
 use App\Models\InscripcionTutoria;
 use App\Models\Role;
 use App\Models\Usuario;
 use App\Notifications\ProvisionalPasswordNotification;
 use App\Rules\CedulaOPasaporte;
 use App\Support\ProvisionalPassword;
+use App\Support\StudentCycle;
 use App\Support\TutoringCoordinatorAccess;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -50,9 +52,9 @@ class CoordinatorStudentController extends Controller
                         ->where('estado', true)
                         ->whereHas('asignaturaTutoria.ciclo', fn (Builder $q3) => $q3->whereIn('fk_carrera', $careerIds))
                     )
-                    ->orWhereHas('paralelos.ciclos', fn (Builder $q2) => $q2->whereIn('fk_carrera', $careerIds));
+                    ->orWhereHas('ciclo', fn (Builder $q2) => $q2->whereIn('fk_carrera', $careerIds));
             })
-            ->with(['inscripciones' => fn ($q) => $q
+            ->with(['ciclo.paralelo', 'inscripciones' => fn ($q) => $q
                 ->where('estado', true)
                 ->whereHas('asignaturaTutoria.ciclo', fn (Builder $q2) => $q2->whereIn('fk_carrera', $careerIds))
                 ->with(['asignaturaTutoria' => fn ($q2) => $q2->with(self::TUTORING_RELATIONS)]),
@@ -63,12 +65,12 @@ class CoordinatorStudentController extends Controller
             $query->where(fn (Builder $q) => $q->whereLike('nombre', $like)->orWhereLike('cedula', $like)->orWhereLike('correo', $like));
         }
 
+        // El ciclo del estudiante es el registrado en su cuenta; el paralelo no lo identifica
+        // porque es compartido por todos los ciclos.
         if ($cycleNumber) {
-            $query->where(fn (Builder $q) => $q
-                ->whereHas('inscripciones', fn (Builder $q2) => $q2
-                    ->where('estado', true)
-                    ->whereHas('asignaturaTutoria.ciclo', fn (Builder $q3) => $q3->whereIn('fk_carrera', $careerIds)->where('numero', $cycleNumber)))
-                ->orWhereHas('paralelos.ciclos', fn (Builder $q2) => $q2->whereIn('fk_carrera', $careerIds)->where('numero', $cycleNumber)));
+            $query->whereHas('ciclo', fn (Builder $q) => $q->whereIn('fk_carrera', $careerIds)->where('numero', $cycleNumber));
+        } elseif ($request->boolean('without_cycle')) {
+            $query->whereNull('fk_ciclo');
         }
 
         $enrollmentScope = fn (Builder $q) => $q->where('estado', true)
@@ -95,7 +97,7 @@ class CoordinatorStudentController extends Controller
         ]);
     }
 
-    public function store(Request $request, TutoringCoordinatorAccess $access): JsonResponse
+    public function store(Request $request, TutoringCoordinatorAccess $access, StudentCycle $cycles): JsonResponse
     {
         Gate::authorize('viewAny', AsignaturaTutoria::class);
 
@@ -110,22 +112,33 @@ class CoordinatorStudentController extends Controller
             'name' => ['required', 'string', 'max:150', 'regex:/^[\pL\s]+$/u'],
             'email' => ['required', 'email:rfc', 'max:150', 'ends_with:@ueb.edu.ec', Rule::unique('usuario', 'correo')],
             'phone' => ['nullable', 'digits:10'],
+            'cycle_id' => ['required', 'integer', Rule::exists('ciclo', 'id_ciclo')->where('estado', true)],
             'tutoring_id' => ['nullable', 'integer', Rule::exists('asignatura_tutoria', 'id_asig_tutoria')],
-        ]);
+        ], [], ['cycle_id' => 'ciclo', 'tutoring_id' => 'tutoría']);
+
+        $cycle = Ciclo::query()->findOrFail((int) $data['cycle_id']);
+        $access->authorizeCareer($request->user(), $cycle->fk_carrera);
+        if (! empty($data['tutoring_id'])) {
+            $belongs = AsignaturaTutoria::query()->whereKey((int) $data['tutoring_id'])->where('fk_ciclo', $cycle->getKey())->where('estado', true)->exists();
+            if (! $belongs || $cycles->isDegreeCycle($cycle)) {
+                throw ValidationException::withMessages(['tutoring_id' => 'Selecciona una tutoría activa del ciclo del estudiante.']);
+            }
+        }
 
         $password = ProvisionalPassword::generate();
-        $student = DB::transaction(function () use ($data, $password, $careerIds): Usuario {
+        $student = DB::transaction(function () use ($data, $password, $cycle, $cycles): Usuario {
             $student = Usuario::query()->create([
                 'cedula' => $data['identification'],
                 'nombre' => $data['name'],
                 'correo' => $data['email'],
                 'telefono' => $data['phone'] ?? null,
                 'password_hash' => $password,
-                'fk_carrera' => $careerIds->first(),
+                'fk_carrera' => $cycle->fk_carrera,
                 'estado' => true,
                 'email_verified_at' => now(),
             ]);
             $student->roles()->attach(Role::query()->where('slug', 'estudiante')->valueOrFail('id'));
+            $cycles->assign($student, $cycle);
 
             if (! empty($data['tutoring_id'])) {
                 $tutoring = AsignaturaTutoria::query()->findOrFail((int) $data['tutoring_id']);
@@ -145,7 +158,7 @@ class CoordinatorStudentController extends Controller
             return $student;
         });
 
-        $student->load(['inscripciones' => fn ($q) => $q
+        $student->load(['ciclo.paralelo', 'inscripciones' => fn ($q) => $q
             ->where('estado', true)
             ->whereHas('asignaturaTutoria.ciclo', fn (Builder $q2) => $q2->whereIn('fk_carrera', $careerIds))
             ->with(['asignaturaTutoria' => fn ($q2) => $q2->with(self::TUTORING_RELATIONS)]),
@@ -193,6 +206,10 @@ class CoordinatorStudentController extends Controller
             if ($locked->fk_paralelo && ! $student->paralelos()->whereKey($locked->fk_paralelo)->wherePivot('estado', true)->exists()) {
                 $student->paralelos()->syncWithoutDetaching([$locked->fk_paralelo => ['fecha_asignacion' => today(), 'estado' => true]]);
             }
+            // Un estudiante sin ciclo registrado pasa a cursar el ciclo de su primera tutoría.
+            if ($student->fk_ciclo === null && $locked->ciclo !== null) {
+                app(StudentCycle::class)->assign($student, $locked->ciclo);
+            }
 
             $enrollment = InscripcionTutoria::query()->firstOrNew(['fk_asig_tutoria' => $locked->getKey(), 'fk_id_usuario' => $student->getKey()]);
             if ($enrollment->exists && $enrollment->estado) {
@@ -216,6 +233,31 @@ class CoordinatorStudentController extends Controller
         return response()->json(['data' => EnrollmentResource::make($enrollment->refresh()->load(self::ENROLLMENT_RELATIONS))]);
     }
 
+    /** Asigna o cambia el ciclo que cursa el estudiante dentro de las carreras del coordinador. */
+    public function updateCycle(Request $request, Usuario $student, TutoringCoordinatorAccess $access, StudentCycle $cycles): JsonResponse
+    {
+        Gate::authorize('viewAny', AsignaturaTutoria::class);
+        abort_unless($student->hasRole('estudiante'), 403);
+        if ($student->fk_carrera !== null) {
+            $access->authorizeCareer($request->user(), $student->fk_carrera);
+        }
+
+        $data = $request->validate([
+            'cycle_id' => ['required', 'integer', Rule::exists('ciclo', 'id_ciclo')->where('estado', true)],
+        ], [], ['cycle_id' => 'ciclo']);
+        $cycle = Ciclo::query()->findOrFail((int) $data['cycle_id']);
+        $access->authorizeCareer($request->user(), $cycle->fk_carrera);
+
+        $cycles->assign($student, $cycle);
+        $student->load(['ciclo.paralelo', 'inscripciones' => fn ($q) => $q
+            ->where('estado', true)
+            ->whereHas('asignaturaTutoria.ciclo', fn (Builder $q2) => $q2->where('fk_carrera', $cycle->fk_carrera))
+            ->with(['asignaturaTutoria' => fn ($q2) => $q2->with(self::TUTORING_RELATIONS)]),
+        ]);
+
+        return response()->json(['data' => $this->formatStudent($student)]);
+    }
+
     /** @return array<string, mixed> */
     private function formatStudent(Usuario $student): array
     {
@@ -228,6 +270,7 @@ class CoordinatorStudentController extends Controller
             'email' => $student->correo,
             'phone' => $student->telefono,
             'is_active' => $student->estado,
+            ...app(StudentCycle::class)->describe($student),
             'tutoring_count' => $enrollments->count(),
             'tutorings' => $enrollments->map(fn (InscripcionTutoria $enrollment) => [
                 'enrollment_id' => $enrollment->getKey(),

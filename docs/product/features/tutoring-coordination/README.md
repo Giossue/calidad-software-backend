@@ -336,3 +336,24 @@ No usar `migrate:fresh`, `db:wipe`, seeders de demostración ni rollbacks
 automáticos en producción. El registro anterior acredita la actualización del
 esquema; la publicación de la aplicación debe comprobarse por separado del
 estado de los commits y del push.
+
+## Estudiantes por ciclo
+
+- Cada estudiante registra el ciclo que cursa en `usuario.fk_ciclo`. El paralelo no
+  lo identifica: un paralelo («A») es compartido por los ciclos de todas las carreras.
+- La pantalla **Estudiantes** muestra una pestaña por ciclo de la carrera, más
+  **Sin ciclo**. El último ciclo es titulación: su pestaña gestiona la matrícula en
+  titulación en lugar de tutorías.
+- **Nuevo estudiante** registra al estudiante en el ciclo de la pestaña (si el ciclo
+  tiene varios paralelos, se elige uno) y lo ubica en el paralelo de ese ciclo. La
+  tutoría inicial opcional debe ser del mismo ciclo; el ciclo de titulación no la admite.
+- **Cambiar ciclo / Asignar ciclo** (`PATCH /students/{student}/cycle`) mueve al
+  estudiante a otro ciclo de una carrera coordinada; conserva sus tutorías.
+- Un estudiante sin ciclo toma el de su primera tutoría al inscribirse (coordinación
+  o docente). Los importados por carga masiva quedan en «Sin ciclo».
+- `GET /students` y `GET /degree-students` aceptan `cycle_number`; `GET /students`
+  acepta `without_cycle=1`. Ambos devuelven `cycle_id`, `cycle_number`, `cycle_name`,
+  `section_name` y `academic_stage` (`tutorias` o `titulacion`).
+- La migración `2026_10_27_100000_add_cycle_to_usuario_table` crea la columna y la
+  rellena con el ciclo de la inscripción activa más reciente o, si no hay, con el único
+  ciclo de la carrera que use alguno de los paralelos del estudiante.

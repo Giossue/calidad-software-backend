@@ -25,6 +25,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property bool $estado
  * @property bool $must_complete_profile
  * @property int|null $fk_carrera
+ * @property int|null $fk_ciclo
  * @property Carbon|null $email_verified_at
  * @property string $password_hash
  * @property string|null $two_factor_secret
@@ -34,7 +35,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['cedula', 'nombre', 'correo', 'telefono', 'password_hash', 'estado', 'fk_carrera', 'email_verified_at', 'must_complete_profile'])]
+#[Fillable(['cedula', 'nombre', 'correo', 'telefono', 'password_hash', 'estado', 'fk_carrera', 'fk_ciclo', 'email_verified_at', 'must_complete_profile'])]
 #[Hidden(['password_hash', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class Usuario extends Authenticatable implements MustVerifyEmail
 {
@@ -78,6 +79,16 @@ class Usuario extends Authenticatable implements MustVerifyEmail
     public function carrera(): BelongsTo
     {
         return $this->belongsTo(Carrera::class, 'fk_carrera', 'id_carrera');
+    }
+
+    /**
+     * Ciclo que cursa el estudiante en su carrera.
+     *
+     * @return BelongsTo<Ciclo, $this>
+     */
+    public function ciclo(): BelongsTo
+    {
+        return $this->belongsTo(Ciclo::class, 'fk_ciclo', 'id_ciclo');
     }
 
     /** @return BelongsToMany<Carrera, $this> */

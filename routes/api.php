@@ -265,6 +265,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
             Route::get('students', [CoordinatorStudentController::class, 'index'])->name('students.index');
             Route::post('students', [CoordinatorStudentController::class, 'store'])->name('students.store');
+            Route::patch('students/{student}/cycle', [CoordinatorStudentController::class, 'updateCycle'])->name('students.cycle.update');
             Route::get('students/{student}/available-tutorings', [CoordinatorStudentController::class, 'availableTutorings'])->name('students.available-tutorings');
             Route::post('students/{student}/enroll', [CoordinatorStudentController::class, 'enroll'])->name('students.enroll');
             Route::delete('students/{student}/enrollments/{enrollment}', [CoordinatorStudentController::class, 'unenroll'])->name('students.unenroll');

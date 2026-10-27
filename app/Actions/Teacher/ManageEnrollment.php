@@ -8,6 +8,7 @@ use App\Models\Role;
 use App\Models\Usuario;
 use App\Notifications\ProvisionalPasswordNotification;
 use App\Support\ProvisionalPassword;
+use App\Support\StudentCycle;
 use App\Support\TeacherWorkspace;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -16,7 +17,7 @@ class ManageEnrollment
 {
     public const RELATIONS = ['estudiante.roles', 'notas', 'knowledgeMetric'];
 
-    public function __construct(private TeacherWorkspace $workspace) {}
+    public function __construct(private TeacherWorkspace $workspace, private StudentCycle $cycles) {}
 
     /** @param array<string, mixed> $data */
     public function create(Usuario $teacher, AsignaturaTutoria $tutoring, array $data): InscripcionTutoria
@@ -37,6 +38,10 @@ class ManageEnrollment
                 $student->roles()->attach(Role::query()->where('slug', 'estudiante')->valueOrFail('id'));
                 $student->paralelos()->attach($locked->fk_paralelo, ['fecha_asignacion' => today(), 'estado' => true]);
                 DB::afterCommit(fn () => $student->notify(new ProvisionalPasswordNotification($password)));
+            }
+            // Un estudiante sin ciclo registrado pasa a cursar el ciclo de la tutoría.
+            if ($student->fk_ciclo === null && $locked->ciclo !== null) {
+                $this->cycles->assign($student, $locked->ciclo);
             }
             $enrollment = InscripcionTutoria::query()->firstOrNew(['fk_asig_tutoria' => $locked->getKey(), 'fk_id_usuario' => $student->getKey()]);
             if ($enrollment->exists && $enrollment->estado) {

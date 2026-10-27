@@ -7,6 +7,7 @@ use App\Models\Carrera;
 use App\Models\MatriculaTitulacion;
 use App\Models\PeriodoAcademico;
 use App\Models\Usuario;
+use App\Support\StudentCycle;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -84,12 +85,17 @@ class CoordinatorDegreeEnrollmentController extends Controller
                         ->where('estado', true)
                         ->whereHas('asignaturaTutoria.ciclo', fn (Builder $q3) => $q3->whereIn('fk_carrera', $careerIds))
                     )
-                    ->orWhereHas('paralelos.ciclos', fn (Builder $q2) => $q2->whereIn('fk_carrera', $careerIds));
+                    ->orWhereHas('ciclo', fn (Builder $q2) => $q2->whereIn('fk_carrera', $careerIds));
             })
             ->with([
+                'ciclo.paralelo',
                 'matriculasTitulacion' => fn ($q) => $q
                     ->where('fk_periodo', $currentPeriod->getKey()),
             ]);
+
+        if ($cycleNumber = $request->integer('cycle_number')) {
+            $query->whereHas('ciclo', fn (Builder $q) => $q->whereIn('fk_carrera', $careerIds)->where('numero', $cycleNumber));
+        }
 
         if ($search = trim((string) $request->string('search'))) {
             $like = "%{$search}%";
@@ -121,6 +127,7 @@ class CoordinatorDegreeEnrollmentController extends Controller
                     'name' => $student->nombre,
                     'email' => $student->correo,
                     'phone' => $student->telefono,
+                    ...app(StudentCycle::class)->describe($student),
                     'is_degree_enrolled' => $matricula !== null,
                     'degree_enrollment_id' => $matricula?->getKey(),
                     'enrolled_at' => $matricula?->fecha_matricula?->toDateString(),
