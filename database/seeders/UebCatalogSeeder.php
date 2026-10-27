@@ -1960,62 +1960,75 @@ class UebCatalogSeeder extends Seeder
         $now = now();
 
         foreach (self::CAREERS as $careerName => $data) {
-            $faculty = Facultad::query()->where('nombre', $data['faculty'])->first();
-            $modality = Modalidad::query()->firstOrCreate(['nombre' => $data['modality']], ['estado' => true]);
+            // Cada carrera en su propia transacción: si una falla (p. ej. un
+            // choque de datos inesperado en un entorno ya poblado), las
+            // carreras anteriores quedan guardadas y esta se revierte entera
+            // en vez de dejar ciclos/asignaturas a medio insertar.
+            DB::transaction(function () use ($careerName, $data, $cycles, $now): void {
+                $faculty = Facultad::query()->where('nombre', $data['faculty'])->first();
+                $modality = Modalidad::query()->firstOrCreate(['nombre' => $data['modality']], ['estado' => true]);
 
-            $career = Carrera::query()->firstOrCreate(
-                ['nombre' => $careerName],
-                [
-                    'fk_facultad' => $faculty->id_facultad,
-                    'fk_modalidad' => $modality->id_modalidad,
-                    'estado' => true,
-                ]
-            );
+                $career = Carrera::query()->firstOrCreate(
+                    ['nombre' => $careerName],
+                    [
+                        'fk_facultad' => $faculty->id_facultad,
+                        'fk_modalidad' => $modality->id_modalidad,
+                        'estado' => true,
+                    ]
+                );
 
-            $cycles->handle($career, $data['cycles']);
+                $cycles->handle($career, $data['cycles']);
 
-            foreach ($data['subjects'] as $cycleNumber => $subjects) {
-                $cycleIds = Ciclo::query()
-                    ->where('fk_carrera', $career->id_carrera)
-                    ->where('numero', $cycleNumber)
-                    ->pluck('id_ciclo');
+                foreach ($data['subjects'] as $cycleNumber => $subjects) {
+                    $cycleIds = Ciclo::query()
+                        ->where('fk_carrera', $career->id_carrera)
+                        ->where('numero', $cycleNumber)
+                        ->pluck('id_ciclo');
 
-                foreach ($subjects as $subject) {
-                    $name = SubjectRequest::normalizeName($subject['name']);
+                    foreach ($subjects as $subject) {
+                        $name = SubjectRequest::normalizeName($subject['name']);
+                        $code = $subject['code'];
 
-                    $subjectId = DB::table('subjects')
-                        ->where('career_id', $career->id_carrera)
-                        ->where('name', $name)
-                        ->value('id');
+                        // La única restricción real en BD es (career_id, code)
+                        // (subjects_career_id_code_unique); no existe un unique
+                        // de BD sobre name. Con código, dedupe por código: así
+                        // reutiliza filas ya sembradas por entornos previos
+                        // (p. ej. la vieja migración de asignaturas de Software)
+                        // aunque su `name` no sea idéntico carácter a carácter.
+                        // Sin código, dedupe por nombre (único mecanismo posible).
+                        $subjectId = $code !== null
+                            ? DB::table('subjects')->where('career_id', $career->id_carrera)->where('code', $code)->value('id')
+                            : DB::table('subjects')->where('career_id', $career->id_carrera)->where('name', $name)->value('id');
 
-                    if ($subjectId === null) {
-                        $subjectId = DB::table('subjects')->insertGetId([
-                            'career_id' => $career->id_carrera,
-                            'code' => $subject['code'],
-                            'name' => $name,
-                            'is_active' => true,
-                            'created_at' => $now,
-                            'updated_at' => $now,
-                        ]);
-                    }
-
-                    foreach ($cycleIds as $cycleId) {
-                        $alreadyLinked = DB::table('subject_cycle')
-                            ->where('subject_id', $subjectId)
-                            ->where('cycle_id', $cycleId)
-                            ->exists();
-
-                        if (! $alreadyLinked) {
-                            DB::table('subject_cycle')->insert([
-                                'subject_id' => $subjectId,
-                                'cycle_id' => $cycleId,
+                        if ($subjectId === null) {
+                            $subjectId = DB::table('subjects')->insertGetId([
+                                'career_id' => $career->id_carrera,
+                                'code' => $code,
+                                'name' => $name,
+                                'is_active' => true,
                                 'created_at' => $now,
                                 'updated_at' => $now,
                             ]);
                         }
+
+                        foreach ($cycleIds as $cycleId) {
+                            $alreadyLinked = DB::table('subject_cycle')
+                                ->where('subject_id', $subjectId)
+                                ->where('cycle_id', $cycleId)
+                                ->exists();
+
+                            if (! $alreadyLinked) {
+                                DB::table('subject_cycle')->insert([
+                                    'subject_id' => $subjectId,
+                                    'cycle_id' => $cycleId,
+                                    'created_at' => $now,
+                                    'updated_at' => $now,
+                                ]);
+                            }
+                        }
                     }
                 }
-            }
+            });
         }
     }
 }
