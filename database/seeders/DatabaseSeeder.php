@@ -15,7 +15,7 @@ class DatabaseSeeder extends Seeder
      * poder asignarlos luego desde el panel) pero sin usuarios de demostración:
      * coordinadores, docentes y estudiantes se crean vía carga masiva o UI.
      */
-    private const ADMIN_PASSWORD = '12345678Jv.';
+    private const ADMIN_PASSWORD = 'Administrador123*';
 
     public function run(): void
     {
