@@ -16,7 +16,7 @@ class NotificationApiTest extends TestCase
 
     public function test_user_lists_counts_and_marks_only_their_own_notifications(): void
     {
-        $user = Usuario::factory()->create();
+        $user = Usuario::factory()->student()->create();
         $other = Usuario::factory()->create();
         $user->notify(new ActionNotification('test', 'Primero', 'Cuerpo 1', '/panel/users'));
         $user->notify(new ActionNotification('test', 'Segundo', 'Cuerpo 2'));
@@ -44,7 +44,7 @@ class NotificationApiTest extends TestCase
 
     public function test_read_notifications_older_than_thirty_days_are_removed(): void
     {
-        $user = Usuario::factory()->create();
+        $user = Usuario::factory()->student()->create();
         $user->notify(new ActionNotification('test', 'Antigua leída', 'x'));
         $user->notify(new ActionNotification('test', 'Antigua sin leer', 'y'));
         $user->notifications()->where('data->title', 'Antigua leída')->update(['read_at' => now()->subDays(31)]);
@@ -57,7 +57,7 @@ class NotificationApiTest extends TestCase
     public function test_degree_topic_flow_notifies_coordinators_student_and_teachers_but_not_the_actor(): void
     {
         $period = PeriodoAcademico::query()->create(['nombre' => 'PAO 2026-1', 'fecha_inicio' => '2026-05-01', 'fecha_fin' => '2026-09-30', 'estado' => true]);
-        $student = Usuario::factory()->withRole('estudiante')->create(['nombre' => 'Ana Torres']);
+        $student = Usuario::factory()->student()->create(['nombre' => 'Ana Torres']);
         $coordinator = Usuario::factory()->withRole('coordinador_titulacion')->create();
         $otherCoordinator = Usuario::factory()->withRole('coordinador_titulacion')->create();
         $tutor = Usuario::factory()->withRole('docente')->create();

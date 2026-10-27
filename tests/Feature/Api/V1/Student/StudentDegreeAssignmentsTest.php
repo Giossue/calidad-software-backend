@@ -40,7 +40,7 @@ class StudentDegreeAssignmentsTest extends TestCase
 
     public function test_student_can_consult_tutor_and_peers_assigned_to_approved_topic(): void
     {
-        $student = Usuario::factory()->withRole('estudiante')->create([
+        $student = Usuario::factory()->student()->create([
             'nombre' => 'Carlos Estudiante Aprobado',
             'correo' => 'carlos.aprobado@mail.com',
         ]);
@@ -137,7 +137,7 @@ class StudentDegreeAssignmentsTest extends TestCase
 
     public function test_assignments_endpoint_returns_422_if_topic_is_pending_review(): void
     {
-        $student = Usuario::factory()->withRole('estudiante')->create();
+        $student = Usuario::factory()->student()->create();
 
         TemaTitulacion::query()->create([
             'fk_id_usuario' => $student->getKey(),
@@ -159,7 +159,7 @@ class StudentDegreeAssignmentsTest extends TestCase
 
     public function test_assignments_endpoint_returns_422_if_topic_is_rejected(): void
     {
-        $student = Usuario::factory()->withRole('estudiante')->create();
+        $student = Usuario::factory()->student()->create();
 
         TemaTitulacion::query()->create([
             'fk_id_usuario' => $student->getKey(),
@@ -181,7 +181,7 @@ class StudentDegreeAssignmentsTest extends TestCase
 
     public function test_assignments_endpoint_returns_404_if_student_has_no_topics(): void
     {
-        $student = Usuario::factory()->withRole('estudiante')->create();
+        $student = Usuario::factory()->student()->create();
         Sanctum::actingAs($student, ['access-api']);
 
         $response = $this->getJson('/api/v1/student/degree-topics/assignments');
@@ -192,8 +192,8 @@ class StudentDegreeAssignmentsTest extends TestCase
 
     public function test_student_cannot_view_assignments_of_topic_belonging_to_another_student(): void
     {
-        $studentA = Usuario::factory()->withRole('estudiante')->create();
-        $studentB = Usuario::factory()->withRole('estudiante')->create();
+        $studentA = Usuario::factory()->student()->create();
+        $studentB = Usuario::factory()->student()->create();
 
         $topicA = TemaTitulacion::query()->create([
             'fk_id_usuario' => $studentA->getKey(),

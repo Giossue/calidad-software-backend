@@ -8,8 +8,9 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Las cuentas creadas por carga masiva, o sin cédula, deben completar sus datos
- * (y cambiar la contraseña provisional, si la tienen) antes de usar el resto de la API.
+ * Las cuentas creadas por carga masiva, sin cédula o de estudiantes sin carrera o ciclo
+ * deben completar sus datos (y cambiar la contraseña provisional, si la tienen) antes
+ * de usar el resto de la API.
  */
 class EnsureProfileCompleted
 {
@@ -17,6 +18,7 @@ class EnsureProfileCompleted
         'api.v1.auth.user',
         'api.v1.auth.logout',
         'api.v1.auth.profile.complete',
+        'api.v1.auth.profile.academic-options',
     ];
 
     /** @param Closure(Request): Response $next */

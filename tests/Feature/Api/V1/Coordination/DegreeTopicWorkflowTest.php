@@ -180,7 +180,7 @@ class DegreeTopicWorkflowTest extends TestCase
         $this->getJson('/api/v1/coordination/degree-topics')->assertOk();
         $this->postJson('/api/v1/coordination/degree-topics/'.$topic->getKey().'/reject', ['observation' => 'Revisado por administración'])
             ->assertOk()->assertJsonPath('data.reviewer.id', $admin->getKey());
-        Sanctum::actingAs(Usuario::factory()->withRole('estudiante')->create(), ['access-api']);
+        Sanctum::actingAs(Usuario::factory()->student()->create(), ['access-api']);
         $this->getJson('/api/v1/student/degree-topics?student_id='.$topic->fk_id_usuario)->assertOk()->assertJsonCount(0, 'data');
         $this->getJson('/api/v1/coordination/degree-topics/'.$topic->getKey())->assertForbidden();
     }
@@ -307,7 +307,7 @@ class DegreeTopicWorkflowTest extends TestCase
 
     private function topic(string $status = 'pendiente', ?Paralelo $section = null): TemaTitulacion
     {
-        $student = Usuario::factory()->withRole('estudiante')->create();
+        $student = Usuario::factory()->student()->create();
         if ($section !== null) {
             $student->paralelos()->attach($section->getKey());
         }

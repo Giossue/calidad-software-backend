@@ -23,7 +23,7 @@ class StudentTutoringGradesTest extends TestCase
 
     private function createTutoringSetup(): array
     {
-        $student = Usuario::factory()->withRole('estudiante')->create([
+        $student = Usuario::factory()->student()->create([
             'nombre' => 'María Estudiante',
             'correo' => 'maria.estudiante@mail.com',
         ]);
@@ -218,7 +218,7 @@ class StudentTutoringGradesTest extends TestCase
         $tutoring = $setup['tutoring'];
 
         // Otro estudiante sin inscripción a esa tutoría
-        $otherStudent = Usuario::factory()->withRole('estudiante')->create();
+        $otherStudent = Usuario::factory()->student()->create();
 
         Sanctum::actingAs($otherStudent, ['access-api']);
 
@@ -234,7 +234,7 @@ class StudentTutoringGradesTest extends TestCase
         $enrollmentA = $setup['enrollment'];
         $tutoring = $setup['tutoring'];
 
-        $studentB = Usuario::factory()->withRole('estudiante')->create();
+        $studentB = Usuario::factory()->student()->create();
         $enrollmentB = InscripcionTutoria::query()->create([
             'fk_asig_tutoria' => $tutoring->getKey(),
             'fk_id_usuario' => $studentB->getKey(),

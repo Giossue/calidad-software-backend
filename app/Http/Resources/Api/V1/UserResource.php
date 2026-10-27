@@ -3,6 +3,7 @@
 namespace App\Http\Resources\Api\V1;
 
 use App\Models\Usuario;
+use App\Support\StudentCycle;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -28,6 +29,7 @@ class UserResource extends JsonResource
             'career_name' => $career?->nombre,
             'faculty_id' => $career?->fk_facultad,
             'faculty_name' => $career?->facultad?->nombre,
+            ...($this->hasRole('estudiante') ? app(StudentCycle::class)->describe($this->resource) : []),
             'is_active' => $this->estado,
             'email_verified_at' => $this->email_verified_at?->toISOString(),
             'has_two_factor' => $this->two_factor_confirmed_at !== null,

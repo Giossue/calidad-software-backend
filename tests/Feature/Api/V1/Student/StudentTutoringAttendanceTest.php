@@ -24,7 +24,7 @@ class StudentTutoringAttendanceTest extends TestCase
 
     private function createTutoringSetup(): array
     {
-        $student = Usuario::factory()->withRole('estudiante')->create([
+        $student = Usuario::factory()->student()->create([
             'nombre' => 'María Estudiante',
             'correo' => 'maria.estudiante@mail.com',
         ]);
@@ -235,7 +235,7 @@ class StudentTutoringAttendanceTest extends TestCase
         $setup = $this->createTutoringSetup();
         $tutoring = $setup['tutoring'];
 
-        $otherStudent = Usuario::factory()->withRole('estudiante')->create();
+        $otherStudent = Usuario::factory()->student()->create();
 
         Sanctum::actingAs($otherStudent, ['access-api']);
 
@@ -252,7 +252,7 @@ class StudentTutoringAttendanceTest extends TestCase
         $teacher = $setup['teacher'];
         $tutoring = $setup['tutoring'];
 
-        $studentB = Usuario::factory()->withRole('estudiante')->create();
+        $studentB = Usuario::factory()->student()->create();
         $enrollmentB = InscripcionTutoria::query()->create([
             'fk_asig_tutoria' => $tutoring->getKey(),
             'fk_id_usuario' => $studentB->getKey(),

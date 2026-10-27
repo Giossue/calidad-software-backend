@@ -24,7 +24,7 @@ class StudentTutoringTopicsTest extends TestCase
 
     private function createTutoringSetup(): array
     {
-        $student = Usuario::factory()->withRole('estudiante')->create([
+        $student = Usuario::factory()->student()->create([
             'nombre' => 'María Estudiante',
             'correo' => 'maria.estudiante@mail.com',
         ]);
@@ -227,7 +227,7 @@ class StudentTutoringTopicsTest extends TestCase
         $setup = $this->createTutoringSetup();
         $tutoring = $setup['tutoring'];
 
-        $otherStudent = Usuario::factory()->withRole('estudiante')->create();
+        $otherStudent = Usuario::factory()->student()->create();
 
         Sanctum::actingAs($otherStudent, ['access-api']);
 

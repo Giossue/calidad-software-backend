@@ -22,7 +22,7 @@ class StudentTutoringTest extends TestCase
 
     public function test_student_can_list_assigned_tutorings_with_subject_teacher_and_schedules(): void
     {
-        $student = Usuario::factory()->withRole('estudiante')->create([
+        $student = Usuario::factory()->student()->create([
             'nombre' => 'María Estudiante',
             'correo' => 'maria.estudiante@mail.com',
         ]);
@@ -120,8 +120,8 @@ class StudentTutoringTest extends TestCase
 
     public function test_student_only_sees_their_own_tutoring_enrollments(): void
     {
-        $studentA = Usuario::factory()->withRole('estudiante')->create();
-        $studentB = Usuario::factory()->withRole('estudiante')->create();
+        $studentA = Usuario::factory()->student()->create();
+        $studentB = Usuario::factory()->student()->create();
 
         $period = PeriodoAcademico::query()->create([
             'nombre' => 'PAO 2026-1',
@@ -157,7 +157,7 @@ class StudentTutoringTest extends TestCase
 
     public function test_student_without_tutorings_receives_empty_array(): void
     {
-        $student = Usuario::factory()->withRole('estudiante')->create();
+        $student = Usuario::factory()->student()->create();
         Sanctum::actingAs($student, ['access-api']);
 
         $response = $this->getJson('/api/v1/student/tutoring');

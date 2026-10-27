@@ -107,11 +107,18 @@ class Usuario extends Authenticatable implements MustVerifyEmail
 
     /**
      * La cuenta debe completar su perfil antes de usar el sistema: las creadas por
-     * carga masiva (contraseña provisional) y cualquiera que aún no tenga cédula.
+     * carga masiva (contraseña provisional), cualquiera que aún no tenga cédula y
+     * los estudiantes sin carrera o ciclo registrados.
      */
     public function needsProfileCompletion(): bool
     {
-        return $this->must_complete_profile || blank($this->cedula);
+        return $this->must_complete_profile || blank($this->cedula) || $this->needsAcademicData();
+    }
+
+    /** Facultad, carrera y ciclo son obligatorios para los estudiantes. */
+    public function needsAcademicData(): bool
+    {
+        return $this->hasRole('estudiante') && ($this->fk_carrera === null || $this->fk_ciclo === null);
     }
 
     public function hasRole(string $slug): bool

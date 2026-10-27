@@ -2,6 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Models\Carrera;
+use App\Models\Ciclo;
+use App\Models\Facultad;
 use App\Models\Role;
 use App\Models\Usuario;
 use App\Rules\CedulaEcuatoriana;
@@ -62,6 +65,28 @@ class UsuarioFactory extends Factory
     {
         return $this->afterCreating(function (Usuario $user) use ($slug): void {
             $user->roles()->sync(Role::query()->where('slug', $slug)->value('id'));
+        });
+    }
+
+    /**
+     * Estudiante con perfil académico completo (carrera y ciclo), como los que ya
+     * pasaron por "Completa tu cuenta". Sin ellos la API le pide completar sus datos.
+     */
+    public function student(int $cycleNumber = 1): static
+    {
+        return $this->withRole('estudiante')->afterCreating(function (Usuario $user) use ($cycleNumber): void {
+            if ($user->fk_carrera !== null && $user->fk_ciclo !== null) {
+                return;
+            }
+
+            $careerId = $user->fk_carrera ?? Carrera::query()->create([
+                'fk_facultad' => Facultad::query()->create(['nombre' => 'Facultad '.Str::random(8), 'estado' => true])->getKey(),
+                'nombre' => 'Carrera '.Str::random(8),
+                'estado' => true,
+            ])->getKey();
+            $cycle = Ciclo::query()->firstOrCreate(['fk_carrera' => $careerId, 'numero' => $cycleNumber], ['nombre' => "Ciclo {$cycleNumber}", 'estado' => true]);
+
+            $user->forceFill(['fk_carrera' => $careerId, 'fk_ciclo' => $cycle->getKey()])->save();
         });
     }
 

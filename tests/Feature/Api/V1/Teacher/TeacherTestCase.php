@@ -35,7 +35,7 @@ abstract class TeacherTestCase extends TutoringTestCase
     protected function enrollment(?AsignaturaTutoria $tutoring = null, ?Usuario $student = null): InscripcionTutoria
     {
         $tutoring ??= $this->tutoring;
-        $student ??= Usuario::factory()->withRole('estudiante')->create();
+        $student ??= Usuario::factory()->student()->create();
         $student->paralelos()->syncWithoutDetaching([$tutoring->fk_paralelo => ['fecha_asignacion' => today(), 'estado' => true]]);
 
         return InscripcionTutoria::query()->create(['fk_asig_tutoria' => $tutoring->getKey(), 'fk_id_usuario' => $student->getKey(), 'fecha_inscripcion' => today(), 'estado' => true]);

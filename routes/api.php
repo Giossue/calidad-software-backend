@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\Admin\CoordinatorCareerAssignmentController;
 use App\Http\Controllers\Api\V1\Admin\CycleController;
 use App\Http\Controllers\Api\V1\Admin\FacultyController;
 use App\Http\Controllers\Api\V1\Admin\UserController;
+use App\Http\Controllers\Api\V1\Auth\AcademicOptionsController;
 use App\Http\Controllers\Api\V1\Auth\CompleteProfileController;
 use App\Http\Controllers\Api\V1\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\V1\Auth\PasswordController;
@@ -64,6 +65,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::delete('logout', [TokenController::class, 'destroy'])->name('logout');
             Route::put('profile/complete', CompleteProfileController::class)
                 ->middleware('throttle:10,1')->name('profile.complete');
+            Route::get('profile/academic-options', AcademicOptionsController::class)->name('profile.academic-options');
             Route::post('email/verification-notification', [EmailVerificationController::class, 'send'])
                 ->middleware('throttle:3,1')->name('verification.send');
         });

@@ -130,7 +130,7 @@ class AccountFlowsTest extends TestCase
 
     public function test_two_factor_recovery_code_exchanges_challenge_for_session_token(): void
     {
-        $user = Usuario::factory()->create([
+        $user = Usuario::factory()->student()->create([
             'password_hash' => 'password',
             'two_factor_secret' => Fortify::currentEncrypter()->encrypt('secret'),
             'two_factor_recovery_codes' => Fortify::currentEncrypter()->encrypt(json_encode(['recovery-code'])),

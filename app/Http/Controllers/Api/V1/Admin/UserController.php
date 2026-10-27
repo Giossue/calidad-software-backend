@@ -27,6 +27,7 @@ class UserController extends Controller
         $query = Usuario::query()->with([
             'roles',
             'carrera.facultad',
+            'ciclo.paralelo',
             'coordinatedCareers.facultad',
             'teachingCareers.facultad',
         ]);

@@ -44,7 +44,7 @@ class AbsenceNoticeTest extends TeacherTestCase
 
     public function test_only_enrolled_students_can_send_notices(): void
     {
-        Sanctum::actingAs(Usuario::factory()->withRole('estudiante')->create(), ['access-api']);
+        Sanctum::actingAs(Usuario::factory()->student()->create(), ['access-api']);
 
         $this->postJson(self::STUDENT_API.$this->tutoring->getKey().'/absence-notices', ['date' => '2026-09-29', 'reason' => 'Cita médica'])
             ->assertForbidden();

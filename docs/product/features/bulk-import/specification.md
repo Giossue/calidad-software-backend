@@ -63,10 +63,22 @@ correo `@ueb.edu.ec` y una carrera coordinada por quien importa.
 - La contraseña provisional se envía con `QueuedProvisionalPasswordNotification`
   (cola cifrada, porque el payload contiene la clave).
 - `EnsureProfileCompleted` responde `403` con `code: profile_incomplete` en toda
-  la API salvo `auth/user`, `auth/logout` y `PUT auth/profile/complete`.
+  la API salvo `auth/user`, `auth/logout`, `PUT auth/profile/complete` y
+  `GET auth/profile/academic-options`. Aplica a las cuentas con contraseña
+  provisional, a las que no tienen cédula y a los **estudiantes sin carrera o
+  ciclo** (`fk_carrera` o `fk_ciclo` nulos), aunque ya hayan completado antes.
 - `PUT /api/v1/auth/profile/complete` exige cédula o pasaporte, nombre, teléfono
-  y una contraseña nueva distinta de la provisional; apaga el indicador y revoca
-  los demás tokens del usuario.
+  y, si la cuenta es provisional, una contraseña nueva distinta de la provisional;
+  apaga el indicador y revoca los demás tokens del usuario.
+- A los estudiantes además les exige `faculty_id`, `career_id` y `cycle_id`
+  (activos y coherentes entre sí: la carrera pertenece a la facultad y el ciclo a
+  la carrera). Los valores enviados reemplazan los registrados; el ciclo se asigna
+  con `StudentCycle::assign` (carrera, ciclo y paralelo). La pantalla precarga lo
+  que el usuario ya tenga y el estudiante puede cambiarlo.
+- `GET /api/v1/auth/profile/academic-options` devuelve las facultades activas con
+  sus carreras y ciclos activos (`id`, `number`, `name`, `section_name`).
+- `GET auth/user` incluye para los estudiantes `cycle_id`, `cycle_number`,
+  `cycle_name`, `section_name` y `academic_stage`.
 - Gmail personal limita a unos 500 correos diarios; las importaciones grandes de
   usuarios deben repartirse en varios días o usar un proveedor transaccional.
 

@@ -111,15 +111,26 @@ class UserImportTest extends TutoringTestCase
             'password' => 'password', 'password_confirmation' => 'password',
         ])->assertUnprocessable()->assertJsonValidationErrors(['password']);
 
-        $this->withToken($token)->putJson('/api/v1/auth/profile/complete', [
+        $profile = [
             'identification' => 'ab1234567', 'name' => 'Ana Torres', 'phone' => '0991234567',
             'password' => 'Nueva-Clave-2026', 'password_confirmation' => 'Nueva-Clave-2026',
+        ];
+        $this->withToken($token)->putJson('/api/v1/auth/profile/complete', $profile)
+            ->assertUnprocessable()->assertJsonValidationErrors(['faculty_id', 'career_id', 'cycle_id']);
+
+        $this->withToken($token)->putJson('/api/v1/auth/profile/complete', [
+            ...$profile,
+            'faculty_id' => $this->career->fk_facultad, 'career_id' => $this->career->getKey(), 'cycle_id' => $this->cycle->getKey(),
         ])->assertOk()
             ->assertJsonPath('data.must_complete_profile', false)
-            ->assertJsonPath('data.identification', 'AB1234567');
+            ->assertJsonPath('data.identification', 'AB1234567')
+            ->assertJsonPath('data.career_id', $this->career->getKey())
+            ->assertJsonPath('data.cycle_id', $this->cycle->getKey());
 
         $user->refresh();
         $this->assertSame('Ana Torres', $user->nombre);
+        $this->assertSame($this->cycle->getKey(), $user->fk_ciclo);
+        $this->assertTrue($user->paralelos()->whereKey($this->cycle->fk_paralelo)->exists());
         $this->assertTrue(password_verify('Nueva-Clave-2026', $user->password_hash));
         $this->assertSame(1, $user->tokens()->count());
         $this->assertNotSame(explode('|', $other)[0], (string) $user->tokens()->value('id'));
@@ -158,5 +169,54 @@ class UserImportTest extends TutoringTestCase
         return $this->post('/api/v1/imports/'.$type, [
             'file' => UploadedFile::fake()->createWithContent('datos.csv', $contents),
         ], ['Accept' => 'application/json']);
+    }
+
+    public function test_a_student_without_career_or_cycle_must_register_them_and_the_submitted_data_replaces_the_old_one(): void
+    {
+        $user = Usuario::factory()->withRole('estudiante')->create(['fk_carrera' => $this->otherCareer->getKey(), 'password_hash' => 'Clave-Actual-2026']);
+        $token = $user->createToken('web', ['*'])->plainTextToken;
+
+        $this->withToken($token)->getJson('/api/v1/student/degree-enrollment-status')
+            ->assertForbidden()->assertJsonPath('code', 'profile_incomplete');
+        $this->withToken($token)->getJson('/api/v1/auth/user')
+            ->assertOk()
+            ->assertJsonPath('data.must_complete_profile', true)
+            ->assertJsonPath('data.must_change_password', false);
+
+        $options = $this->withToken($token)->getJson('/api/v1/auth/profile/academic-options')->assertOk()->json('data');
+        $careers = collect($options)->flatMap(fn (array $faculty) => $faculty['careers']);
+        $this->assertContains($this->cycle->getKey(), array_column($careers->firstWhere('id', $this->career->getKey())['cycles'], 'id'));
+
+        $payload = ['identification' => $user->cedula, 'name' => 'Luis Mora', 'phone' => '0987654321', 'faculty_id' => $this->career->fk_facultad];
+        // El ciclo debe pertenecer a la carrera elegida.
+        $this->withToken($token)->putJson('/api/v1/auth/profile/complete', [
+            ...$payload, 'career_id' => $this->otherCareer->getKey(), 'cycle_id' => $this->cycle->getKey(),
+        ])->assertUnprocessable()->assertJsonValidationErrors(['cycle_id']);
+
+        $this->withToken($token)->putJson('/api/v1/auth/profile/complete', [
+            ...$payload, 'career_id' => $this->career->getKey(), 'cycle_id' => $this->cycle->getKey(),
+        ])->assertOk()
+            ->assertJsonPath('data.must_complete_profile', false)
+            ->assertJsonPath('data.name', 'Luis Mora')
+            ->assertJsonPath('data.career_id', $this->career->getKey())
+            ->assertJsonPath('data.cycle_number', $this->cycle->numero)
+            ->assertJsonPath('data.academic_stage', 'tutorias');
+
+        $user->refresh();
+        $this->assertSame([$this->career->getKey(), $this->cycle->getKey(), '0987654321'], [$user->fk_carrera, $user->fk_ciclo, $user->telefono]);
+        $this->assertTrue(password_verify('Clave-Actual-2026', $user->password_hash));
+        $this->app['auth']->forgetGuards();
+        $this->withToken($token)->getJson('/api/v1/student/degree-enrollment-status')->assertOk();
+    }
+
+    public function test_only_students_are_asked_for_faculty_career_and_cycle(): void
+    {
+        $teacher = Usuario::factory()->withRole('docente')->create(['cedula' => null]);
+        $token = $teacher->createToken('web', ['*'])->plainTextToken;
+
+        $this->withToken($token)->putJson('/api/v1/auth/profile/complete', [
+            'identification' => '0926687856', 'name' => 'Rosa Vera', 'phone' => '0991234567',
+        ])->assertOk()->assertJsonPath('data.must_complete_profile', false)->assertJsonMissingPath('data.cycle_id');
+        $this->assertNull($teacher->refresh()->fk_ciclo);
     }
 }

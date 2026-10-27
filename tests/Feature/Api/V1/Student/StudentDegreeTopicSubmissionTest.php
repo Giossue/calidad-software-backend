@@ -74,7 +74,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
         $this->postJson('/api/v1/student/degree-topics', $payload)->assertForbidden();
 
         // En 6.º ciclo pero sin matrícula (la validación de la solicitud ya lo rechaza).
-        $unenrolled = Usuario::factory()->withRole('estudiante')->create(['fk_ciclo' => $this->degreeCycle->getKey()]);
+        $unenrolled = Usuario::factory()->withRole('estudiante')->create(['fk_carrera' => $this->degreeCycle->fk_carrera, 'fk_ciclo' => $this->degreeCycle->getKey()]);
         Sanctum::actingAs($unenrolled, ['access-api']);
         $this->postJson('/api/v1/student/degree-topics', $payload)->assertUnprocessable();
         $this->getJson('/api/v1/student/degree-enrollment-status')->assertOk()

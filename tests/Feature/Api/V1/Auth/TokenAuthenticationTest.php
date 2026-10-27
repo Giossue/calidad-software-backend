@@ -181,7 +181,7 @@ class TokenAuthenticationTest extends TestCase
     public function test_student_can_login_with_valid_credentials_and_receive_student_role(): void
     {
         $student = Usuario::factory()
-            ->withRole('estudiante')
+            ->student()
             ->create([
                 'password_hash' => 'password123',
                 'estado' => true,
@@ -208,7 +208,7 @@ class TokenAuthenticationTest extends TestCase
     public function test_student_receives_generic_error_on_invalid_credentials(): void
     {
         $student = Usuario::factory()
-            ->withRole('estudiante')
+            ->student()
             ->create([
                 'password_hash' => 'password123',
                 'estado' => true,
@@ -230,7 +230,7 @@ class TokenAuthenticationTest extends TestCase
     public function test_inactive_student_cannot_login(): void
     {
         $student = Usuario::factory()
-            ->withRole('estudiante')
+            ->student()
             ->create([
                 'password_hash' => 'password123',
                 'estado' => false,
@@ -252,7 +252,7 @@ class TokenAuthenticationTest extends TestCase
     public function test_student_can_logout_and_token_is_invalidated(): void
     {
         $student = Usuario::factory()
-            ->withRole('estudiante')
+            ->student()
             ->create(['estado' => true]);
 
         $token = $student->createToken('estudiante-web')->plainTextToken;
@@ -273,7 +273,7 @@ class TokenAuthenticationTest extends TestCase
     public function test_student_can_access_student_degree_topics_endpoint(): void
     {
         $student = Usuario::factory()
-            ->withRole('estudiante')
+            ->student()
             ->create(['estado' => true]);
 
         $token = $student->createToken('estudiante-web')->plainTextToken;
@@ -286,7 +286,7 @@ class TokenAuthenticationTest extends TestCase
     public function test_student_cannot_access_administrative_endpoints(): void
     {
         $student = Usuario::factory()
-            ->withRole('estudiante')
+            ->student()
             ->create(['estado' => true]);
 
         $token = $student->createToken('estudiante-web')->plainTextToken;
@@ -298,7 +298,7 @@ class TokenAuthenticationTest extends TestCase
     public function test_student_cannot_access_coordination_endpoints(): void
     {
         $student = Usuario::factory()
-            ->withRole('estudiante')
+            ->student()
             ->create(['estado' => true]);
 
         $token = $student->createToken('estudiante-web')->plainTextToken;

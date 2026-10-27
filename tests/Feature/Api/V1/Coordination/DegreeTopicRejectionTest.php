@@ -32,7 +32,7 @@ class DegreeTopicRejectionTest extends TestCase
             'estado' => true,
         ]);
 
-        $this->student = Usuario::factory()->withRole('estudiante')->create();
+        $this->student = Usuario::factory()->student()->create();
 
         $this->topic = TemaTitulacion::query()->create([
             'fk_id_usuario' => $this->student->getKey(),
@@ -145,7 +145,7 @@ class DegreeTopicRejectionTest extends TestCase
             ->assertJsonPath('data.0.observations.0.observation', $reason);
 
         // Otro estudiante no debe ver los temas de este estudiante
-        $otherStudent = Usuario::factory()->withRole('estudiante')->create();
+        $otherStudent = Usuario::factory()->student()->create();
         Sanctum::actingAs($otherStudent, ['access-api']);
 
         $this->getJson('/api/v1/student/degree-topics')
