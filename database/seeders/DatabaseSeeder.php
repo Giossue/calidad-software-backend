@@ -2,13 +2,6 @@
 
 namespace Database\Seeders;
 
-use App\Models\AsignaturaTutoria;
-use App\Models\Carrera;
-use App\Models\Horario;
-use App\Models\InscripcionTutoria;
-use App\Models\Modalidad;
-use App\Models\Paralelo;
-use App\Models\PeriodoAcademico;
 use App\Models\Role;
 use App\Models\Usuario;
 use Illuminate\Database\Seeder;
@@ -17,152 +10,35 @@ use Illuminate\Support\Facades\Hash;
 class DatabaseSeeder extends Seeder
 {
     /**
-     * Seed the application's database with verified initial admin users.
+     * Siembra el catálogo académico de la UEB y la única cuenta inicial del
+     * sistema: el administrador. Los demás roles se crean como catálogo (para
+     * poder asignarlos luego desde el panel) pero sin usuarios de demostración:
+     * coordinadores, docentes y estudiantes se crean vía carga masiva o UI.
      */
-    /** Clave única de las cuentas demo locales (una por rol). */
-    private const DEMO_PASSWORD = '12345678Jv.';
+    private const ADMIN_PASSWORD = '12345678Jv.';
 
     public function run(): void
     {
-        $adminRole = Role::firstOrCreate(['slug' => 'administrador'], ['name' => 'Administrador']);
-        $coordRole = Role::firstOrCreate(['slug' => 'coordinador_titulacion'], ['name' => 'Coordinador de titulación']);
-        $coordCarreraRole = Role::firstOrCreate(['slug' => 'coordinador_carrera'], ['name' => 'Coordinador de carrera']);
+        $this->call(ModalidadSeeder::class);
+        $this->call(UebCatalogSeeder::class);
 
-        // 1. Administrador Principal
-        $adminPrincipal = Usuario::firstOrCreate(
+        $adminRole = Role::firstOrCreate(['slug' => 'administrador'], ['name' => 'Administrador']);
+        Role::firstOrCreate(['slug' => 'coordinador_titulacion'], ['name' => 'Coordinador de titulación']);
+        Role::firstOrCreate(['slug' => 'coordinador_carrera'], ['name' => 'Coordinador de carrera']);
+        Role::firstOrCreate(['slug' => 'docente'], ['name' => 'Docente']);
+        Role::firstOrCreate(['slug' => 'estudiante'], ['name' => 'Estudiante']);
+
+        $admin = Usuario::firstOrCreate(
             ['correo' => 'admin@email.com'],
             [
-                'cedula' => '1234567890',
+                'cedula' => '0000000000',
                 'nombre' => 'Administrador del Sistema',
                 'telefono' => '0999999999',
-                'password_hash' => Hash::make(self::DEMO_PASSWORD),
+                'password_hash' => Hash::make(self::ADMIN_PASSWORD),
                 'estado' => true,
                 'email_verified_at' => now(),
             ]
         );
-        $adminPrincipal->roles()->syncWithoutDetaching([$adminRole->id]);
-
-        // 3. Coordinador de Titulación
-        $coordTitulacion = Usuario::firstOrCreate(
-            ['correo' => 'titulacion@email.com'],
-            [
-                'cedula' => '0201864329',
-                'nombre' => 'Darwin Carrión Buenaño',
-                'telefono' => '0980219332',
-                'password_hash' => Hash::make(self::DEMO_PASSWORD),
-                'estado' => true,
-                'email_verified_at' => now(),
-            ]
-        );
-        $coordTitulacion->roles()->syncWithoutDetaching([$coordRole->id]);
-
-        // 4. Coordinador de Carrera (Tutorías)
-        $coordCarrera = Usuario::firstOrCreate(
-            ['correo' => 'coordinador@email.com'],
-            [
-                'cedula' => '0201888888',
-                'nombre' => 'Coordinador de Carrera',
-                'telefono' => '0987777777',
-                'password_hash' => Hash::make(self::DEMO_PASSWORD),
-                'estado' => true,
-                'email_verified_at' => now(),
-            ]
-        );
-        $coordCarrera->roles()->syncWithoutDetaching([$coordCarreraRole->id]);
-
-        // 5. Estudiante de Titulación
-        $studentRole = Role::firstOrCreate(['slug' => 'estudiante'], ['name' => 'Estudiante']);
-        $estudiante = Usuario::firstOrCreate(
-            ['correo' => 'estudiante@email.com'],
-            [
-                'cedula' => '0201999999',
-                'nombre' => 'Carlos Estudiante de Prueba',
-                'telefono' => '0981112233',
-                'password_hash' => Hash::make(self::DEMO_PASSWORD),
-                'estado' => true,
-                'email_verified_at' => now(),
-            ]
-        );
-        $estudiante->roles()->syncWithoutDetaching([$studentRole->id]);
-
-        // 6. Período Académico Vigente
-        $periodo = PeriodoAcademico::firstOrCreate(
-            ['nombre' => 'PAO 2026-1'],
-            [
-                'fecha_inicio' => '2026-05-01',
-                'fecha_fin' => '2026-09-30',
-                'estado' => true,
-            ]
-        );
-
-        // 7. Docente de Tutorías
-        $docenteRole = Role::firstOrCreate(['slug' => 'docente'], ['name' => 'Docente']);
-        $docente = Usuario::firstOrCreate(
-            ['correo' => 'docente@email.com'],
-            [
-                'cedula' => '0201555555',
-                'nombre' => 'Ing. Docente de Tutoría',
-                'telefono' => '0984443322',
-                'password_hash' => Hash::make(self::DEMO_PASSWORD),
-                'estado' => true,
-                'email_verified_at' => now(),
-            ]
-        );
-        $docente->roles()->syncWithoutDetaching([$docenteRole->id]);
-
-        // 8. Asignatura e Inscripción de Tutoría para el Estudiante
-        $this->call(ModalidadSeeder::class);
-        $modalidad = Modalidad::firstOrCreate(
-            ['nombre' => 'Presencial'],
-            ['estado' => true]
-        );
-        $paralelo = Paralelo::firstOrCreate(
-            ['nombre' => 'A'],
-            ['estado' => true]
-        );
-
-        $asignatura = AsignaturaTutoria::firstOrCreate(
-            ['nombre' => 'Aseguramiento de la Calidad de Software', 'fk_periodo' => $periodo->getKey()],
-            [
-                'fk_modalidad' => $modalidad->getKey(),
-                'fk_paralelo' => $paralelo->getKey(),
-                'fk_docente' => $docente->getKey(),
-                'estado' => true,
-            ]
-        );
-
-        Horario::firstOrCreate(
-            ['fk_asig_tutoria' => $asignatura->getKey(), 'dia_semana' => 'miercoles'],
-            [
-                'hora_inicio' => '14:00:00',
-                'hora_fin' => '16:00:00',
-                'estado' => true,
-            ]
-        );
-
-        InscripcionTutoria::firstOrCreate(
-            ['fk_asig_tutoria' => $asignatura->getKey(), 'fk_id_usuario' => $estudiante->getKey()],
-            [
-                'fecha_inscripcion' => now()->toDateString(),
-                'estado' => true,
-            ]
-        );
-
-        $carreraSoftware = Carrera::first();
-        if ($carreraSoftware) {
-            $coordCarrera->fk_carrera = $carreraSoftware->id_carrera;
-            $coordCarrera->save();
-            $coordCarrera->coordinatedCareers()->syncWithoutDetaching([$carreraSoftware->id_carrera => ['assigned_at' => now()]]);
-
-            $coordTitulacion->fk_carrera = $carreraSoftware->id_carrera;
-            $coordTitulacion->save();
-
-            $estudiante->fk_carrera = $carreraSoftware->id_carrera;
-            $estudiante->save();
-
-            $docente->fk_carrera = $carreraSoftware->id_carrera;
-            $docente->save();
-            $docente->teachingCareers()->syncWithoutDetaching([$carreraSoftware->id_carrera => ['assigned_at' => now()]]);
-        }
+        $admin->roles()->syncWithoutDetaching([$adminRole->id]);
     }
 }
