@@ -51,6 +51,28 @@ class CatalogImportTest extends TutoringTestCase
         $this->assertNull(BulkImport::query()->findOrFail($response->json('data.id'))->rows);
     }
 
+    public function test_instruction_lines_starting_with_hash_are_ignored_and_keep_file_line_numbers(): void
+    {
+        Sanctum::actingAs($this->admin, ['*']);
+
+        $csv = "\xEF\xBB\xBF\"# INSTRUCCIONES; estas líneas no se importan, puedes borrarlas.\"\n"
+            ."\"# - nombre (obligatoria): Nombre de la facultad.\"\n"
+            ."nombre\nFacultad de Salud\n# otro comentario\n\nFacultad de Salud\n";
+
+        $response = $this->upload('faculties', $csv)
+            ->assertAccepted()
+            ->assertJsonPath('data.total_rows', 2);
+
+        $this->getJson('/api/v1/imports/'.$response->json('data.id'))
+            ->assertOk()
+            ->assertJsonPath('data.created_count', 1)
+            ->assertJsonPath('data.skipped_count', 1)
+            // La fila repetida está en la línea 7 del archivo, contando los comentarios.
+            ->assertJsonPath('data.warnings.0.row', 7);
+
+        $this->assertDatabaseHas('facultad', ['nombre' => 'Facultad de Salud']);
+    }
+
     public function test_upload_queues_the_import_and_stores_rows_encrypted(): void
     {
         Queue::fake();

@@ -63,6 +63,11 @@ el primero activo. Docentes y coordinadores ignoran la columna.
   archivo falla por unicidad porque la anterior ya quedó registrada.
 - Separador `,` o `;`, codificación UTF-8 (con o sin BOM) o Windows-1252
   (CSV de Excel). Máximo 2 MB y 1000 filas.
+- Las líneas cuya primera celda empieza con `#` son comentarios y se ignoran, en
+  cualquier posición. La plantilla que descarga el frontend trae al inicio las
+  instrucciones y las columnas como comentarios, para no tener que consultarlas en
+  otra pantalla. El encabezado es la primera línea que no es comentario; los
+  números de fila de los errores siguen siendo los del archivo, comentarios incluidos.
 - Solo el autor puede consultar su importación.
 
 ## Cuentas importadas y primer ingreso

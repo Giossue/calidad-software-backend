@@ -12,7 +12,9 @@ class CsvReader
 
     /**
      * Lee el CSV y devuelve las filas con su número de línea. Acepta separador
-     * coma o punto y coma, UTF-8 (con o sin BOM) y Windows-1252.
+     * coma o punto y coma, UTF-8 (con o sin BOM) y Windows-1252. Las líneas cuya
+     * primera celda empieza con `#` son comentarios (las instrucciones de la
+     * plantilla) y se ignoran; los números de línea siguen siendo los del archivo.
      *
      * @param  array<string, bool>  $columns
      * @return array<int, array{line: int, values: array<string, string|null>}>
@@ -24,14 +26,19 @@ class CsvReader
             $contents = mb_convert_encoding($contents, 'UTF-8', 'Windows-1252');
         }
 
-        $firstLine = strtok($contents, "\r\n") ?: '';
+        $firstLine = self::firstContentLine($contents);
         $delimiter = substr_count($firstLine, ';') > substr_count($firstLine, ',') ? ';' : ',';
 
         $stream = self::memoryStream();
         fwrite($stream, $contents);
         rewind($stream);
 
-        $header = fgetcsv($stream, null, $delimiter, '"', '');
+        $line = 0;
+        do {
+            $header = fgetcsv($stream, null, $delimiter, '"', '');
+            $line++;
+        } while (is_array($header) && self::isComment($header));
+
         if (! is_array($header) || $header === [null]) {
             throw ValidationException::withMessages(['file' => 'El archivo CSV está vacío.']);
         }
@@ -45,9 +52,12 @@ class CsvReader
         }
 
         $rows = [];
-        $line = 1;
         while (($values = fgetcsv($stream, null, $delimiter, '"', '')) !== false) {
             $line++;
+            if (self::isComment($values)) {
+                continue;
+            }
+
             $values = array_map(fn (?string $value): string => trim((string) $value), $values);
             if (implode('', $values) === '') {
                 continue;
@@ -74,6 +84,25 @@ class CsvReader
         }
 
         return $rows;
+    }
+
+    /** Primera línea que no es comentario ni está vacía: de ella se deduce el separador. */
+    private static function firstContentLine(string $contents): string
+    {
+        foreach (preg_split('/\r\n|\r|\n/', $contents) ?: [] as $line) {
+            $trimmed = ltrim($line, " \t\"");
+            if ($trimmed !== '' && ! str_starts_with($trimmed, '#')) {
+                return $line;
+            }
+        }
+
+        return '';
+    }
+
+    /** @param  array<int, string|null>  $values */
+    private static function isComment(array $values): bool
+    {
+        return str_starts_with(ltrim((string) ($values[0] ?? '')), '#');
     }
 
     public static function normalizeHeader(string $name): string
