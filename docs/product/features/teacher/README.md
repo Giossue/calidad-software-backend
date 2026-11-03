@@ -58,7 +58,8 @@ de coordinación.
    ecuatoriana, nombre, correo `@ueb.edu.ec` o
    `@mailes.ueb.edu.ec` y teléfono opcional.
    Una cuenta nueva recibe contraseña provisional mediante la notificación
-   existente del sistema. El envío requiere la configuración de correo operativa.
+   existente del sistema y debe cambiarla al primer ingreso. El envío requiere la
+   configuración de correo operativa.
 4. Editar nombre o teléfono cuando la cuenta tenga únicamente rol estudiantil.
    La cédula y el correo identifican la cuenta y su cambio corresponde a
    administración. **Desactivar inscripción** conserva el historial y no bloquea

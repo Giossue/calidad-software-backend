@@ -17,6 +17,7 @@ class EnrollmentAndGradeTest extends TeacherTestCase
         $response->assertCreated()->assertJsonPath('data.name', 'Ana Pérez')->assertJsonPath('data.is_active', true)->assertJsonMissingPath('data.password')->assertJsonMissingPath('data.password_hash');
         $student = Usuario::query()->findOrFail($response->json('data.student_id'));
         $this->assertTrue($student->hasRole('estudiante'));
+        $this->assertTrue($student->must_complete_profile);
         $this->assertTrue($student->paralelos()->whereKey($this->tutoring->fk_paralelo)->wherePivot('estado', true)->exists());
         $this->assertDatabaseCount('inscripcion_tutoria', 1);
     }

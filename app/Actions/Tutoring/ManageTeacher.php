@@ -25,6 +25,7 @@ class ManageTeacher
                 'password_hash' => Hash::make($provisionalPassword),
                 'estado' => true,
                 'email_verified_at' => now(),
+                'must_complete_profile' => true,
             ]);
             $teacher->roles()->sync(Role::query()->where('slug', 'docente')->valueOrFail('id'));
             $teacher->teachingCareers()->syncWithoutDetaching([$data['career_id']]);

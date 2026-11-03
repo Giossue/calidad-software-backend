@@ -35,6 +35,7 @@ class ManageEnrollment
                     'cedula' => $data['identification'], 'nombre' => $data['name'],
                     'correo' => $data['email'], 'telefono' => $data['phone'] ?? null,
                     'password_hash' => $password, 'estado' => true, 'email_verified_at' => now(),
+                    'must_complete_profile' => true,
                 ]);
                 $student->roles()->attach(Role::query()->where('slug', 'estudiante')->valueOrFail('id'));
                 $student->paralelos()->attach($locked->fk_paralelo, ['fecha_asignacion' => today(), 'estado' => true]);
