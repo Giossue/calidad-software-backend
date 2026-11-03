@@ -11,6 +11,7 @@ use App\Models\Usuario;
 use App\Notifications\QueuedProvisionalPasswordNotification;
 use App\Rules\CedulaEcuatoriana;
 use App\Rules\CedulaOPasaporte;
+use App\Support\InstitutionalEmail;
 use App\Support\StudentCycle;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -118,7 +119,7 @@ abstract class AccountImporter implements Importer
             'cedula.unique' => 'La cédula o pasaporte :input ya está registrado.',
             'nombre.regex' => 'Los nombres y apellidos solo pueden contener letras y espacios.',
             'telefono.digits' => 'El teléfono debe tener exactamente 10 dígitos numéricos.',
-            'correo.ends_with' => 'El correo debe ser institucional (@ueb.edu.ec).',
+            'correo.ends_with' => InstitutionalEmail::message(),
         ], ['correo' => 'correo', 'cedula' => 'cédula o pasaporte', 'nombre' => 'nombres y apellidos', 'telefono' => 'teléfono'])->validate();
 
         [$account, $provisionalPassword] = $this->createAccount->handle([

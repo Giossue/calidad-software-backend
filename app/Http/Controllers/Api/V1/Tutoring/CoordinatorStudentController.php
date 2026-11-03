@@ -12,6 +12,7 @@ use App\Models\Role;
 use App\Models\Usuario;
 use App\Notifications\ProvisionalPasswordNotification;
 use App\Rules\CedulaOPasaporte;
+use App\Support\InstitutionalEmail;
 use App\Support\ProvisionalPassword;
 use App\Support\StudentCycle;
 use App\Support\TutoringCoordinatorAccess;
@@ -110,7 +111,7 @@ class CoordinatorStudentController extends Controller
         $data = $request->validate([
             'identification' => ['required', 'string', new CedulaOPasaporte, Rule::unique('usuario', 'cedula')],
             'name' => ['required', 'string', 'max:150', 'regex:/^[\pL\s]+$/u'],
-            'email' => ['required', 'email:rfc', 'max:150', 'ends_with:@ueb.edu.ec', Rule::unique('usuario', 'correo')],
+            'email' => ['required', 'email:rfc', 'max:150', InstitutionalEmail::rule(), Rule::unique('usuario', 'correo')],
             'phone' => ['nullable', 'digits:10'],
             'cycle_id' => ['required', 'integer', Rule::exists('ciclo', 'id_ciclo')->where('estado', true)],
             'tutoring_id' => ['nullable', 'integer', Rule::exists('asignatura_tutoria', 'id_asig_tutoria')],

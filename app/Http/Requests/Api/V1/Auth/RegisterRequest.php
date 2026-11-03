@@ -4,6 +4,7 @@ namespace App\Http\Requests\Api\V1\Auth;
 
 use App\Concerns\PasswordValidationRules;
 use App\Concerns\ProfileValidationRules;
+use App\Support\InstitutionalEmail;
 use Illuminate\Foundation\Http\FormRequest;
 
 class RegisterRequest extends FormRequest
@@ -20,7 +21,7 @@ class RegisterRequest extends FormRequest
     {
         return [
             ...$this->profileRules(),
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:usuario,correo', 'ends_with:@ueb.edu.ec'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:usuario,correo', InstitutionalEmail::rule()],
             'password' => $this->passwordRules(),
             'password_confirmation' => ['required', 'string'],
             'device_name' => ['required', 'string', 'max:100'],
@@ -31,7 +32,7 @@ class RegisterRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'email.ends_with' => 'El correo electrónico debe pertenecer al dominio institucional (@ueb.edu.ec).',
+            'email.ends_with' => InstitutionalEmail::message(),
             'identification.digits' => 'La cédula debe contener exactamente 10 dígitos numéricos.',
         ];
     }

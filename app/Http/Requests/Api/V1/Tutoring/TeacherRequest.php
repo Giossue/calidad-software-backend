@@ -4,6 +4,7 @@ namespace App\Http\Requests\Api\V1\Tutoring;
 
 use App\Models\Usuario;
 use App\Rules\CedulaOPasaporte;
+use App\Support\InstitutionalEmail;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -36,7 +37,7 @@ class TeacherRequest extends FormRequest
             'identification' => [($creating ? 'required' : 'sometimes'), 'string', new CedulaOPasaporte,
                 Rule::unique('usuario', 'cedula')->ignore($teacher)],
             'name' => [($creating ? 'required' : 'sometimes'), 'string', 'max:150', 'regex:/^[\pL\s]+$/u'],
-            'email' => [($creating ? 'required' : 'sometimes'), 'email:rfc', 'max:150', 'ends_with:@ueb.edu.ec',
+            'email' => [($creating ? 'required' : 'sometimes'), 'email:rfc', 'max:150', InstitutionalEmail::rule(),
                 Rule::unique('usuario', 'correo')->ignore($teacher)],
             'phone' => [($creating ? 'required' : 'sometimes'), 'digits:10'],
         ];
@@ -59,7 +60,7 @@ class TeacherRequest extends FormRequest
     {
         return [
             'phone.digits' => 'El teléfono debe tener exactamente 10 dígitos numéricos.',
-            'email.ends_with' => 'El correo institucional debe pertenecer al dominio @ueb.edu.ec.',
+            'email.ends_with' => InstitutionalEmail::message(),
             'name.regex' => 'El nombre completo solo puede contener letras y espacios.',
         ];
     }

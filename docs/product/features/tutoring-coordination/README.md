@@ -83,7 +83,8 @@ carrera elegida.
 2. En **Asignaturas**, registrar código, nombre y carrera. Después, seleccionar
    **Asignar ciclo** para vincular la asignatura con un ciclo de esa carrera.
 3. En **Docentes**, registrar las cuentas que correspondan a su carrera o
-   actualizar las cuentas autorizadas. El correo debe terminar en `@ueb.edu.ec`;
+   actualizar las cuentas autorizadas. El correo debe terminar en `@ueb.edu.ec` o
+   `@mailes.ueb.edu.ec`;
    la cédula y el correo no pueden duplicarse. El registro envía una contraseña
    provisional al correo institucional mediante la configuración de correo del
    backend.

@@ -12,6 +12,7 @@ use App\Models\Role;
 use App\Models\Usuario;
 use App\Notifications\ProvisionalPasswordNotification;
 use App\Rules\CedulaOPasaporte;
+use App\Support\InstitutionalEmail;
 use App\Support\ProvisionalPassword;
 use App\Support\StudentCycle;
 use Illuminate\Database\Eloquent\Builder;
@@ -152,7 +153,7 @@ class CoordinatorEnrollmentController extends Controller
             'student_id' => ['nullable', 'integer', Rule::exists('usuario', 'id_usuario')->where('estado', true)],
             'identification' => [$existing, 'required_without:student_id', 'string', new CedulaOPasaporte, Rule::unique('usuario', 'cedula')],
             'name' => [$existing, 'required_without:student_id', 'string', 'max:150', 'regex:/^[\pL\s]+$/u'],
-            'email' => [$existing, 'required_without:student_id', 'email:rfc', 'max:150', 'ends_with:@ueb.edu.ec', Rule::unique('usuario', 'correo')],
+            'email' => [$existing, 'required_without:student_id', 'email:rfc', 'max:150', InstitutionalEmail::rule(), Rule::unique('usuario', 'correo')],
             'phone' => [$existing, 'nullable', 'digits:10'],
         ]);
     }

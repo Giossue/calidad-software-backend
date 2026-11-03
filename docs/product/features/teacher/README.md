@@ -55,7 +55,8 @@ de coordinación.
    `?tutoring=<id>` para conservar el contexto.
 3. En **Estudiantes**, seleccionar una tutoría. **Registrar estudiante** permite
    buscar una cuenta activa del mismo paralelo o registrar una nueva con cédula
-   ecuatoriana, nombre, correo `@ueb.edu.ec` y teléfono opcional.
+   ecuatoriana, nombre, correo `@ueb.edu.ec` o
+   `@mailes.ueb.edu.ec` y teléfono opcional.
    Una cuenta nueva recibe contraseña provisional mediante la notificación
    existente del sistema. El envío requiere la configuración de correo operativa.
 4. Editar nombre o teléfono cuando la cuenta tenga únicamente rol estudiantil.

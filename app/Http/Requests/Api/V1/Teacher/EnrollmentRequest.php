@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api\V1\Teacher;
 
 use App\Rules\CedulaOPasaporte;
+use App\Support\InstitutionalEmail;
 use Illuminate\Validation\Rule;
 
 class EnrollmentRequest extends TeacherMutationRequest
@@ -33,7 +34,7 @@ class EnrollmentRequest extends TeacherMutationRequest
             'student_id' => ['nullable', 'integer', Rule::exists('usuario', 'id_usuario')->where('estado', true)],
             'identification' => [$existing, 'required_without:student_id', 'string', new CedulaOPasaporte, Rule::unique('usuario', 'cedula')],
             'name' => [$existing, 'required_without:student_id', 'string', 'max:150', 'regex:/^[\pL\s]+$/u'],
-            'email' => [$existing, 'required_without:student_id', 'email:rfc', 'max:150', 'ends_with:@ueb.edu.ec', Rule::unique('usuario', 'correo')],
+            'email' => [$existing, 'required_without:student_id', 'email:rfc', 'max:150', InstitutionalEmail::rule(), Rule::unique('usuario', 'correo')],
             'phone' => [$existing, 'nullable', 'digits:10'],
         ];
     }
@@ -49,7 +50,7 @@ class EnrollmentRequest extends TeacherMutationRequest
     {
         return [
             'phone.digits' => 'El teléfono debe tener exactamente 10 dígitos numéricos.',
-            'email.ends_with' => 'El correo institucional debe pertenecer al dominio @ueb.edu.ec.',
+            'email.ends_with' => InstitutionalEmail::message(),
             'name.regex' => 'El nombre solo puede contener letras y espacios.',
         ];
     }
