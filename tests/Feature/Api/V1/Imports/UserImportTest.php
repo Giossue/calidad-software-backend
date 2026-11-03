@@ -99,19 +99,20 @@ class UserImportTest extends TutoringTestCase
         $id = $this->upload('teachers', "correo,facultad,carrera\ndocente1@ueb.edu.ec,Ciencias,Software\ndocente2@gmail.com,Ciencias,Software\ndocente3@ueb.edu.ec,Ciencias,Administración\n")->json('data.id');
         $this->getJson('/api/v1/imports/'.$id)
             ->assertJsonPath('data.created_count', 1)
-            ->assertJsonPath('data.errors.0.messages.0', 'El correo debe ser institucional (@ueb.edu.ec).')
+            ->assertJsonPath('data.errors.0.messages.0', 'El correo debe ser institucional (@ueb.edu.ec o @mailes.ueb.edu.ec).')
             ->assertJsonPath('data.errors.1.messages.0', 'No tienes permiso para registrar este elemento.');
         $this->assertTrue(Usuario::query()->where('correo', 'docente1@ueb.edu.ec')->firstOrFail()->hasRole('docente'));
 
         $this->upload('students', "correo,carrera\nalumno@ueb.edu.ec,Software\n")
             ->assertUnprocessable()->assertJsonValidationErrors(['file' => 'Faltan columnas obligatorias en el CSV: facultad, ciclo.']);
-        $id = $this->upload('students', "correo,nombres,apellidos,rol,facultad,carrera,ciclo\nalumno@ueb.edu.ec,Rosa,Vera,estudiante,Ciencias,Software,1.º\notro@ueb.edu.ec,,,docente,Ciencias,Software,1\n")->json('data.id');
+        $id = $this->upload('students', "correo,nombres,apellidos,rol,facultad,carrera,ciclo\nalumno@ueb.edu.ec,Rosa,Vera,estudiante,Ciencias,Software,1.º\notro@ueb.edu.ec,,,docente,Ciencias,Software,1\nyechacha@mailes.ueb.edu.ec,,,estudiante,Ciencias,Software,1\n")->json('data.id');
         $this->getJson('/api/v1/imports/'.$id)
-            ->assertJsonPath('data.created_count', 1)
+            ->assertJsonPath('data.created_count', 2)
             ->assertJsonPath('data.errors.0.messages.0', 'En esta carga todas las cuentas son de rol estudiante.');
         $student = Usuario::query()->where('correo', 'alumno@ueb.edu.ec')->firstOrFail();
         $this->assertTrue($student->hasRole('estudiante'));
         $this->assertSame(['Vera Rosa', $this->cycle->getKey()], [$student->nombre, $student->fk_ciclo]);
+        $this->assertTrue(Usuario::query()->where('correo', 'yechacha@mailes.ueb.edu.ec')->firstOrFail()->hasRole('estudiante'));
 
         $this->upload('users', "correo,rol,carrera\nx@ueb.edu.ec,estudiante,Software\n")->assertForbidden();
     }

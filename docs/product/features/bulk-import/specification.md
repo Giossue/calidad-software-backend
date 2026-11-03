@@ -42,7 +42,8 @@ Las columnas entre corchetes son opcionales.
 Las tres cargas de cuentas comparten el formato y la plantilla trae las nueve columnas.
 
 ¹ Obligatorias salvo para el rol `administrador`. La carrera se busca dentro de la
-facultad. Docentes y estudiantes requieren correo `@ueb.edu.ec` y una carrera
+facultad. Docentes y estudiantes requieren correo `@ueb.edu.ec` o
+`@mailes.ueb.edu.ec` y una carrera
 coordinada por quien importa.
 ² Obligatorio para estudiantes: número del ciclo dentro de la carrera (se acepta
 `6`, `6.º` o `6to`). El estudiante queda asignado a ese ciclo y a su paralelo con

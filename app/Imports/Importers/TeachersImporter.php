@@ -3,6 +3,7 @@
 namespace App\Imports\Importers;
 
 use App\Models\Usuario;
+use App\Support\InstitutionalEmail;
 use App\Support\TutoringCoordinatorAccess;
 
 class TeachersImporter extends AccountImporter
@@ -38,6 +39,6 @@ class TeachersImporter extends AccountImporter
 
     protected function extraRules(): array
     {
-        return ['correo' => ['ends_with:@ueb.edu.ec']];
+        return ['correo' => [InstitutionalEmail::rule()]];
     }
 }
