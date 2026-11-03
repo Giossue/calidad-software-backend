@@ -75,6 +75,7 @@ class UserManagementTest extends TestCase
         $user = Usuario::query()->where('correo', 'luis@example.com')->firstOrFail();
         $this->assertTrue($user->hasRole('estudiante'));
         $this->assertNotNull($user->email_verified_at);
+        $this->assertTrue($user->must_complete_profile);
         Notification::assertSentTo($user, ProvisionalPasswordNotification::class, function (ProvisionalPasswordNotification $notification) use ($user): bool {
             return password_verify($notification->provisionalPassword, $user->password_hash);
         });

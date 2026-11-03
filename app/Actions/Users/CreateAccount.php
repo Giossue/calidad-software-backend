@@ -12,9 +12,10 @@ class CreateAccount
 {
     /**
      * Crea la cuenta con su rol y carrera. Devuelve el usuario y la contraseña
-     * provisional, que el llamador envía por correo.
+     * provisional, que el llamador envía por correo. La cuenta queda obligada a
+     * cambiarla al primer ingreso.
      *
-     * @param  array{identification: string|null, name: string, email: string, phone: string|null, role: string, career_id: int|null, must_complete_profile?: bool}  $data
+     * @param  array{identification: string|null, name: string, email: string, phone: string|null, role: string, career_id: int|null}  $data
      * @return array{0: Usuario, 1: string}
      */
     public function handle(array $data): array
@@ -31,7 +32,7 @@ class CreateAccount
             'estado' => true,
             'email_verified_at' => now(),
             'fk_carrera' => $careerId,
-            'must_complete_profile' => $data['must_complete_profile'] ?? false,
+            'must_complete_profile' => true,
         ])->refresh();
 
         $user->roles()->sync(Role::query()->where('slug', $data['role'])->valueOrFail('id'));

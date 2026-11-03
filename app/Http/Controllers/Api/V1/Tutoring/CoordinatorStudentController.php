@@ -137,6 +137,7 @@ class CoordinatorStudentController extends Controller
                 'fk_carrera' => $cycle->fk_carrera,
                 'estado' => true,
                 'email_verified_at' => now(),
+                'must_complete_profile' => true,
             ]);
             $student->roles()->attach(Role::query()->where('slug', 'estudiante')->valueOrFail('id'));
             $cycles->assign($student, $cycle);

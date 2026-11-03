@@ -106,8 +106,8 @@ class Usuario extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * La cuenta debe completar su perfil antes de usar el sistema: las creadas por
-     * carga masiva (contraseña provisional), cualquiera que aún no tenga cédula y
+     * La cuenta debe completar su perfil antes de usar el sistema: las que aún tienen
+     * la contraseña provisional enviada por correo, cualquiera que aún no tenga cédula y
      * los estudiantes sin carrera o ciclo registrados.
      */
     public function needsProfileCompletion(): bool

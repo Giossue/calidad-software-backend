@@ -212,6 +212,7 @@ class SubjectAndTeacherTest extends TutoringTestCase
         $this->assertNotEmpty($teacher->password_hash);
         $response->assertJsonMissingPath('data.password_hash')->assertJsonMissingPath('data.password');
         Notification::assertSentTo($teacher, ProvisionalPasswordNotification::class);
+        $this->assertTrue($teacher->must_complete_profile);
         $this->patchJson(self::API.'/teachers/'.$teacher->getKey(), [
             'name' => 'María Torres', 'email' => 'maria.torres@ueb.edu.ec',
         ])->assertOk()->assertJsonPath('data.name', 'María Torres')->assertJsonPath('data.email', 'maria.torres@ueb.edu.ec');

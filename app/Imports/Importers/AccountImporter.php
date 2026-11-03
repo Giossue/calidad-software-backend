@@ -129,7 +129,6 @@ abstract class AccountImporter implements Importer
             'phone' => $data['telefono'],
             'role' => $role,
             'career_id' => $careerId,
-            'must_complete_profile' => true,
         ]);
         if ($cycleId !== null) {
             $this->cycles->assign($account, Ciclo::query()->findOrFail($cycleId));

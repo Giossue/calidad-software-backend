@@ -67,10 +67,23 @@ class CoordinatorStudentTest extends TutoringTestCase
             'fk_carrera' => $this->career->getKey(),
         ]);
 
-        Notification::assertSentTo(
-            Usuario::query()->where('cedula', '0926687856')->first(),
-            ProvisionalPasswordNotification::class
-        );
+        $student = Usuario::query()->where('cedula', '0926687856')->firstOrFail();
+        Notification::assertSentTo($student, ProvisionalPasswordNotification::class);
+        $this->assertTrue($student->must_complete_profile);
+    }
+
+    public function test_coordinator_enrolling_a_new_student_requires_changing_the_provisional_password(): void
+    {
+        Notification::fake();
+        $tutoring = $this->createTutoring($this->cycle);
+
+        $this->actingAs($this->coordinator)->postJson(self::API.'/tutorings/'.$tutoring->getKey().'/students', [
+            'identification' => '0926687856', 'name' => 'Carlos Nuevo', 'email' => 'carlos.nuevo@ueb.edu.ec',
+        ])->assertCreated();
+
+        $student = Usuario::query()->where('cedula', '0926687856')->firstOrFail();
+        Notification::assertSentTo($student, ProvisionalPasswordNotification::class);
+        $this->assertTrue($student->must_complete_profile);
     }
 
     public function test_coordinator_can_enroll_and_unenroll_student_in_tutoring(): void
