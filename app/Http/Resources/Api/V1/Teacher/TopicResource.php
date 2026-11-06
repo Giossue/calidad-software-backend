@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Api\V1\Teacher;
 
+use App\Http\Resources\Api\V1\TopicFileResource;
 use App\Models\Tema;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -14,6 +15,7 @@ class TopicResource extends JsonResource
     {
         return ['id' => $this->getKey(), 'tutoring_id' => $this->fk_asig_tutoria, 'name' => $this->nombre,
             'description' => $this->descripcion, 'is_active' => $this->estado, 'is_covered' => $this->visto,
-            'activities' => ActivityResource::collection($this->whenLoaded('actividades'))];
+            'activities' => ActivityResource::collection($this->whenLoaded('actividades')),
+            'files' => TopicFileResource::collection($this->whenLoaded('files'))];
     }
 }

@@ -193,7 +193,7 @@ class StudentTutoringController extends Controller
         }
 
         $topics = $tutoring->temas()
-            ->with(['actividades' => fn ($query) => $query->where('estado', true)->orderBy('id_actividad'), 'actividades.metodologias'])
+            ->with(['actividades' => fn ($query) => $query->where('estado', true)->orderBy('id_actividad'), 'actividades.metodologias', 'files'])
             ->where('estado', true)
             ->orderBy('id_tema')
             ->get();
@@ -362,7 +362,7 @@ class StudentTutoringController extends Controller
         }
 
         return StudentTutoringTopicResource::make(
-            $topic->load(['actividades' => fn ($query) => $query->where('estado', true), 'actividades.metodologias'])
+            $topic->load(['actividades' => fn ($query) => $query->where('estado', true), 'actividades.metodologias', 'files'])
         );
     }
 }

@@ -24,6 +24,7 @@ use App\Http\Controllers\Api\V1\SectionController;
 use App\Http\Controllers\Api\V1\Student\StudentAbsenceNoticeController;
 use App\Http\Controllers\Api\V1\Student\StudentDegreeTopicController;
 use App\Http\Controllers\Api\V1\Student\StudentTutoringController;
+use App\Http\Controllers\Api\V1\Student\TopicFileController as StudentTopicFileController;
 use App\Http\Controllers\Api\V1\Teacher\ContentController as TeacherContentController;
 use App\Http\Controllers\Api\V1\Teacher\DegreeAssignmentController;
 use App\Http\Controllers\Api\V1\Teacher\EnrollmentController;
@@ -32,6 +33,7 @@ use App\Http\Controllers\Api\V1\Teacher\ReportController as TeacherReportControl
 use App\Http\Controllers\Api\V1\Teacher\ScheduleController as TeacherScheduleController;
 use App\Http\Controllers\Api\V1\Teacher\SessionController;
 use App\Http\Controllers\Api\V1\Teacher\TeacherDegreeTrackingController;
+use App\Http\Controllers\Api\V1\Teacher\TopicFileController as TeacherTopicFileController;
 use App\Http\Controllers\Api\V1\Teacher\TutoringController as TeacherTutoringController;
 use App\Http\Controllers\Api\V1\Tutoring\CatalogController as TutoringCatalogController;
 use App\Http\Controllers\Api\V1\Tutoring\CoordinatorDegreeEnrollmentController;
@@ -144,6 +146,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::get('tutoring/{tutoring}/attendance', [StudentTutoringController::class, 'attendance'])->name('tutoring.attendance');
             Route::get('tutoring/{tutoring}/topics', [StudentTutoringController::class, 'topics'])->name('tutoring.topics');
             Route::get('tutoring/{tutoring}/topics/{topic}', [StudentTutoringController::class, 'topicDetail'])->name('tutoring.topics.show');
+            Route::get('tutoring/{tutoring}/topics/{topic}/files/{file}', [StudentTopicFileController::class, 'download'])->name('tutoring.topics.files.download');
             Route::get('tutoring/{tutoring}/sessions', [StudentTutoringController::class, 'sessions'])->name('tutoring.sessions');
             Route::get('tutoring/{tutoring}/absence-notices', [StudentAbsenceNoticeController::class, 'index'])->name('tutoring.absence-notices.index');
             Route::post('tutoring/{tutoring}/absence-notices', [StudentAbsenceNoticeController::class, 'store'])->name('tutoring.absence-notices.store');
@@ -172,6 +175,9 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::patch('tutorings/{tutoring}/topics/{topic}', [TeacherContentController::class, 'updateTopic'])->name('topics.update');
             Route::patch('tutorings/{tutoring}/topics/{topic}/toggle-covered', [TeacherContentController::class, 'toggleCovered'])->name('topics.toggle-covered');
             Route::patch('tutorings/{tutoring}/topics/{topic}/deactivate', [TeacherContentController::class, 'deactivateTopic'])->name('topics.deactivate');
+            Route::post('tutorings/{tutoring}/topics/{topic}/files', [TeacherTopicFileController::class, 'store'])->middleware('throttle:30,1')->name('topics.files.store');
+            Route::get('tutorings/{tutoring}/topics/{topic}/files/{file}', [TeacherTopicFileController::class, 'download'])->name('topics.files.download');
+            Route::delete('tutorings/{tutoring}/topics/{topic}/files/{file}', [TeacherTopicFileController::class, 'destroy'])->name('topics.files.destroy');
             Route::post('tutorings/{tutoring}/topics/{topic}/activities', [TeacherContentController::class, 'storeActivity'])->name('activities.store');
             Route::patch('tutorings/{tutoring}/topics/{topic}/activities/{activity}', [TeacherContentController::class, 'updateActivity'])->name('activities.update');
             Route::patch('tutorings/{tutoring}/topics/{topic}/activities/{activity}/deactivate', [TeacherContentController::class, 'deactivateActivity'])->name('activities.deactivate');

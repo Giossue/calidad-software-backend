@@ -15,6 +15,7 @@ class StudentTutoringTopicResource extends JsonResource
     public function toArray(Request $request): array
     {
         $activities = $this->relationLoaded('actividades') ? $this->actividades : $this->actividades()->with('metodologias')->get();
+        $files = $this->relationLoaded('files') ? $this->files : $this->files()->get();
 
         return [
             'id' => $this->getKey(),
@@ -23,6 +24,7 @@ class StudentTutoringTopicResource extends JsonResource
             'description' => $this->descripcion,
             'is_active' => (bool) $this->estado,
             'is_covered' => (bool) $this->visto,
+            'files' => TopicFileResource::collection($files),
             'activities_count' => $activities->where('estado', true)->count(),
             'activities' => $activities->where('estado', true)->values()->map(function (Actividad $activity) {
                 $methodologies = $activity->relationLoaded('metodologias') ? $activity->metodologias : $activity->metodologias()->get();
