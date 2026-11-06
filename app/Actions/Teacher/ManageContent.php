@@ -38,7 +38,7 @@ class ManageContent
             }
             $topic->fill($attributes)->save();
 
-            return $topic->refresh()->load('actividades.metodologias');
+            return $topic->refresh()->load('actividades.metodologias', 'files');
         });
     }
 
@@ -49,7 +49,7 @@ class ManageContent
             $this->active($topic->estado);
             $topic->update(['visto' => $isCovered ?? ! $topic->visto]);
 
-            return $topic->refresh()->load('actividades.metodologias');
+            return $topic->refresh()->load('actividades.metodologias', 'files');
         });
     }
 

@@ -19,6 +19,7 @@ de coordinación.
 | DOC-08 | Contenido | Registrar temas dentro de la tutoría propia. |
 | DOC-09 | Contenido | Actualizar nombre y descripción del tema. |
 | DOC-10 | Contenido | Deshabilitar temas mediante baja lógica. |
+| DOC-10A | Contenido | Adjuntar a un tema activo hasta 10 recursos (PDF, Word, PowerPoint, Excel, OpenDocument o texto, máx. 20 MB cada uno), descargarlos y eliminarlos. Los estudiantes inscritos descargan los recursos de los temas activos. |
 | DOC-11 | Contenido | Registrar actividades de un tema activo. |
 | DOC-12 | Contenido | Actualizar nombre y duración de una actividad. |
 | DOC-13 | Contenido | Deshabilitar actividades mediante baja lógica. |

@@ -28,6 +28,19 @@ return [
     |
     */
 
+    /*
+    |--------------------------------------------------------------------------
+    | Recursos de los temas de tutoría
+    |--------------------------------------------------------------------------
+    |
+    | Disco donde se guardan los archivos que los docentes adjuntan a los temas.
+    | En producción su carpeta (storage/app/private) debe estar en un volumen
+    | persistente; ver docs/deployment/dokploy.md.
+    |
+    */
+
+    'topic_files_disk' => env('TOPIC_FILES_DISK', 'local'),
+
     'disks' => [
 
         'local' => [

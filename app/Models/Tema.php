@@ -43,6 +43,12 @@ class Tema extends Model
         return $this->hasMany(Actividad::class, 'fk_tema');
     }
 
+    /** @return HasMany<TopicFile, $this> */
+    public function files(): HasMany
+    {
+        return $this->hasMany(TopicFile::class, 'topic_id', 'id_tema')->orderBy('id');
+    }
+
     /** @return BelongsToMany<TutoringSession, $this> */
     public function sessions(): BelongsToMany
     {

@@ -23,7 +23,7 @@ class ContentController extends Controller
 {
     public function index(TeacherListRequest $request, AsignaturaTutoria $tutoring): AnonymousResourceCollection
     {
-        $query = $tutoring->temas()->with(['actividades' => fn ($query) => $query->orderBy('id_actividad'), 'actividades.metodologias']);
+        $query = $tutoring->temas()->with(['actividades' => fn ($query) => $query->orderBy('id_actividad'), 'actividades.metodologias', 'files']);
         if ($request->filled('search')) {
             $query->whereLike('nombre', '%'.$request->string('search').'%');
         }
@@ -53,7 +53,7 @@ class ContentController extends Controller
 
     public function deactivateTopic(TeacherMutationRequest $request, AsignaturaTutoria $tutoring, Tema $topic, ManageContent $action): TopicResource
     {
-        return TopicResource::make($action->deactivate($request->user(), $tutoring, $topic)->load('actividades.metodologias'));
+        return TopicResource::make($action->deactivate($request->user(), $tutoring, $topic)->load('actividades.metodologias', 'files'));
     }
 
     public function storeActivity(ActivityRequest $request, AsignaturaTutoria $tutoring, Tema $topic, ManageContent $action): JsonResponse

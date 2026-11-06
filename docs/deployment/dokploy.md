@@ -67,6 +67,24 @@ misma cuenta. Las credenciales de la aplicación desplegada se configuran en
 Environment Settings; las credenciales administrativas locales se leen desde
 `/home/giossue/.pgpass`.
 
+## Archivos de los temas
+
+Los docentes adjuntan recursos (PDF, Word, PowerPoint, Excel, texto) a los temas
+de tutoría. Se guardan en el disco `local`, carpeta
+`/var/www/html/storage/app/private/topic-files`. **Esa carpeta debe estar en un
+volumen persistente**; sin él, los archivos se pierden en cada despliegue.
+
+En Dokploy, en la aplicación del backend: **Advanced → Volumes / Mounts → Add
+Volume**, tipo *Volume Mount*, nombre `calidad-software-files` y ruta de montaje
+`/var/www/html/storage/app/private`. Redespliega después de crearlo. El
+entrypoint ajusta los permisos de `storage` para `www-data`.
+
+Incluye ese volumen en los respaldos del servidor. `TOPIC_FILES_DISK` permite
+usar otro disco configurado (por ejemplo, uno S3) sin cambiar el código.
+
+PHP acepta subidas de hasta 25 MB (`docker/php/production.ini`); la API limita
+cada archivo a 20 MB y cada tema a 10 archivos.
+
 ## Cola de trabajos
 
 Las importaciones masivas y sus correos se procesan en la cola
