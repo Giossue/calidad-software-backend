@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\V1\Auth\EmailVerificationController;
 use App\Http\Controllers\Api\V1\Auth\PasswordController;
 use App\Http\Controllers\Api\V1\Auth\RegistrationController;
 use App\Http\Controllers\Api\V1\Auth\TokenController;
+use App\Http\Controllers\Api\V1\Auth\TourController;
 use App\Http\Controllers\Api\V1\Auth\TwoFactorChallengeController;
 use App\Http\Controllers\Api\V1\BulkImportController;
 use App\Http\Controllers\Api\V1\Coordination\DegreeTopicController;
@@ -67,6 +68,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::put('profile/complete', CompleteProfileController::class)
                 ->middleware('throttle:10,1')->name('profile.complete');
             Route::get('profile/academic-options', AcademicOptionsController::class)->name('profile.academic-options');
+            Route::post('tour/complete', [TourController::class, 'complete'])
+                ->middleware('throttle:10,1')->name('tour.complete');
             Route::post('email/verification-notification', [EmailVerificationController::class, 'send'])
                 ->middleware('throttle:3,1')->name('verification.send');
         });

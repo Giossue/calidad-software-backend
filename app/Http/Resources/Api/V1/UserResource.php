@@ -35,6 +35,7 @@ class UserResource extends JsonResource
             'has_two_factor' => $this->two_factor_confirmed_at !== null,
             'must_complete_profile' => $this->needsProfileCompletion(),
             'must_change_password' => (bool) $this->must_complete_profile,
+            'tour_completed' => $this->tour_completed_at !== null,
         ];
     }
 }
