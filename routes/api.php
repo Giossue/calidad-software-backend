@@ -68,8 +68,8 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::put('profile/complete', CompleteProfileController::class)
                 ->middleware('throttle:10,1')->name('profile.complete');
             Route::get('profile/academic-options', AcademicOptionsController::class)->name('profile.academic-options');
-            Route::post('tour/complete', [TourController::class, 'complete'])
-                ->middleware('throttle:10,1')->name('tour.complete');
+            Route::post('tours/complete', [TourController::class, 'complete'])
+                ->middleware('throttle:30,1')->name('tours.complete');
             Route::post('email/verification-notification', [EmailVerificationController::class, 'send'])
                 ->middleware('throttle:3,1')->name('verification.send');
         });

@@ -31,7 +31,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property string|null $two_factor_secret
  * @property string|null $two_factor_recovery_codes
  * @property Carbon|null $two_factor_confirmed_at
- * @property Carbon|null $tour_completed_at
+ * @property list<string>|null $completed_tours
  * @property string|null $remember_token
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
@@ -217,7 +217,7 @@ class Usuario extends Authenticatable implements MustVerifyEmail
             'estado' => 'boolean',
             'must_complete_profile' => 'boolean',
             'two_factor_confirmed_at' => 'datetime',
-            'tour_completed_at' => 'datetime',
+            'completed_tours' => 'array',
         ];
     }
 }

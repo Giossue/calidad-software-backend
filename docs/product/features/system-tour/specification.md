@@ -2,8 +2,8 @@
 
 ## Problema
 
-Los usuarios nuevos no saben dónde está cada módulo ni qué herramientas tienen
-en la cabecera.
+Los usuarios nuevos no saben dónde está cada módulo ni para qué sirve cada
+botón, filtro o tabla de las pantallas.
 
 ## Usuarios
 
@@ -12,29 +12,33 @@ titulación, docente y estudiante.
 
 ## Requisitos funcionales
 
-- El frontend presenta un recorrido guiado (driver.js) por el menú lateral, los
-  módulos que la cuenta tiene en su menú y las herramientas de la cabecera.
-- El recorrido se presenta automáticamente la primera vez que el usuario entra,
-  después de completar su perfil y cambiar la contraseña provisional.
-- El botón de ayuda (?) de la cabecera vuelve a abrir el recorrido en cualquier
-  momento.
+- El frontend presenta guías con driver.js:
+  - **Recorrido general**: menú lateral, módulos de la cuenta y herramientas de
+    la cabecera.
+  - **Guía por pantalla**: explica los elementos de cada pantalla y sub-pantalla
+    (por ejemplo, cada pestaña de una tutoría del docente).
+- El recorrido general se presenta la primera vez que el usuario entra, después
+  de completar su perfil. Al terminarlo sigue la guía de la pantalla actual.
+- La guía de cada pantalla se presenta la primera vez que el usuario la visita.
+- El botón de ayuda (?) de la cabecera abre la guía de la pantalla actual o el
+  recorrido general en cualquier momento.
 
 ## Reglas
 
-- Terminar o cerrar el recorrido cuenta como visto; no vuelve a presentarse solo.
+- Terminar o cerrar una guía cuenta como vista; no vuelve a presentarse sola.
 - Se guarda por usuario en el servidor, así que no se repite al cambiar de
   equipo o navegador.
-- Solo se explican los módulos visibles para la cuenta (por ejemplo, un
-  estudiante de titulación no ve la explicación de tutorías).
+- Solo se explican los módulos y elementos visibles para la cuenta.
 
 ## Datos
 
-- `usuario.tour_completed_at` (timestamp, nulo): primera vez que terminó o cerró
-  el recorrido.
-- `UserResource.tour_completed` (bool): `tour_completed_at` no es nulo.
+- `usuario.completed_tours` (JSON, nulo): identificadores de las guías vistas,
+  por ejemplo `general`, `users` o `teacher-tutorings/grades`. Máximo 100.
+- `UserResource.completed_tours` (lista de textos).
 
 ## API
 
-- `POST /api/v1/auth/tour/complete`: registra el recorrido como visto y devuelve
-  el usuario. Es idempotente y conserva la primera fecha. Requiere sesión y perfil
-  completo.
+- `POST /api/v1/auth/tours/complete` con `{ "tour": "<identificador>" }`:
+  registra la guía como vista y devuelve el usuario. Es idempotente. El
+  identificador admite minúsculas, números y guiones, con una sola `/` opcional
+  (máximo 80 caracteres). Requiere sesión y perfil completo.
