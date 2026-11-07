@@ -251,6 +251,26 @@ class SubjectAndTeacherTest extends TutoringTestCase
             ->assertJsonPath('data.0.id', $inactive->getKey());
     }
 
+    public function test_teacher_listing_shows_current_tutorings_of_coordinated_careers(): void
+    {
+        $teacher = Usuario::factory()->withRole('docente')->create();
+        $teacher->teachingCareers()->attach([$this->career->getKey(), $this->otherCareer->getKey()]);
+        $current = $this->createTutoring($this->cycle);
+        $current->update(['fk_docente' => $teacher->getKey(), 'nombre' => 'Programación Web I']);
+        $inactive = $this->createTutoring($this->cycle, $this->createSubject($this->cycle, 'CS-102'));
+        $inactive->update(['fk_docente' => $teacher->getKey(), 'nombre' => 'Retirada', 'estado' => false]);
+        $otherCareer = $this->createTutoring($this->otherCycle);
+        $otherCareer->update(['fk_docente' => $teacher->getKey(), 'nombre' => 'De otra carrera']);
+        Sanctum::actingAs($this->coordinator, ['*']);
+
+        $this->getJson(self::API.'/teachers')->assertOk()
+            ->assertJsonCount(1, 'data.0.tutorings')
+            ->assertJsonPath('data.0.tutorings.0.id', $current->getKey())
+            ->assertJsonPath('data.0.tutorings.0.subject_name', 'Programación Web I')
+            ->assertJsonPath('data.0.tutorings.0.cycle_number', $this->cycle->numero)
+            ->assertJsonPath('data.0.tutorings.0.section_name', $current->paralelo?->nombre);
+    }
+
     public function test_teacher_input_rejects_invalid_identity_email_and_role_escalation(): void
     {
         Notification::fake();
