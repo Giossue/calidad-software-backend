@@ -27,10 +27,19 @@ class TeacherController extends Controller
     public function index(Request $request): AnonymousResourceCollection
     {
         Gate::authorize('viewTutoringTeachers', Usuario::class);
+        $isAdmin = $request->user()->hasRole('administrador');
+        $careerIds = $request->user()->coordinatedCareers()->select('carrera.id_carrera');
         $query = Usuario::query()->whereHas('roles', fn (Builder $q) => $q->where('slug', 'docente'))
-            ->with('teachingCareers');
-        if (! $request->user()->hasRole('administrador')) {
-            $careerIds = $request->user()->coordinatedCareers()->select('carrera.id_carrera');
+            ->with([
+                'teachingCareers',
+                // Tutorías vigentes del docente; el coordinador ve solo las de sus carreras.
+                'asignaturasTutoria' => fn ($q) => $q->where('estado', true)
+                    ->whereHas('periodo', fn (Builder $period) => $period->where('estado', true))
+                    ->when(! $isAdmin, fn ($q) => $q->whereHas('ciclo', fn (Builder $cycle) => $cycle->whereIn('fk_carrera', $careerIds)))
+                    ->with(['ciclo', 'paralelo'])
+                    ->orderBy('nombre'),
+            ]);
+        if (! $isAdmin) {
             $query->whereHas('teachingCareers', fn (Builder $q) => $q->whereIn('carrera.id_carrera', $careerIds));
         }
         if ($careerId = $request->integer('career_id')) {
