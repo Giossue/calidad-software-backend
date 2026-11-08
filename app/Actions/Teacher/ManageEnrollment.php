@@ -8,6 +8,7 @@ use App\Models\InscripcionTutoria;
 use App\Models\Role;
 use App\Models\Usuario;
 use App\Notifications\ProvisionalPasswordNotification;
+use App\Support\PendingSubjects;
 use App\Support\ProvisionalPassword;
 use App\Support\StudentCycle;
 use App\Support\TeacherWorkspace;
@@ -30,6 +31,7 @@ class ManageEnrollment
                     throw ValidationException::withMessages(['student_id' => 'Selecciona un estudiante activo del paralelo de esta tutoría.']);
                 }
                 $this->cycles->assertCanTakeTutorings($student);
+                PendingSubjects::assertCanTake($student, $locked);
             } else {
                 $password = ProvisionalPassword::generate();
                 $student = Usuario::query()->create([
@@ -92,6 +94,9 @@ class ManageEnrollment
             }
             $enrollment->update(['final_result' => $result, 'final_result_at' => $result === null ? null : now()]);
             if ($result === InscripcionTutoria::APPROVED) {
+                if ($tutoring->subject_id !== null) {
+                    PendingSubjects::resolve($enrollment->estudiante, (int) $tutoring->subject_id);
+                }
                 $this->advance->afterApproval($enrollment);
             }
 

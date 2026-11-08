@@ -6,6 +6,7 @@ use App\Models\AsignaturaTutoria;
 use App\Models\InscripcionTutoria;
 use App\Models\Subject;
 use App\Models\Usuario;
+use App\Support\PendingSubjects;
 use App\Support\StudentCycle;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -97,6 +98,9 @@ class AdvanceApprovedStudents
     private function enroll(Usuario $student, AsignaturaTutoria $tutoring): void
     {
         if (! $student->estado || ! $student->hasRole('estudiante') || $this->cycles->isDegreeStudent($student)) {
+            return;
+        }
+        if ($tutoring->subject_id !== null && PendingSubjects::blockedSubjectIds($student)->contains((int) $tutoring->subject_id)) {
             return;
         }
         $existing = InscripcionTutoria::query()

@@ -33,7 +33,7 @@ class CareersImporter implements Importer
         return $user->can('create', Carrera::class);
     }
 
-    public function import(array $row, Usuario $user): void
+    public function import(array $row, Usuario $user): ?string
     {
         $data = $this->validator->validate(StoreCareerRequest::class, array_filter([
             'faculty_id' => $this->lookup->facultyId($row['facultad']),
@@ -43,5 +43,7 @@ class CareersImporter implements Importer
         ], fn (mixed $value): bool => $value !== null), $user);
 
         $this->createCareer->handle($data);
+
+        return null;
     }
 }

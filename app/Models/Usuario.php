@@ -173,6 +173,16 @@ class Usuario extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Asignaturas que el estudiante arrastra de ciclos anteriores.
+     *
+     * @return BelongsToMany<Subject, $this>
+     */
+    public function pendingSubjects(): BelongsToMany
+    {
+        return $this->belongsToMany(Subject::class, 'student_pending_subjects', 'student_id', 'subject_id')->withTimestamps();
+    }
+
+    /**
      * @return HasMany<MetricaConocimiento, $this>
      */
     public function metricas(): HasMany

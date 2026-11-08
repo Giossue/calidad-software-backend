@@ -63,6 +63,19 @@ class FinalResultTest extends TeacherTestCase
         $this->assertSame([$approved->fk_id_usuario], InscripcionTutoria::query()->where('fk_asig_tutoria', $next->getKey())->pluck('fk_id_usuario')->all());
     }
 
+    public function test_approving_a_pending_subject_stops_blocking_the_ones_that_continue_it(): void
+    {
+        $next = $this->nextTutoring();
+        $enrollment = $this->enrollment();
+        $student = $enrollment->estudiante;
+        $student->pendingSubjects()->attach($this->tutoring->subject_id);
+
+        $this->putJson($this->resultPath($enrollment), ['result' => InscripcionTutoria::APPROVED])->assertOk();
+
+        $this->assertSame([], $student->pendingSubjects()->pluck('subjects.id')->all());
+        $this->assertTrue(InscripcionTutoria::query()->where('fk_asig_tutoria', $next->getKey())->where('fk_id_usuario', $student->getKey())->exists());
+    }
+
     public function test_only_the_assigned_teacher_records_results_of_active_enrollments(): void
     {
         $enrollment = $this->enrollment();

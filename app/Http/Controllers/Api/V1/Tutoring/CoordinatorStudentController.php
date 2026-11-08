@@ -9,10 +9,12 @@ use App\Models\AsignaturaTutoria;
 use App\Models\Ciclo;
 use App\Models\InscripcionTutoria;
 use App\Models\Role;
+use App\Models\Subject;
 use App\Models\Usuario;
 use App\Notifications\ProvisionalPasswordNotification;
 use App\Rules\CedulaOPasaporte;
 use App\Support\InstitutionalEmail;
+use App\Support\PendingSubjects;
 use App\Support\ProvisionalPassword;
 use App\Support\StudentCycle;
 use App\Support\TutoringCoordinatorAccess;
@@ -55,7 +57,7 @@ class CoordinatorStudentController extends Controller
                     )
                     ->orWhereHas('ciclo', fn (Builder $q2) => $q2->whereIn('fk_carrera', $careerIds));
             })
-            ->with(['ciclo.paralelo', 'inscripciones' => fn ($q) => $q
+            ->with(['ciclo.paralelo', 'pendingSubjects:subjects.id,subjects.code,subjects.name', 'inscripciones' => fn ($q) => $q
                 ->where('estado', true)
                 ->whereHas('asignaturaTutoria.ciclo', fn (Builder $q2) => $q2->whereIn('fk_carrera', $careerIds))
                 ->with(['asignaturaTutoria' => fn ($q2) => $q2->with(self::TUTORING_RELATIONS)]),
@@ -160,7 +162,7 @@ class CoordinatorStudentController extends Controller
             return $student;
         });
 
-        $student->load(['ciclo.paralelo', 'inscripciones' => fn ($q) => $q
+        $student->load(['ciclo.paralelo', 'pendingSubjects:subjects.id,subjects.code,subjects.name', 'inscripciones' => fn ($q) => $q
             ->where('estado', true)
             ->whereHas('asignaturaTutoria.ciclo', fn (Builder $q2) => $q2->whereIn('fk_carrera', $careerIds))
             ->with(['asignaturaTutoria' => fn ($q2) => $q2->with(self::TUTORING_RELATIONS)]),
@@ -185,6 +187,11 @@ class CoordinatorStudentController extends Controller
             ->where('estado', true)
             ->whereHas('ciclo', fn (Builder $q) => $q->whereIn('fk_carrera', $careerIds))
             ->whereNotIn('id_asig_tutoria', $enrolledTutoringIds);
+        // Las que continúan a una asignatura que arrastra no se ofrecen hasta que la apruebe.
+        $blocked = PendingSubjects::blockedSubjectIds($student);
+        if ($blocked->isNotEmpty()) {
+            $query->where(fn (Builder $q) => $q->whereNull('subject_id')->orWhereNotIn('subject_id', $blocked));
+        }
 
         if ($search = trim((string) $request->string('search'))) {
             $query->whereLike('nombre', "%{$search}%");
@@ -205,6 +212,7 @@ class CoordinatorStudentController extends Controller
 
         $tutoring = AsignaturaTutoria::query()->with(self::TUTORING_RELATIONS)->findOrFail((int) $data['tutoring_id']);
         Gate::authorize('view', $tutoring);
+        PendingSubjects::assertCanTake($student, $tutoring, 'tutoring_id');
 
         $enrollment = DB::transaction(function () use ($student, $tutoring): InscripcionTutoria {
             $locked = AsignaturaTutoria::query()->whereKey($tutoring->getKey())->lockForUpdate()->firstOrFail();
@@ -256,7 +264,7 @@ class CoordinatorStudentController extends Controller
         $access->authorizeCareer($request->user(), $cycle->fk_carrera);
 
         $cycles->assign($student, $cycle);
-        $student->load(['ciclo.paralelo', 'inscripciones' => fn ($q) => $q
+        $student->load(['ciclo.paralelo', 'pendingSubjects:subjects.id,subjects.code,subjects.name', 'inscripciones' => fn ($q) => $q
             ->where('estado', true)
             ->whereHas('asignaturaTutoria.ciclo', fn (Builder $q2) => $q2->where('fk_carrera', $cycle->fk_carrera))
             ->with(['asignaturaTutoria' => fn ($q2) => $q2->with(self::TUTORING_RELATIONS)]),
@@ -278,6 +286,9 @@ class CoordinatorStudentController extends Controller
             'phone' => $student->telefono,
             'is_active' => $student->estado,
             ...app(StudentCycle::class)->describe($student),
+            'pending_subjects' => $student->relationLoaded('pendingSubjects')
+                ? $student->pendingSubjects->map(fn (Subject $subject) => ['id' => $subject->id, 'code' => $subject->code, 'name' => $subject->name])->values()
+                : [],
             'tutoring_count' => $enrollments->count(),
             'tutorings' => $enrollments->map(fn (InscripcionTutoria $enrollment) => [
                 'enrollment_id' => $enrollment->getKey(),

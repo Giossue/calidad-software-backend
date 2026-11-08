@@ -33,7 +33,7 @@ class CyclesImporter implements Importer
         return $user->can('create', Ciclo::class);
     }
 
-    public function import(array $row, Usuario $user): void
+    public function import(array $row, Usuario $user): ?string
     {
         $data = $this->validator->validate(StoreCycleRequest::class, [
             'career_id' => $this->lookup->careerId($row['carrera']),
@@ -42,5 +42,7 @@ class CyclesImporter implements Importer
         ], $user);
 
         $this->createCycle->handle($data);
+
+        return null;
     }
 }

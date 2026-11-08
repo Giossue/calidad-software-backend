@@ -37,9 +37,10 @@ Las columnas entre corchetes son opcionales.
 | `sections` | nombre |
 | `users` (admin) | correo, [cedula], [nombres], [apellidos], rol, [facultad]¹, [carrera]¹, [ciclo]², [telefono] |
 | `teachers` (coordinador) | correo, [cedula], [nombres], [apellidos], [rol]³, facultad, carrera, [ciclo], [telefono] |
-| `students` (coordinador) | correo, [cedula], [nombres], [apellidos], [rol]³, facultad, carrera, ciclo, [telefono] |
+| `students` (coordinador) | correo, [cedula], [nombres], [apellidos], [rol]³, facultad, carrera, ciclo, [telefono], [asignaturas_pendientes]⁴ |
 
-Las tres cargas de cuentas comparten el formato y la plantilla trae las nueve columnas.
+Las tres cargas de cuentas comparten el formato y la plantilla trae las nueve columnas
+(la de estudiantes, además, `asignaturas_pendientes`).
 
 ¹ Obligatorias salvo para el rol `administrador`. La carrera se busca dentro de la
 facultad. Docentes y estudiantes requieren correo `@ueb.edu.ec` o
@@ -50,6 +51,11 @@ coordinada por quien importa.
 `StudentCycle::assign`; si la carrera tiene varios ciclos con ese número, se toma
 el primero activo. Docentes y coordinadores ignoran la columna.
 ³ Si se indica, debe coincidir con el rol de la pantalla.
+⁴ Asignaturas que el estudiante arrastra, por código o nombre, separadas por `|`
+(o `;` dentro de una celda entre comillas). Deben ser de la carrera y de un ciclo
+anterior al del estudiante. Si el correo ya está registrado como estudiante de esa
+carrera, la fila solo reemplaza su lista de pendientes y se informa como aviso.
+Ver [secuencia de asignaturas](../subject-sequence/specification.md).
 
 `apellidos` y `nombres` se guardan en el único campo de nombre como
 «Apellidos Nombres»; si ambos faltan, se usa un nombre provisional derivado del correo.

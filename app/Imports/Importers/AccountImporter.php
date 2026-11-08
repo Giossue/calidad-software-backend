@@ -51,20 +51,49 @@ abstract class AccountImporter implements Importer
     /** Comprueba que quien importa puede registrar cuentas en la carrera. */
     protected function authorizeCareer(Usuario $user, int $careerId): void {}
 
+    /**
+     * Columnas opcionales propias de la pantalla, después de las comunes.
+     *
+     * @return list<string>
+     */
+    protected function extraColumns(): array
+    {
+        return [];
+    }
+
+    /**
+     * Ajustes propios de la pantalla sobre la cuenta recién creada.
+     *
+     * @param  array<string, string|null>  $row
+     */
+    protected function afterCreate(Usuario $account, array $row): void {}
+
+    /**
+     * La fila corresponde a una cuenta ya registrada. Devuelve un aviso si la
+     * actualizó; con null la fila se informa como ya registrada.
+     *
+     * @param  array<string, string|null>  $row
+     */
+    protected function updateExisting(Usuario $account, array $row, ?int $careerId): ?string
+    {
+        return null;
+    }
+
     public function columns(): array
     {
         $required = ['correo', ...$this->requiredColumns()];
+        $columns = [...self::COLUMNS, ...$this->extraColumns()];
 
-        return array_combine(self::COLUMNS, array_map(fn (string $column): bool => in_array($column, $required, true), self::COLUMNS));
+        return array_combine($columns, array_map(fn (string $column): bool => in_array($column, $required, true), $columns));
     }
 
     /**
      * @param  array<string, string>  $values
      * @return array<string, string>
      */
-    protected static function exampleRow(array $values): array
+    protected function exampleRow(array $values): array
     {
-        return array_merge(array_fill_keys(self::COLUMNS, ''), $values);
+        return array_merge(array_fill_keys([...self::COLUMNS, ...$this->extraColumns()], ''), $values);
     }
 
     /**
@@ -87,7 +116,7 @@ abstract class AccountImporter implements Importer
         return [];
     }
 
-    public function import(array $row, Usuario $user): void
+    public function import(array $row, Usuario $user): ?string
     {
         $role = $this->role($row);
         $careerId = null;
@@ -102,6 +131,11 @@ abstract class AccountImporter implements Importer
             }
             // Acepta «6», «6.º», «6to»…: cuenta el número inicial.
             $cycleId = $this->lookup->cycleId((int) $careerId, preg_match('/^\d+/', $row['ciclo'], $number) ? $number[0] : $row['ciclo']);
+        }
+
+        $existing = $row['correo'] === null ? null : Usuario::query()->where('correo', mb_strtolower($row['correo']))->first();
+        if ($existing !== null && ($notice = $this->updateExisting($existing, $row, $careerId)) !== null) {
+            return $notice;
         }
 
         $data = Validator::make([
@@ -133,8 +167,11 @@ abstract class AccountImporter implements Importer
         if ($cycleId !== null) {
             $this->cycles->assign($account, Ciclo::query()->findOrFail($cycleId));
         }
+        $this->afterCreate($account, $row);
 
         $account->notify(new QueuedProvisionalPasswordNotification($provisionalPassword));
+
+        return null;
     }
 
     /** El sistema guarda un solo campo con apellidos y nombres, en ese orden. */

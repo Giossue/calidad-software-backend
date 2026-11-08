@@ -33,7 +33,7 @@ class SubjectsImporter implements Importer
         return $user->can('create', Subject::class);
     }
 
-    public function import(array $row, Usuario $user): void
+    public function import(array $row, Usuario $user): ?string
     {
         $careerId = $this->lookup->careerId($row['carrera']);
         $data = $this->validator->validate(SubjectRequest::class, array_filter([
@@ -51,5 +51,7 @@ class SubjectsImporter implements Importer
             'cycle_id' => $data['cycle_id'] ?? null,
             'modality_id' => $data['modality_id'] ?? null,
         ]);
+
+        return null;
     }
 }

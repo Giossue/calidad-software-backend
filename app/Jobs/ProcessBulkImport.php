@@ -52,8 +52,12 @@ class ProcessBulkImport implements ShouldQueue
                 if (! $user->estado || ! $importer->authorize($user)) {
                     throw new AuthorizationException;
                 }
-                DB::transaction(fn () => $importer->import($row['values'], $user));
-                $created++;
+                $notice = DB::transaction(fn () => $importer->import($row['values'], $user));
+                if ($notice === null) {
+                    $created++;
+                } else {
+                    $warnings[] = ['row' => $row['line'], 'messages' => [$notice]];
+                }
             } catch (ValidationException $exception) {
                 $entry = ['row' => $row['line'], 'messages' => array_values(array_unique(Arr::flatten($exception->errors())))];
                 if (self::isAlreadyRegistered($exception)) {

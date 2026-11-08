@@ -13,6 +13,7 @@ use App\Models\Usuario;
 use App\Notifications\ProvisionalPasswordNotification;
 use App\Rules\CedulaOPasaporte;
 use App\Support\InstitutionalEmail;
+use App\Support\PendingSubjects;
 use App\Support\ProvisionalPassword;
 use App\Support\StudentCycle;
 use Illuminate\Database\Eloquent\Builder;
@@ -52,6 +53,7 @@ class CoordinatorEnrollmentController extends Controller
             ->whereHas('paralelos', fn (Builder $query) => $query->where('paralelo.id_paralelo', $tutoring->fk_paralelo)->where('usuario_paralelo.estado', true))
             ->whereDoesntHave('inscripciones', fn (Builder $query) => $query->where('fk_asig_tutoria', $tutoring->getKey())->where('estado', true));
         StudentCycle::scopeTutoringStage($query);
+        PendingSubjects::scopeCanTake($query, $tutoring);
         if ($request->filled('search')) {
             $search = '%'.$request->string('search').'%';
             $query->where(fn (Builder $query) => $query->whereLike('nombre', $search)->orWhereLike('cedula', $search)->orWhereLike('correo', $search));
@@ -76,6 +78,7 @@ class CoordinatorEnrollmentController extends Controller
                     throw ValidationException::withMessages(['student_id' => 'Selecciona un estudiante activo del paralelo de esta tutoría.']);
                 }
                 app(StudentCycle::class)->assertCanTakeTutorings($student);
+                PendingSubjects::assertCanTake($student, $locked);
             } else {
                 $password = ProvisionalPassword::generate();
                 $student = Usuario::query()->create([

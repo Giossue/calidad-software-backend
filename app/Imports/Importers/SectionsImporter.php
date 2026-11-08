@@ -33,12 +33,14 @@ class SectionsImporter implements Importer
         return $user->can('viewAny', TemaTitulacion::class);
     }
 
-    public function import(array $row, Usuario $user): void
+    public function import(array $row, Usuario $user): ?string
     {
         $data = $this->validator->validate(RegisterPeriodSectionRequest::class, ['name' => $row['nombre']], $user);
         $period = PeriodoAcademico::periodoVigente()
             ?? throw ValidationException::withMessages(['nombre' => 'No existe un período académico vigente.']);
 
         $this->registerSection->handle($period, $data['name']);
+
+        return null;
     }
 }

@@ -27,10 +27,12 @@ class FacultiesImporter implements Importer
         return $user->can('create', Facultad::class);
     }
 
-    public function import(array $row, Usuario $user): void
+    public function import(array $row, Usuario $user): ?string
     {
         $data = $this->validator->validate(StoreFacultyRequest::class, ['name' => $row['nombre']], $user);
 
         Facultad::query()->create(['nombre' => $data['name']]);
+
+        return null;
     }
 }

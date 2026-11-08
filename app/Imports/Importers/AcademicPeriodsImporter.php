@@ -31,7 +31,7 @@ class AcademicPeriodsImporter implements Importer
         return $user->can('create', PeriodoAcademico::class);
     }
 
-    public function import(array $row, Usuario $user): void
+    public function import(array $row, Usuario $user): ?string
     {
         $data = $this->validator->validate(StoreAcademicPeriodRequest::class, [
             'nombre' => $row['nombre'],
@@ -40,5 +40,7 @@ class AcademicPeriodsImporter implements Importer
         ], $user);
 
         $this->createAcademicPeriod->handle($data);
+
+        return null;
     }
 }

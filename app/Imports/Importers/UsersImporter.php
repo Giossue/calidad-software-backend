@@ -17,7 +17,7 @@ class UsersImporter extends AccountImporter
 
     public function example(): array
     {
-        return self::exampleRow([
+        return $this->exampleRow([
             'correo' => 'ana.torres@ueb.edu.ec', 'cedula' => '0201234567', 'nombres' => 'Ana María', 'apellidos' => 'Torres Vera',
             'rol' => 'estudiante', 'facultad' => 'Ciencias Administrativas', 'carrera' => 'Software', 'ciclo' => '1', 'telefono' => '0991234567',
         ]);

@@ -32,6 +32,19 @@ estudiantes que aprobaron la asignatura previa.
   al estudiante y al docente.
 - Cambiar un aprobado a reprobado no retira la inscripción ya creada.
 
+## Asignaturas pendientes (arrastres)
+
+- `student_pending_subjects` guarda las asignaturas de ciclos anteriores que el
+  estudiante arrastra. Se cargan con la columna `asignaturas_pendientes` de la
+  carga masiva de estudiantes.
+- Quien arrastra una asignatura **no se ofrece ni se puede inscribir** en las que
+  la continúan, directa o indirectamente, en la malla. El resto de asignaturas de
+  su ciclo sí. Aplica a los estudiantes disponibles del docente y del coordinador,
+  a las tutorías disponibles de un estudiante y al avance automático.
+- Cuando el docente registra que aprobó la asignatura, deja de arrastrarla
+  (`App\Support\PendingSubjects`).
+- La lista de estudiantes del coordinador devuelve `pending_subjects`.
+
 ## Datos
 
 - Malla de Tecnologías de la Información (RCU-009-2022-044) cargada por la
