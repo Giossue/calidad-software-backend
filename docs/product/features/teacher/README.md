@@ -66,8 +66,11 @@ de coordinación.
    La cédula y el correo identifican la cuenta y su cambio corresponde a
    administración. **Desactivar inscripción** conserva el historial y no bloquea
    la cuenta global; **Reinscribir** reutiliza la inscripción anterior.
-5. En **Calificaciones**, registrar diagnóstico o parcial, consultar el grupo
+5. En **Estudiantes y Calificaciones** → **Calificaciones**, registrar diagnóstico o parcial, consultar el grupo
    calculado por el servidor y abrir el historial de notas.
+   Las pestañas de la tutoría van en este orden: **Asistencia** (se abre por
+   defecto), **Contenido**, **Horarios** y **Estudiantes y Calificaciones**, que
+   reúne la lista de estudiantes y sus notas (`?tab=grades` abre las notas).
 6. En **Contenido**, crear temas y abrir sus **Actividades** y **Metodologías**.
    Las acciones de edición y baja lógica se ofrecen dentro de cada nivel.
 7. En **Asistencia**, elegir una fecha dentro del período y hasta hoy. Cada
