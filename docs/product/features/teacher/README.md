@@ -157,6 +157,8 @@ grupo diagnóstico.
   un padre bloquea nuevos cambios en sus elementos, conservando su consulta.
 - El nombre de un tema es único dentro de su tutoría y el de una actividad dentro
   de su tema, incluidos los registros deshabilitados.
+- Cada vez que se imparte la tutoría es una sesión, numerada por fecha (`number`:
+  Sesión 1, 2…), también para el estudiante (`session_number`) y el coordinador.
 - Las sesiones se identifican por tutoría y fecha. Repetir el guardado actualiza
   la sesión y la asistencia, conservando las demás fechas.
 - La UI exige marcar a todos los estudiantes activos. La API admite guardar un

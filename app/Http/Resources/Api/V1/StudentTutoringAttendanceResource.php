@@ -72,6 +72,7 @@ class StudentTutoringAttendanceResource extends JsonResource
 
                 return [
                     'id' => $asistencia->getKey(),
+                    'session_number' => $session?->number(),
                     'date' => $asistencia->fecha?->toDateString(),
                     'present' => (bool) $asistencia->estado_asistencia,
                     'status' => $asistencia->estado_asistencia ? 'presente' : 'ausente',

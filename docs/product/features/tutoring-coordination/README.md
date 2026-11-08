@@ -25,7 +25,7 @@ React del repositorio `calidad-software-frontend`.
 | COOR-13 | Registrar horario | Día, inicio, fin y aula obligatorios; duración positiva y sin superposición activa en la misma tutoría. |
 | COOR-14 | Actualizar horario | El horario pertenece a la tutoría seleccionada; valida también los cambios parciales. |
 | COOR-15 | Deshabilitar horario | Baja lógica; un horario deshabilitado no bloquea su reemplazo. |
-| COOR-16 | Consultar asistencia | Muestra solamente la asistencia registrada de la tutoría autorizada; solo lectura. |
+| COOR-16 | Consultar asistencia | Muestra la asistencia de la tutoría autorizada por sesión: cada vez que se imparte es una sesión numerada (Sesión 1, 2…) con su fecha, temas, presentes y su lista; solo lectura. |
 | COOR-17 | Revisar informes | Muestra autor, tipo, fecha, contenido disponible y resumen de la tutoría; solo lectura. |
 
 ## Acceso por rol
@@ -169,6 +169,7 @@ permiso `403`.
 | PATCH | `/tutorings/{tutoring}/schedules/{schedule}` | Cambios parciales de día, horas y aula. |
 | PATCH | `/tutorings/{tutoring}/schedules/{schedule}/deactivate` | Baja lógica. |
 | GET | `/tutorings/{tutoring}/attendance` | Asistencia; `page`, `per_page`. |
+| GET | `/tutorings/{tutoring}/sessions` | Sesiones de la más reciente a la primera, con `number`, `date`, `topics`, `present_count`, `absent_count` y `attendance`; `page`, `per_page`. |
 | GET | `/tutorings/{tutoring}/reports` | Informes y resumen; `page`, `per_page`. |
 
 `day` usa `lunes`, `martes`, `miercoles`, `jueves`, `viernes`, `sabado` o

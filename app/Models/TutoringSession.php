@@ -18,6 +18,15 @@ class TutoringSession extends Model
         return ['date' => 'date', 'topics_covered' => 'boolean'];
     }
 
+    /** Número de la sesión dentro de su tutoría, en orden de fecha (la primera es la 1). */
+    public function number(): int
+    {
+        return self::query()->where('tutoring_id', $this->tutoring_id)
+            ->where(fn ($query) => $query->whereDate('date', '<', $this->date)
+                ->orWhere(fn ($same) => $same->whereDate('date', $this->date)->where('id', '<=', $this->getKey())))
+            ->count();
+    }
+
     /** @return BelongsTo<AsignaturaTutoria, $this> */
     public function tutoring(): BelongsTo
     {

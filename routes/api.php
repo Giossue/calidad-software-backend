@@ -274,6 +274,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::patch('tutorings/{tutoring}/schedules/{schedule}', [TutoringScheduleController::class, 'update'])->name('schedules.update');
             Route::patch('tutorings/{tutoring}/schedules/{schedule}/deactivate', [TutoringScheduleController::class, 'deactivate'])->name('schedules.deactivate');
             Route::get('tutorings/{tutoring}/attendance', [TutoringSupervisionController::class, 'attendance'])->name('tutorings.attendance');
+            Route::get('tutorings/{tutoring}/sessions', [TutoringSupervisionController::class, 'sessions'])->name('tutorings.sessions');
             Route::get('tutorings/{tutoring}/reports', [TutoringSupervisionController::class, 'reports'])->name('tutorings.reports');
             Route::get('reports', [TutoringSupervisionController::class, 'allReports'])->name('tutorings.all-reports');
 

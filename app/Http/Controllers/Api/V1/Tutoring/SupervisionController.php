@@ -5,9 +5,11 @@ namespace App\Http\Controllers\Api\V1\Tutoring;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\TutoringAttendanceResource;
 use App\Http\Resources\Api\V1\TutoringReportResource;
+use App\Http\Resources\Api\V1\TutoringSupervisionSessionResource;
 use App\Models\AsignaturaTutoria;
 use App\Models\Asistencia;
 use App\Models\Reporte;
+use App\Models\TutoringSession;
 use App\Support\TutoringCoordinatorAccess;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -23,6 +25,18 @@ class SupervisionController extends Controller
         return TutoringAttendanceResource::collection(Asistencia::query()
             ->whereHas('inscripcion', fn (Builder $q) => $q->where('fk_asig_tutoria', $tutoring->getKey()))
             ->with('estudiante', 'session')->orderByDesc('fecha')->paginate(min(max($request->integer('per_page', 20), 1), 100)));
+    }
+
+    /** Sesiones de la tutoría, de la más reciente a la primera, cada una con su lista. */
+    public function sessions(Request $request, AsignaturaTutoria $tutoring): AnonymousResourceCollection
+    {
+        Gate::authorize('view', $tutoring);
+
+        return TutoringSupervisionSessionResource::collection(TutoringSession::query()
+            ->where('tutoring_id', $tutoring->getKey())
+            ->with(['topics', 'attendance.estudiante'])
+            ->orderByDesc('date')->orderByDesc('id')
+            ->paginate(min(max($request->integer('per_page', 20), 1), 100)));
     }
 
     public function reports(Request $request, AsignaturaTutoria $tutoring): AnonymousResourceCollection

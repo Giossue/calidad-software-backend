@@ -51,6 +51,7 @@ class SessionResource extends JsonResource
         return [
             'id' => $this->getKey(),
             'tutoring_id' => $this->tutoring_id,
+            'number' => $this->number(),
             'date' => $this->date->toDateString(),
             'topics_covered' => $this->topics_covered,
             'topics' => $topics->map(fn (Tema $topic) => [

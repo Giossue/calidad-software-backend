@@ -7,6 +7,8 @@ use App\Models\Asistencia;
 use App\Models\Horario;
 use App\Models\InscripcionTutoria;
 use App\Models\Reporte;
+use App\Models\Tema;
+use App\Models\TutoringSession;
 use App\Models\Usuario;
 use Laravel\Sanctum\Sanctum;
 
@@ -105,6 +107,38 @@ class ScheduleAndSupervisionTest extends TutoringTestCase
         $this->patchJson($url.'/deactivate')->assertOk();
         $this->postJson($url.'/schedules', $this->schedulePayload())->assertUnprocessable();
         $this->getJson($url.'/schedules')->assertOk()->assertJsonCount(1, 'data');
+    }
+
+    public function test_supervision_lists_each_session_numbered_with_its_own_attendance(): void
+    {
+        $tutoring = $this->createTutoring();
+        $ana = Usuario::factory()->withRole('estudiante')->create(['nombre' => 'Ana Pérez']);
+        $luis = Usuario::factory()->withRole('estudiante')->create(['nombre' => 'Luis Mora']);
+        $enrollments = collect([$luis, $ana])->map(fn (Usuario $student) => InscripcionTutoria::query()->create([
+            'fk_asig_tutoria' => $tutoring->getKey(), 'fk_id_usuario' => $student->getKey(), 'fecha_inscripcion' => '2026-05-02', 'estado' => true,
+        ]));
+        $topic = Tema::query()->create(['fk_asig_tutoria' => $tutoring->getKey(), 'nombre' => 'Derivadas', 'estado' => true]);
+        foreach (['2026-05-04' => [true, true], '2026-05-11' => [false, true]] as $date => $present) {
+            $session = TutoringSession::query()->create(['tutoring_id' => $tutoring->getKey(), 'recorded_by' => $this->coordinator->getKey(), 'date' => $date, 'topics_covered' => true]);
+            $session->topics()->attach($topic->getKey());
+            foreach ($enrollments as $index => $enrollment) {
+                Asistencia::query()->create(['fk_inscripcion' => $enrollment->getKey(), 'fk_id_usuario' => $enrollment->fk_id_usuario, 'fecha' => $date, 'estado_asistencia' => $present[$index], 'session_id' => $session->getKey()]);
+            }
+        }
+        Sanctum::actingAs($this->coordinator, ['*']);
+
+        $this->getJson(self::API.'/tutorings/'.$tutoring->getKey().'/sessions')->assertOk()
+            ->assertJsonCount(2, 'data')
+            ->assertJsonPath('data.0.number', 2)
+            ->assertJsonPath('data.0.date', '2026-05-11')
+            ->assertJsonPath('data.0.present_count', 1)
+            ->assertJsonPath('data.0.absent_count', 1)
+            ->assertJsonPath('data.0.topics.0.name', 'Derivadas')
+            ->assertJsonPath('data.0.attendance.0.student_name', 'Ana Pérez')
+            ->assertJsonPath('data.0.attendance.1.present', false)
+            ->assertJsonPath('data.1.number', 1)
+            ->assertJsonPath('data.1.present_count', 2);
+        $this->getJson(self::API.'/tutorings/'.$this->createTutoring($this->otherCycle)->getKey().'/sessions')->assertForbidden();
     }
 
     public function test_supervision_returns_only_records_of_the_authorized_tutoring_and_preserves_history(): void
