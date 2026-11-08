@@ -17,6 +17,11 @@ final class InstitutionalEmail
         return 'ends_with:'.implode(',', self::DOMAINS);
     }
 
+    public static function isInstitutional(string $email): bool
+    {
+        return array_any(self::DOMAINS, fn (string $domain): bool => str_ends_with(mb_strtolower($email), $domain));
+    }
+
     public static function message(): string
     {
         return 'El correo debe ser institucional ('.implode(' o ', self::DOMAINS).').';

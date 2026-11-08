@@ -94,7 +94,7 @@ class StudentsImporter extends AccountImporter
 
         $subjects = Subject::query()->where('career_id', $careerId)->with('cycles:id_ciclo,numero')->get(['id', 'code', 'name']);
 
-        return $names->map(function (string $name) use ($subjects, $studentCycle): int {
+        return array_values($names->map(function (string $name) use ($subjects, $studentCycle): int {
             $needle = CatalogLookup::normalize($name);
             $subject = $subjects->first(fn (Subject $subject): bool => $subject->code !== null && CatalogLookup::normalize($subject->code) === $needle)
                 ?? $subjects->first(fn (Subject $subject): bool => CatalogLookup::normalize($subject->name) === $needle);
@@ -108,6 +108,6 @@ class StudentsImporter extends AccountImporter
             }
 
             return $subject->id;
-        })->values()->all();
+        })->all());
     }
 }

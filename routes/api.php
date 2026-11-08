@@ -39,6 +39,7 @@ use App\Http\Controllers\Api\V1\Tutoring\CatalogController as TutoringCatalogCon
 use App\Http\Controllers\Api\V1\Tutoring\CoordinatorDegreeEnrollmentController;
 use App\Http\Controllers\Api\V1\Tutoring\CoordinatorEnrollmentController;
 use App\Http\Controllers\Api\V1\Tutoring\CoordinatorStudentController;
+use App\Http\Controllers\Api\V1\Tutoring\RosterImportController;
 use App\Http\Controllers\Api\V1\Tutoring\ScheduleController as TutoringScheduleController;
 use App\Http\Controllers\Api\V1\Tutoring\SubjectController as TutoringSubjectController;
 use App\Http\Controllers\Api\V1\Tutoring\SupervisionController as TutoringSupervisionController;
@@ -255,6 +256,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
 
             Route::get('tutorings', [TutoringController::class, 'index'])->name('tutorings.index');
             Route::post('tutorings', [TutoringController::class, 'store'])->name('tutorings.store');
+            Route::post('roster-imports', RosterImportController::class)->middleware('throttle:20,1')->name('roster-imports.store');
             Route::patch('tutorings/{tutoring}', [TutoringController::class, 'update'])->name('tutorings.update');
             Route::patch('tutorings/{tutoring}/deactivate', [TutoringController::class, 'deactivate'])->name('tutorings.deactivate');
             Route::patch('tutorings/{tutoring}/activate', [TutoringController::class, 'activate'])->name('tutorings.activate');
