@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Curricula;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -13,12 +14,21 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $code
  * @property string $name
  * @property int|null $modality_id
+ * @property int|null $curriculum_id
  * @property bool $is_active
  * @property-read Carrera|null $career
  */
 class Subject extends Model
 {
-    protected $fillable = ['career_id', 'code', 'name', 'modality_id', 'is_active'];
+    protected $fillable = ['career_id', 'curriculum_id', 'code', 'name', 'modality_id', 'is_active'];
+
+    protected static function booted(): void
+    {
+        // Sin malla indicada, la asignatura entra en la malla que rige hoy en su carrera.
+        static::creating(function (Subject $subject): void {
+            $subject->curriculum_id ??= Curricula::inForceAt($subject->career_id)->id;
+        });
+    }
 
     /** @return array<string, string> */
     protected function casts(): array
@@ -30,6 +40,12 @@ class Subject extends Model
     public function career(): BelongsTo
     {
         return $this->belongsTo(Carrera::class, 'career_id');
+    }
+
+    /** @return BelongsTo<Curriculum, $this> */
+    public function curriculum(): BelongsTo
+    {
+        return $this->belongsTo(Curriculum::class, 'curriculum_id');
     }
 
     /** @return BelongsTo<Modalidad, $this> */

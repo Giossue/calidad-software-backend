@@ -19,6 +19,7 @@ class TutoringSubjectResource extends JsonResource
         return [
             'id' => $this->getKey(),
             'career_id' => $this->career_id,
+            'curriculum_id' => $this->curriculum_id,
             'career_name' => $this->whenLoaded('career', fn () => $this->career->nombre),
             'code' => $this->code,
             'name' => $this->name,

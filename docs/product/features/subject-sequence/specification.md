@@ -16,7 +16,8 @@ estudiantes que aprobaron la asignatura previa.
 
 - `subject_sequences`: `next_subject_id` continúa a `subject_id`. Una asignatura
   puede tener varias previas y continuar en varias. Ambas son de la misma
-  carrera; no se permiten ciclos (A → B → A).
+  carrera y malla; no se permiten ciclos (A → B → A). Ver
+  [versiones de la malla](../curriculum-versions/specification.md).
 - Para avanzar a una asignatura hay que **aprobar todas sus previas**. Una
   asignatura sin secuencia termina la cadena.
 - El resultado final es `approved` o `failed` en `inscripcion_tutoria.final_result`

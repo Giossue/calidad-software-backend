@@ -13,6 +13,7 @@ use App\Http\Resources\Api\V1\Teacher\EnrollmentResource;
 use App\Models\AsignaturaTutoria;
 use App\Models\InscripcionTutoria;
 use App\Models\Usuario;
+use App\Support\Curricula;
 use App\Support\PendingSubjects;
 use App\Support\StudentCycle;
 use Illuminate\Database\Eloquent\Builder;
@@ -44,6 +45,7 @@ class EnrollmentController extends Controller
             ->whereDoesntHave('inscripciones', fn (Builder $query) => $query->where('fk_asig_tutoria', $tutoring->getKey())->where('estado', true));
         StudentCycle::scopeTutoringStage($query);
         PendingSubjects::scopeCanTake($query, $tutoring);
+        Curricula::scopeFollows($query, $tutoring);
         if ($request->filled('search')) {
             $search = '%'.$request->string('search').'%';
             $query->where(fn (Builder $query) => $query->whereLike('nombre', $search)->orWhereLike('cedula', $search)->orWhereLike('correo', $search));

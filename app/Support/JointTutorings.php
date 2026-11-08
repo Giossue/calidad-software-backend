@@ -25,7 +25,7 @@ class JointTutorings
      * Tutorías activas del mismo docente, período y asignatura que coinciden en
      * horario con `$tutoring`, con los días en que coinciden.
      *
-     * @return Collection<int, array{tutoring: AsignaturaTutoria, days: list<string>}>
+     * @return Collection<int, array{tutoring: AsignaturaTutoria, days: non-empty-list<string>}>
      */
     public static function for(AsignaturaTutoria $tutoring): Collection
     {
@@ -47,11 +47,11 @@ class JointTutorings
             ->filter(fn (AsignaturaTutoria $other): bool => self::sameSubject($other->nombre, $tutoring->nombre))
             ->map(fn (AsignaturaTutoria $other): array => [
                 'tutoring' => $other,
-                'days' => $own->flatMap(fn (Horario $mine) => $other->horarios
+                'days' => array_values($own->flatMap(fn (Horario $mine) => $other->horarios
                     ->filter(fn (Horario $theirs): bool => self::day($theirs->dia_semana) === self::day($mine->dia_semana)
                         && $mine->hora_inicio < $theirs->hora_fin && $theirs->hora_inicio < $mine->hora_fin)
                     ->map(fn (): string => self::day($mine->dia_semana)))
-                    ->unique()->values()->all(),
+                    ->unique()->all()),
             ])
             ->filter(fn (array $joint): bool => $joint['days'] !== [])
             ->values();

@@ -26,6 +26,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property bool $must_complete_profile
  * @property int|null $fk_carrera
  * @property int|null $fk_ciclo
+ * @property int|null $curriculum_id
  * @property Carbon|null $email_verified_at
  * @property string $password_hash
  * @property string|null $two_factor_secret
