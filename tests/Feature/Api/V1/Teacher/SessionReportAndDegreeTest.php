@@ -25,7 +25,9 @@ class SessionReportAndDegreeTest extends TeacherTestCase
         $this->assertTrue($topic->refresh()->visto);
         $data['attendance'][0]['present'] = false;
         $data['topics_covered'] = false;
-        $this->putJson($this->path('/sessions'), $data)->assertOk()->assertJsonPath('data.attendance.0.present', false)->assertJsonCount(0, 'data.topics');
+        $this->putJson($this->path('/sessions'), $data)->assertOk()->assertJsonPath('data.attendance.0.present', false);
+        // El tema ya no queda vinculado a la sesión (se sigue mostrando por haberse registrado ese día).
+        $this->assertDatabaseCount('tutoring_session_topic', 0);
         $this->assertFalse($topic->refresh()->visto);
         Sanctum::actingAs($this->coordinator, ['access-api']);
         $this->getJson(self::API.'/tutorings/'.$this->tutoring->getKey().'/attendance')->assertOk()->assertJsonPath('data.0.present', false)->assertJsonPath('data.0.topics_covered', false);

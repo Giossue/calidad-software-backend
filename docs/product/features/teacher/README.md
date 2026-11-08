@@ -159,6 +159,10 @@ grupo diagnóstico.
   de su tema, incluidos los registros deshabilitados.
 - Cada vez que se imparte la tutoría es una sesión, numerada por fecha (`number`:
   Sesión 1, 2…), también para el estudiante (`session_number`) y el coordinador.
+- La sesión nace al tomar asistencia. Sus temas son los vinculados al tomar la
+  lista o desde Contenido («Asignar temas a esta sesión»); si no tiene ninguno
+  vinculado, los que se registraron ese día en la tutoría. Contenido se filtra
+  por sesión y, en «Todas», indica en qué sesión se trató cada tema.
 - Las sesiones se identifican por tutoría y fecha. Repetir el guardado actualiza
   la sesión y la asistencia, conservando las demás fechas.
 - La UI exige marcar a todos los estudiantes activos. La API admite guardar un

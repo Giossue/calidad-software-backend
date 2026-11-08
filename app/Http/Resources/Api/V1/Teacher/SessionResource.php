@@ -30,19 +30,8 @@ class SessionResource extends JsonResource
             ->orderBy('id_actividad')
             ->get();
 
-        $topics = $this->topics;
-        if ($topics->isEmpty() && $this->topics_covered) {
-            $topics = Tema::query()
-                ->where('fk_asig_tutoria', $this->tutoring_id)
-                ->where('estado', true)
-                ->where(function ($q) use ($sessionDate) {
-                    $q->whereDate('created_at', $sessionDate)
-                        ->orWhereDate('updated_at', $sessionDate)
-                        ->orWhere('visto', true);
-                })
-                ->with(['actividades.metodologias'])
-                ->get();
-        }
+        // Temas de la sesión o, si no quedaron vinculados, los registrados ese día.
+        $topics = $this->topicsOfTheDay()->loadMissing('actividades.metodologias');
 
         if ($activities->isEmpty() && $topics->isNotEmpty()) {
             $activities = $topics->flatMap->actividades->where('estado', true)->values();
