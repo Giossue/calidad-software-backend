@@ -15,6 +15,7 @@ de coordinación.
 | DOC-04 | Estudiantes | Inscribir una cuenta existente del paralelo o registrar una cuenta estudiantil nueva. |
 | DOC-05 | Estudiantes | Actualizar nombre y teléfono de cuentas con rol exclusivamente estudiantil. |
 | DOC-06 | Estudiantes | Deshabilitar la inscripción conservando cuenta, notas y asistencia. |
+| DOC-06A | Resultado final | Registrar si el estudiante aprobó o reprobó la asignatura al cerrar el ciclo; el aprobado avanza a la asignatura siguiente de la malla (ver `../subject-sequence/specification.md`). |
 | DOC-07 | Asistencia | Guardar presentes y ausentes por fecha, junto con temas vistos. |
 | DOC-08 | Contenido | Registrar temas dentro de la tutoría propia. |
 | DOC-09 | Contenido | Actualizar nombre y descripción del tema. |

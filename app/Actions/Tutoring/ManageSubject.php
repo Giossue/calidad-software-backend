@@ -2,12 +2,12 @@
 
 namespace App\Actions\Tutoring;
 
+use App\Http\Requests\Api\V1\Tutoring\SubjectRequest;
 use App\Models\AsignaturaTutoria;
 use App\Models\Ciclo;
 use App\Models\Paralelo;
 use App\Models\Subject;
 use App\Models\Usuario;
-use App\Http\Requests\Api\V1\Tutoring\SubjectRequest;
 use App\Support\TutoringCoordinatorAccess;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -80,11 +80,53 @@ class ManageSubject
                 }
             }
 
+            if (array_key_exists('next_subject_ids', $data)) {
+                $this->syncNextSubjects($subject, $data['next_subject_ids'] ?? []);
+            }
+
             return $subject;
         });
     }
 
-    /** @param array{code?: string|null, name?: string, modality_id?: int|null} $data */
+    /**
+     * Asignaturas que continúan a `$subject` en la malla. No se permiten ciclos
+     * (A → B → A): la siguiente no puede llevar de vuelta a `$subject`.
+     *
+     * @param  array<int, int|string>  $nextIds
+     */
+    public function syncNextSubjects(Subject $subject, array $nextIds): void
+    {
+        $nextIds = array_values(array_unique(array_map('intval', $nextIds)));
+        foreach ($nextIds as $nextId) {
+            if ($this->leadsTo($nextId, $subject->getKey())) {
+                $name = Subject::query()->whereKey($nextId)->value('name');
+                throw ValidationException::withMessages(['next_subject_ids' => "«{$name}» ya lleva a esta asignatura en la secuencia; no puede continuarla."]);
+            }
+        }
+        $subject->nextSubjects()->sync($nextIds);
+    }
+
+    /** `$from` lleva a `$target` siguiendo la secuencia. */
+    private function leadsTo(int $from, int $target): bool
+    {
+        $pending = [$from];
+        $seen = [];
+        while ($pending !== []) {
+            $current = array_pop($pending);
+            if ($current === $target) {
+                return true;
+            }
+            if (isset($seen[$current])) {
+                continue;
+            }
+            $seen[$current] = true;
+            array_push($pending, ...DB::table('subject_sequences')->where('subject_id', $current)->pluck('next_subject_id')->all());
+        }
+
+        return false;
+    }
+
+    /** @param array{code?: string|null, name?: string, modality_id?: int|null, next_subject_ids?: array<int, int>|null} $data */
     public function update(Subject $subject, array $data): Subject
     {
         $originalName = $subject->name;
@@ -101,6 +143,10 @@ class ManageSubject
 
         if (array_key_exists('modality_id', $data) && empty($data['modality_id'])) {
             $subject->forceFill(['modality_id' => null])->save();
+        }
+
+        if (array_key_exists('next_subject_ids', $data)) {
+            $this->syncNextSubjects($subject, $data['next_subject_ids'] ?? []);
         }
 
         // Las tutorías guardan una copia del nombre de la asignatura.

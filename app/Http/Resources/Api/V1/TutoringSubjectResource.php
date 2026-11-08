@@ -29,6 +29,9 @@ class TutoringSubjectResource extends JsonResource
             'is_active' => $this->is_active,
             'cycle_ids' => $this->whenLoaded('cycles', fn () => $this->cycles->pluck('id_ciclo')->all()),
             'parallel_ids' => $this->whenLoaded('cycles', fn () => $this->cycles->pluck('fk_paralelo')->filter()->unique()->values()->all()),
+            // Secuencia de la malla: a qué asignaturas continúa y cuáles hay que aprobar antes.
+            'next_subjects' => $this->whenLoaded('nextSubjects', fn () => $this->nextSubjects->map(fn ($next) => ['id' => $next->id, 'code' => $next->code, 'name' => $next->name])->values()->all()),
+            'previous_subjects' => $this->whenLoaded('previousSubjects', fn () => $this->previousSubjects->map(fn ($previous) => ['id' => $previous->id, 'code' => $previous->code, 'name' => $previous->name])->values()->all()),
         ];
     }
 }

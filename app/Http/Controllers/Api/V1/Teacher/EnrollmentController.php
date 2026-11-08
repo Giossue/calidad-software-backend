@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Teacher;
 use App\Actions\Teacher\ManageEnrollment;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Teacher\EnrollmentRequest;
+use App\Http\Requests\Api\V1\Teacher\FinalResultRequest;
 use App\Http\Requests\Api\V1\Teacher\TeacherListRequest;
 use App\Http\Requests\Api\V1\Teacher\TeacherMutationRequest;
 use App\Http\Resources\Api\V1\Teacher\AvailableStudentResource;
@@ -62,5 +63,10 @@ class EnrollmentController extends Controller
     public function deactivate(TeacherMutationRequest $request, AsignaturaTutoria $tutoring, InscripcionTutoria $enrollment, ManageEnrollment $action): EnrollmentResource
     {
         return EnrollmentResource::make($action->deactivate($request->user(), $tutoring, $enrollment));
+    }
+
+    public function finalResult(FinalResultRequest $request, AsignaturaTutoria $tutoring, InscripcionTutoria $enrollment, ManageEnrollment $action): EnrollmentResource
+    {
+        return EnrollmentResource::make($action->recordFinalResult($request->user(), $tutoring, $enrollment, $request->validated('result')));
     }
 }

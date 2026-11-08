@@ -41,6 +41,7 @@ class SubjectRequest extends FormRequest
         $normalized = Normalizer::normalize($name, Normalizer::FORM_D);
         // Remove non-spacing marks (accents)
         $normalized = preg_replace('/\p{Mn}/u', '', $normalized ?? $name);
+
         return mb_strtoupper($normalized ?? $name);
     }
 
@@ -74,6 +75,9 @@ class SubjectRequest extends FormRequest
             'period_id' => $creating
                 ? ['nullable', 'integer', Rule::exists('periodo_academico', 'id_periodo')->where('estado', true)]
                 : ['prohibited'],
+            'next_subject_ids' => ['sometimes', 'nullable', 'array', 'max:10'],
+            'next_subject_ids.*' => ['integer', 'distinct', Rule::exists('subjects', 'id')->where('career_id', $careerId),
+                Rule::notIn($subject instanceof Subject ? [$subject->getKey()] : [])],
             'name' => [
                 ($creating ? 'required' : 'sometimes'),
                 'string',
@@ -82,6 +86,15 @@ class SubjectRequest extends FormRequest
                     ->where('career_id', $careerId)
                     ->ignore($this->route('subject')),
             ],
+        ];
+    }
+
+    /** @return array<string, string> */
+    public function messages(): array
+    {
+        return [
+            'next_subject_ids.*.exists' => 'La asignatura que continúa debe pertenecer a la misma carrera.',
+            'next_subject_ids.*.not_in' => 'Una asignatura no puede continuar en sí misma.',
         ];
     }
 }
