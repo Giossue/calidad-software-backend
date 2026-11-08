@@ -167,6 +167,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::post('tutorings/{tutoring}/students', [EnrollmentController::class, 'store'])->name('students.store');
             Route::patch('tutorings/{tutoring}/students/{enrollment}', [EnrollmentController::class, 'update'])->name('students.update');
             Route::patch('tutorings/{tutoring}/students/{enrollment}/deactivate', [EnrollmentController::class, 'deactivate'])->name('students.deactivate');
+            Route::put('tutorings/{tutoring}/students/{enrollment}/final-result', [EnrollmentController::class, 'finalResult'])->name('students.final-result');
             Route::put('tutorings/{tutoring}/students/{enrollment}/grades/{type}', [GradeController::class, 'store'])->whereIn('type', ['diagnostic', 'partial', 'partial_two'])->name('grades.store');
             Route::put('tutorings/{tutoring}/grades', [GradeController::class, 'bulk'])->name('grades.bulk');
 

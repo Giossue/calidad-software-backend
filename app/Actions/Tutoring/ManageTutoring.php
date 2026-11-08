@@ -18,7 +18,7 @@ use Illuminate\Validation\ValidationException;
 
 class ManageTutoring
 {
-    public function __construct(private TutoringCoordinatorAccess $access) {}
+    public function __construct(private TutoringCoordinatorAccess $access, private AdvanceApprovedStudents $advance) {}
 
     /** @param array{subject_id: int, cycle_id: int, period_id: int, modality_id: int, parallel_ids?: array<int>|null, parallel_id?: int|null, teacher_id?: int|null, schedules?: array<int, array{day: string, start_time: string, end_time: string, room?: string|null}>|null} $data */
     public function create(Usuario $user, array $data): AsignaturaTutoria
@@ -76,6 +76,8 @@ class ManageTutoring
                     ]);
 
                     $this->applyTeacherAndSchedules($tutoring, $data, $targetCycle);
+                    // Quienes aprobaron las asignaturas previas quedan inscritos.
+                    $this->advance->intoNewTutoring($tutoring);
 
                     $created[] = $tutoring;
                 }
@@ -99,6 +101,7 @@ class ManageTutoring
             ]);
 
             $this->applyTeacherAndSchedules($tutoring, $data, $baseCycle);
+            $this->advance->intoNewTutoring($tutoring);
 
             return $tutoring;
         });
@@ -167,8 +170,8 @@ class ManageTutoring
                 Horario::query()->create([
                     'fk_asig_tutoria' => $tutoring->getKey(),
                     'dia_semana' => $dayA,
-                    'hora_inicio' => $startA . ':00',
-                    'hora_fin' => $endA . ':00',
+                    'hora_inicio' => $startA.':00',
+                    'hora_fin' => $endA.':00',
                     'room' => $room,
                     'estado' => true,
                 ]);
@@ -278,8 +281,8 @@ class ManageTutoring
                     $room = trim($sched['room'] ?? '') ?: ($match->room ?: 'Por asignar');
                     $match->update([
                         'dia_semana' => $day,
-                        'hora_inicio' => $startTime . ':00',
-                        'hora_fin' => $endTime . ':00',
+                        'hora_inicio' => $startTime.':00',
+                        'hora_fin' => $endTime.':00',
                         'room' => $room,
                         'estado' => true,
                     ]);
@@ -288,8 +291,8 @@ class ManageTutoring
                     Horario::query()->create([
                         'fk_asig_tutoria' => $tutoring->getKey(),
                         'dia_semana' => $day,
-                        'hora_inicio' => $startTime . ':00',
-                        'hora_fin' => $endTime . ':00',
+                        'hora_inicio' => $startTime.':00',
+                        'hora_fin' => $endTime.':00',
                         'room' => $room,
                         'estado' => true,
                     ]);
@@ -404,8 +407,9 @@ class ManageTutoring
                 throw ValidationException::withMessages(['cycle_id' => 'El ciclo o la carrera de la tutoría están inactivos; no puede habilitarse.']);
             }
             $tutoring->update(['estado' => true]);
+            $this->advance->intoNewTutoring($tutoring->refresh());
 
-            return $tutoring->refresh();
+            return $tutoring;
         });
     }
 

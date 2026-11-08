@@ -14,6 +14,8 @@ class EnrollmentResource extends JsonResource
     {
         $student = $this->estudiante;
         $grades = $this->notas->sortByDesc('id_nota');
+        $partial = $grades->firstWhere('tipo', 'partial')?->valor;
+        $secondPartial = $grades->firstWhere('tipo', 'partial_two')?->valor;
 
         return [
             'id' => $this->getKey(), 'tutoring_id' => $this->fk_asig_tutoria, 'student_id' => $this->fk_id_usuario,
@@ -22,8 +24,12 @@ class EnrollmentResource extends JsonResource
             'enrolled_at' => $this->fecha_inscripcion->toDateString(),
             'can_edit_profile' => $student->hasRole('estudiante') && $student->roleSlugs()->count() === 1,
             'diagnostic_grade' => $grades->firstWhere('tipo', 'diagnostic')?->valor,
-            'partial_grade' => $grades->firstWhere('tipo', 'partial')?->valor,
-            'second_partial_grade' => $grades->firstWhere('tipo', 'partial_two')?->valor,
+            'partial_grade' => $partial,
+            'second_partial_grade' => $secondPartial,
+            'final_result' => $this->final_result,
+            // Sugerencia para el docente: promedio de los dos parciales frente a la nota mínima.
+            'suggested_result' => $partial === null || $secondPartial === null ? null
+                : ((((float) $partial + (float) $secondPartial) / 2) >= (float) config('teaching.passing_grade', 7) ? InscripcionTutoria::APPROVED : InscripcionTutoria::FAILED),
             'knowledge_group' => $this->knowledgeMetric?->descripcion,
             'knowledge_group_key' => $this->knowledgeMetric?->rango,
         ];

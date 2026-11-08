@@ -2,6 +2,7 @@
 
 namespace App\Actions\Teacher;
 
+use App\Actions\Tutoring\AdvanceApprovedStudents;
 use App\Models\AsignaturaTutoria;
 use App\Models\InscripcionTutoria;
 use App\Models\Role;
@@ -17,7 +18,7 @@ class ManageEnrollment
 {
     public const RELATIONS = ['estudiante.roles', 'notas', 'knowledgeMetric'];
 
-    public function __construct(private TeacherWorkspace $workspace, private StudentCycle $cycles) {}
+    public function __construct(private TeacherWorkspace $workspace, private StudentCycle $cycles, private AdvanceApprovedStudents $advance) {}
 
     /** @param array<string, mixed> $data */
     public function create(Usuario $teacher, AsignaturaTutoria $tutoring, array $data): InscripcionTutoria
@@ -73,6 +74,26 @@ class ManageEnrollment
         return $this->workspace->write($teacher, $tutoring, function () use ($tutoring, $enrollment): InscripcionTutoria {
             $this->workspace->enrollment($tutoring, $enrollment);
             $enrollment->update(['estado' => false]);
+
+            return $enrollment->refresh()->load(self::RELATIONS);
+        });
+    }
+
+    /**
+     * Resultado final del ciclo (`approved`, `failed` o null para quitarlo). Un aprobado
+     * avanza a la tutoría de la asignatura que continúa, si ya existe.
+     */
+    public function recordFinalResult(Usuario $teacher, AsignaturaTutoria $tutoring, InscripcionTutoria $enrollment, ?string $result): InscripcionTutoria
+    {
+        return $this->workspace->write($teacher, $tutoring, function () use ($tutoring, $enrollment, $result): InscripcionTutoria {
+            $this->workspace->enrollment($tutoring, $enrollment);
+            if (! $enrollment->estado) {
+                throw ValidationException::withMessages(['result' => 'La inscripción está deshabilitada; reinscribe al estudiante para registrar su resultado.']);
+            }
+            $enrollment->update(['final_result' => $result, 'final_result_at' => $result === null ? null : now()]);
+            if ($result === InscripcionTutoria::APPROVED) {
+                $this->advance->afterApproval($enrollment);
+            }
 
             return $enrollment->refresh()->load(self::RELATIONS);
         });

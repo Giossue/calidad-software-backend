@@ -45,6 +45,26 @@ class Subject extends Model
             ->withTimestamps();
     }
 
+    /**
+     * Asignaturas que continúan a esta en la malla curricular.
+     *
+     * @return BelongsToMany<Subject, $this>
+     */
+    public function nextSubjects(): BelongsToMany
+    {
+        return $this->belongsToMany(Subject::class, 'subject_sequences', 'subject_id', 'next_subject_id')->withTimestamps();
+    }
+
+    /**
+     * Asignaturas previas: hay que aprobarlas todas para avanzar a esta.
+     *
+     * @return BelongsToMany<Subject, $this>
+     */
+    public function previousSubjects(): BelongsToMany
+    {
+        return $this->belongsToMany(Subject::class, 'subject_sequences', 'next_subject_id', 'subject_id')->withTimestamps();
+    }
+
     /** @return HasMany<AsignaturaTutoria, $this> */
     public function tutorings(): HasMany
     {

@@ -16,6 +16,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * @property CarbonInterface $fecha_inscripcion
+ * @property string|null $final_result `approved` o `failed`, registrado por el docente al cerrar el ciclo.
+ * @property CarbonInterface|null $final_result_at
  * @property-read AsignaturaTutoria|null $asignaturaTutoria
  */
 #[ObservedBy([TutoringEnrollmentObserver::class])]
@@ -25,9 +27,13 @@ class InscripcionTutoria extends Model
 
     protected $primaryKey = 'id_inscripcion';
 
+    public const APPROVED = 'approved';
+
+    public const FAILED = 'failed';
+
     protected $fillable = [
         'fk_asig_tutoria', 'fk_id_usuario',
-        'fecha_inscripcion', 'estado',
+        'fecha_inscripcion', 'estado', 'final_result', 'final_result_at',
     ];
 
     protected function casts(): array
@@ -35,6 +41,7 @@ class InscripcionTutoria extends Model
         return [
             'estado' => 'boolean',
             'fecha_inscripcion' => 'date',
+            'final_result_at' => 'datetime',
         ];
     }
 
