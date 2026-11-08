@@ -50,6 +50,8 @@ estudiantes que aprobaron la asignatura previa.
 - Malla de Tecnologías de la Información (RCU-009-2022-044) cargada por la
   migración `2026_11_08_100200`, por código de asignatura y, sin código, por
   nombre.
+- Malla de Software (8 ciclos, modalidad presencial) cargada por la migración
+  `2026_11_09_100100`, por código de asignatura y, si no lo tiene, por nombre.
 
 ## API
 

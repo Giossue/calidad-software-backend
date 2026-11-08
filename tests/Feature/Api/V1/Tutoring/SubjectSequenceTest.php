@@ -10,6 +10,7 @@ use App\Models\Paralelo;
 use App\Models\PeriodoAcademico;
 use App\Models\Subject;
 use App\Models\Usuario;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Laravel\Sanctum\Sanctum;
 
@@ -155,5 +156,37 @@ class SubjectSequenceTest extends TutoringTestCase
         $this->assertEqualsCanonicalizing([$algebra->id, $calculus->id], $calculusTwo->previousSubjects()->pluck('subjects.id')->all());
         $this->assertSame([$integration->id], $practices->nextSubjects()->pluck('subjects.id')->all());
         $this->assertSame([], $software->nextSubjects()->pluck('subjects.id')->all());
+    }
+
+    public function test_software_curriculum_is_loaded_by_code_or_by_name_when_the_code_is_missing(): void
+    {
+        $make = fn (?string $code, string $name) => Subject::query()->create(['career_id' => $this->career->getKey(), 'code' => $code, 'name' => $name, 'is_active' => true]);
+        $calculus = $make('SW-B1-004', 'CÁLCULO I');
+        $calculusTwo = $make(null, 'Cálculo  II');
+        $calculusThree = $make('SW-B3-014', 'CALCULO III');
+        $statistics = $make(null, 'ESTADÍSTICA Y PROBABILIDADES');
+        $design = $make(null, 'Modelamiento y Diseño de Software');
+        $architecture = $make('SW-P5-024', 'ARQUITECTURA DEL SOFTWARE');
+        $maintenance = $make('SW-P6-029', 'MANTENIMIENTO Y CONFIGURACIÓN DE SOFTWARE');
+        $distributed = $make('SW-P7-034', 'APLICACIONES DISTRIBUIDAS');
+        $security = $make('SW-P7-035', 'SEGURIDAD DEL SOFTWARE');
+        $networks = $make('SW-P7-036', 'REDES DE DATOS');
+        $internship = $make(null, 'PRÁCTICAS PREPROFESIONALES');
+        $community = $make(null, 'PRÁCTICAS DE SERVICIO COMUNITARIO');
+        // La carrera de Administración no se toca aunque comparta nombres.
+        $otherCalculus = Subject::query()->create(['career_id' => $this->otherCareer->getKey(), 'code' => 'SW-B1-004', 'name' => 'CALCULO I', 'is_active' => true]);
+
+        $migration = require database_path('migrations/2026_11_09_100100_load_software_subject_sequences.php');
+        $migration->up();
+        $migration->up();
+
+        $this->assertSame([$calculusTwo->id], $calculus->nextSubjects()->pluck('subjects.id')->all());
+        $this->assertEqualsCanonicalizing([$calculusThree->id, $statistics->id], $calculusTwo->nextSubjects()->pluck('subjects.id')->all());
+        $this->assertSame([$architecture->id], $design->nextSubjects()->pluck('subjects.id')->all());
+        $this->assertSame([$maintenance->id], $architecture->nextSubjects()->pluck('subjects.id')->all());
+        $this->assertEqualsCanonicalizing([$distributed->id, $security->id, $networks->id], $maintenance->nextSubjects()->pluck('subjects.id')->all());
+        $this->assertSame([$community->id], $internship->nextSubjects()->pluck('subjects.id')->all());
+        $this->assertSame([], $otherCalculus->nextSubjects()->pluck('subjects.id')->all());
+        $this->assertSame(9, DB::table('subject_sequences')->count());
     }
 }
