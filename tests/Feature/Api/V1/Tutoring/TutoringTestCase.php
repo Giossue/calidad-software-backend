@@ -69,12 +69,12 @@ abstract class TutoringTestCase extends TestCase
         ]);
     }
 
-    protected function createSubject(?Ciclo $cycle = null, string $code = 'CS-101'): Subject
+    protected function createSubject(?Ciclo $cycle = null, string $code = 'CS-101', string $name = 'Calidad de software'): Subject
     {
         $cycle ??= $this->cycle;
         $subject = Subject::query()->create([
             'career_id' => $cycle->fk_carrera, 'code' => $code,
-            'name' => 'Calidad de software', 'is_active' => true,
+            'name' => $name, 'is_active' => true,
         ]);
         $subject->cycles()->attach($cycle);
 

@@ -161,7 +161,7 @@ class ScheduleAndSupervisionTest extends TutoringTestCase
     {
         $teacher = Usuario::factory()->withRole('docente')->create();
         $tutoring1 = $this->createTutoring();
-        $tutoring2 = $this->createTutoring(subject: $this->createSubject(code: 'CS-202'));
+        $tutoring2 = $this->createTutoring(subject: $this->createSubject(code: 'CS-202', name: 'Estadística'));
 
         Sanctum::actingAs($this->coordinator, ['*']);
 
@@ -191,7 +191,7 @@ class ScheduleAndSupervisionTest extends TutoringTestCase
     {
         $teacher = Usuario::factory()->withRole('docente')->create();
         $tutoring1 = $this->createTutoring();
-        $tutoring2 = $this->createTutoring(subject: $this->createSubject(code: 'CS-203'));
+        $tutoring2 = $this->createTutoring(subject: $this->createSubject(code: 'CS-203', name: 'Estadística'));
 
         Sanctum::actingAs($this->coordinator, ['*']);
 
@@ -217,7 +217,7 @@ class ScheduleAndSupervisionTest extends TutoringTestCase
         $teacher = Usuario::factory()->withRole('docente')->create();
         $this->teacher = $teacher;
         $subject1 = $this->createSubject();
-        $subject2 = $this->createSubject(code: 'CS-204');
+        $subject2 = $this->createSubject(code: 'CS-204', name: 'Estadística');
 
         Sanctum::actingAs($this->coordinator, ['*']);
 
@@ -264,7 +264,7 @@ class ScheduleAndSupervisionTest extends TutoringTestCase
     {
         $teacher = Usuario::factory()->withRole('docente')->create();
         $tutoring1 = $this->createTutoring();
-        $tutoring2 = $this->createTutoring(subject: $this->createSubject(code: 'CS-205'));
+        $tutoring2 = $this->createTutoring(subject: $this->createSubject(code: 'CS-205', name: 'Estadística'));
 
         Sanctum::actingAs($this->coordinator, ['*']);
 

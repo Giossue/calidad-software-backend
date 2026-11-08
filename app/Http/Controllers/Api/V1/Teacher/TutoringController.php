@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Teacher\TeacherListRequest;
 use App\Http\Resources\Api\V1\Teacher\TeacherTutoringResource;
 use App\Models\AsignaturaTutoria;
+use App\Support\JointTutorings;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -24,6 +26,20 @@ class TutoringController extends Controller
         }
 
         return TeacherTutoringResource::collection($query->orderByDesc('fk_periodo')->orderBy('nombre')->orderBy('id_asig_tutoria')->paginate($request->integer('per_page', 15)));
+    }
+
+    /** Tutorías que el docente dicta a la misma hora y de la misma asignatura (clase conjunta). */
+    public function joint(TeacherListRequest $request, AsignaturaTutoria $tutoring): JsonResponse
+    {
+        return response()->json(['data' => JointTutorings::for($tutoring)->map(fn (array $joint): array => [
+            'id' => $joint['tutoring']->getKey(),
+            'name' => $joint['tutoring']->nombre,
+            'career_name' => $joint['tutoring']->ciclo?->carrera?->nombre,
+            'cycle_number' => $joint['tutoring']->ciclo?->numero,
+            'section_name' => $joint['tutoring']->paralelo?->nombre,
+            'days' => $joint['days'],
+            'can_manage' => $request->user()->can('teach', $joint['tutoring']),
+        ])->values()]);
     }
 
     public function gradeSettings(TeacherListRequest $request): JsonResource

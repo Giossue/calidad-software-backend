@@ -4,6 +4,7 @@ namespace App\Actions\Tutoring;
 
 use App\Models\AsignaturaTutoria;
 use App\Models\Horario;
+use App\Support\JointTutorings;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -137,6 +138,9 @@ class ManageSchedule
         $endTimeFull = strlen($endTime) === 5 ? $endTime.':00' : $endTime;
         $dayVariants = self::getDayVariants($day);
 
+        // La misma asignatura del mismo docente a la misma hora es una clase conjunta, no un cruce.
+        $subjectName = $exceptTutoringId ? AsignaturaTutoria::query()->whereKey($exceptTutoringId)->value('nombre') : null;
+
         return Horario::query()
             ->where('estado', true)
             ->where(function ($q) use ($dayVariants) {
@@ -153,6 +157,7 @@ class ManageSchedule
                     ->when($exceptTutoringId, fn ($inner) => $inner->where('id_asig_tutoria', '!=', $exceptTutoringId));
             })
             ->with(['asignaturaTutoria'])
-            ->first();
+            ->get()
+            ->first(fn (Horario $schedule): bool => ! JointTutorings::sameSubject($schedule->asignaturaTutoria?->nombre, $subjectName));
     }
 }

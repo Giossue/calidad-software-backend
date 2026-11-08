@@ -163,6 +163,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::patch('degree-tracking/{topic}/activities/{activity}/toggle', [TeacherDegreeTrackingController::class, 'toggleActivity'])->name('degree-tracking.activities.toggle');
             Route::patch('degree-tracking/{topic}/progress', [TeacherDegreeTrackingController::class, 'updateProgress'])->name('degree-tracking.progress.update');
 
+            Route::get('tutorings/{tutoring}/joint-tutorings', [TeacherTutoringController::class, 'joint'])->name('tutorings.joint');
             Route::get('tutorings/{tutoring}/students', [EnrollmentController::class, 'index'])->name('students.index');
             Route::get('tutorings/{tutoring}/available-students', [EnrollmentController::class, 'available'])->name('students.available');
             Route::post('tutorings/{tutoring}/students', [EnrollmentController::class, 'store'])->name('students.store');
