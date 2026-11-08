@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Carbon\CarbonInterface;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -25,6 +26,26 @@ class TutoringSession extends Model
             ->where(fn ($query) => $query->whereDate('date', '<', $this->date)
                 ->orWhere(fn ($same) => $same->whereDate('date', $this->date)->where('id', '<=', $this->getKey())))
             ->count();
+    }
+
+    /**
+     * Temas de la sesión. Si no quedaron vinculados al tomar la lista, los que el
+     * docente registró ese día en la tutoría (el tema o alguna de sus actividades).
+     *
+     * @return Collection<int, Tema>
+     */
+    public function topicsOfTheDay(): Collection
+    {
+        $linked = $this->relationLoaded('topics') ? $this->topics : $this->topics()->get();
+        if ($linked->isNotEmpty()) {
+            return $linked;
+        }
+        $date = $this->date->toDateString();
+
+        return Tema::query()->where('fk_asig_tutoria', $this->tutoring_id)->where('estado', true)
+            ->where(fn ($query) => $query->whereDate('created_at', $date)->orWhereDate('updated_at', $date)
+                ->orWhereHas('actividades', fn ($activity) => $activity->whereDate('created_at', $date)))
+            ->orderBy('id_tema')->get();
     }
 
     /** @return BelongsTo<AsignaturaTutoria, $this> */

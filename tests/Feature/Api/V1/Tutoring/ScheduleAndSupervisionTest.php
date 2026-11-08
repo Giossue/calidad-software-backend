@@ -141,6 +141,24 @@ class ScheduleAndSupervisionTest extends TutoringTestCase
         $this->getJson(self::API.'/tutorings/'.$this->createTutoring($this->otherCycle)->getKey().'/sessions')->assertForbidden();
     }
 
+    public function test_a_session_without_linked_topics_shows_those_registered_that_day(): void
+    {
+        $tutoring = $this->createTutoring();
+        $this->travelTo('2026-05-04 09:00');
+        Tema::query()->create(['fk_asig_tutoria' => $tutoring->getKey(), 'nombre' => 'Formularios HTML', 'estado' => true]);
+        Tema::query()->create(['fk_asig_tutoria' => $tutoring->getKey(), 'nombre' => 'Hojas de estilo', 'estado' => true]);
+        $this->travelTo('2026-05-11 09:00');
+        Tema::query()->create(['fk_asig_tutoria' => $tutoring->getKey(), 'nombre' => 'JavaScript', 'estado' => true]);
+        $this->travelBack();
+        TutoringSession::query()->create(['tutoring_id' => $tutoring->getKey(), 'recorded_by' => $this->coordinator->getKey(), 'date' => '2026-05-04', 'topics_covered' => false]);
+        Sanctum::actingAs($this->coordinator, ['*']);
+
+        $this->getJson(self::API.'/tutorings/'.$tutoring->getKey().'/sessions')->assertOk()
+            ->assertJsonCount(2, 'data.0.topics')
+            ->assertJsonPath('data.0.topics.0.name', 'Formularios HTML')
+            ->assertJsonPath('data.0.topics.1.name', 'Hojas de estilo');
+    }
+
     public function test_supervision_returns_only_records_of_the_authorized_tutoring_and_preserves_history(): void
     {
         $own = $this->createTutoring();

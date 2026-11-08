@@ -26,7 +26,7 @@ class TutoringSupervisionSessionResource extends JsonResource
             'number' => $this->number(),
             'date' => $this->date->toDateString(),
             'topics_covered' => (bool) $this->topics_covered,
-            'topics' => $this->topics->map(fn (Tema $topic): array => ['id' => $topic->getKey(), 'name' => $topic->nombre])->values(),
+            'topics' => $this->topicsOfTheDay()->map(fn (Tema $topic): array => ['id' => $topic->getKey(), 'name' => $topic->nombre])->values(),
             'present_count' => $attendance->where('estado_asistencia', true)->count(),
             'absent_count' => $attendance->where('estado_asistencia', false)->count(),
             'attendance' => $attendance->map(fn (Asistencia $record): array => [

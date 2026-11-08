@@ -63,8 +63,8 @@ class StudentTutoringAttendanceResource extends JsonResource
             ],
             'records' => $attendances->values()->map(function (Asistencia $asistencia) {
                 $session = $asistencia->relationLoaded('session') ? $asistencia->session : null;
-                $topics = $session && $session->relationLoaded('topics')
-                    ? $session->topics->map(fn ($topic) => [
+                $topics = $session
+                    ? $session->topicsOfTheDay()->map(fn ($topic) => [
                         'id' => $topic->getKey(),
                         'name' => $topic->nombre,
                     ])
