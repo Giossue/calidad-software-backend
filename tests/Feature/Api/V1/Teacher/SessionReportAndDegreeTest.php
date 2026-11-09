@@ -162,6 +162,20 @@ class SessionReportAndDegreeTest extends TeacherTestCase
             ->assertJsonValidationErrors(['date' => 'el día de la clase']);
     }
 
+    public function test_an_evening_class_can_modify_todays_list_after_midnight_utc(): void
+    {
+        // 20:06 del martes 29 en Ecuador ya es miércoles 30 en UTC.
+        $this->travelTo('2026-09-30 01:06:00');
+        $this->classNow();
+        $enrollment = $this->enrollment();
+        $payload = ['date' => '2026-09-29', 'topics_covered' => false, 'attendance' => [['enrollment_id' => $enrollment->getKey(), 'present' => true]]];
+
+        $this->putJson($this->path('/sessions'), $payload)->assertOk();
+        $this->putJson($this->path('/sessions'), [...$payload, 'attendance' => [['enrollment_id' => $enrollment->getKey(), 'present' => false]]])
+            ->assertOk()->assertJsonPath('data.attendance.0.present', false);
+        $this->assertDatabaseCount('tutoring_sessions', 1);
+    }
+
     public function test_attendance_requires_a_schedule(): void
     {
         $enrollment = $this->enrollment();
