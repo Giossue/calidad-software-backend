@@ -17,6 +17,11 @@ titulación, docente y estudiante.
     la cabecera.
   - **Guía por pantalla**: explica los elementos de cada pantalla y sub-pantalla
     (por ejemplo, cada pestaña de una tutoría del docente).
+  - **Tutorial práctico del docente** (solo cuentas de docente, desde el botón
+    de ayuda): el trabajo de cada clase en cuatro pasos (ver tutorías
+    asignadas, tomar asistencia, registrar contenido, y registrar calificaciones
+    y configurar horarios). No se presenta automáticamente; se registra como
+    `teacher-guide`.
 - El recorrido general se presenta la primera vez que el usuario entra, después
   de completar su perfil. Al terminarlo sigue la guía de la pantalla actual.
 - La guía de cada pantalla se presenta la primera vez que el usuario la visita.
