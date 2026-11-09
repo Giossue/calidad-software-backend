@@ -83,6 +83,7 @@ class StudentTutoringTest extends TestCase
             'dia_semana' => 'Martes',
             'hora_inicio' => '10:00:00',
             'hora_fin' => '12:00:00',
+            'room' => 'Laboratorio 1',
             'estado' => true,
         ]);
 
@@ -115,7 +116,8 @@ class StudentTutoringTest extends TestCase
             ->assertJsonPath('data.0.subject.teacher.phone', '0981234567')
             ->assertJsonCount(1, 'data.0.subject.schedules')
             ->assertJsonPath('data.0.subject.schedules.0.id', $schedule->getKey())
-            ->assertJsonPath('data.0.subject.schedules.0.day_of_week', 'Martes');
+            ->assertJsonPath('data.0.subject.schedules.0.day_of_week', 'Martes')
+            ->assertJsonPath('data.0.subject.schedules.0.room', 'Laboratorio 1');
     }
 
     public function test_student_only_sees_their_own_tutoring_enrollments(): void

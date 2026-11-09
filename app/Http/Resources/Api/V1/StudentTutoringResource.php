@@ -57,6 +57,7 @@ class StudentTutoringResource extends JsonResource
                     'day_of_week' => $schedule->dia_semana,
                     'start_time' => $schedule->hora_inicio,
                     'end_time' => $schedule->hora_fin,
+                    'room' => $schedule->room,
                     'is_active' => $schedule->estado,
                 ]),
             ] : null,
