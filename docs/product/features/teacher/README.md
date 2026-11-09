@@ -27,7 +27,7 @@ de coordinación.
 | DOC-14 | Contenido | Registrar metodologías de una actividad activa. |
 | DOC-15 | Contenido | Actualizar la descripción de una metodología. |
 | DOC-16 | Contenido | Deshabilitar metodologías mediante baja lógica. |
-| DOC-17 | Informes | Generar un consolidado y dejarlo disponible al Coordinador de Carrera. |
+| DOC-17 | Informes | Consultar los informes enviados (el informe libre ya no se ofrece en la interfaz). |
 | DOC-19 | Informes | Generar el Reporte de la Evaluación Diagnóstica con el formato oficial y enviarlo a coordinación. |
 | DOC-22 | Informes | Generar las Calificaciones de la Evaluación Diagnóstica (formato 1.a) y enviarlas a coordinación. |
 | DOC-20 | Informes | Generar el Reporte de Seguimiento a las Tutorías Académicas de un parcial con el formato oficial y enviarlo a coordinación. |
@@ -79,9 +79,12 @@ de coordinación.
    usar **Todos presentes** y corregir las ausencias. Indicar si se abordaron
    temas y seleccionar los correspondientes. Guardar y consultar el historial.
    Cambiar de fecha con modificaciones pendientes exige confirmar su descarte.
-8. En **Informes**, enviar título y observaciones. El servidor genera el
-   consolidado, lo conserva y lo hace accesible desde la supervisión de tutorías
-   del Coordinador de Carrera. **Leer informe** muestra el contenido enviado.
+8. En **Informes**, el docente envía solo los cuatro formatos oficiales desde
+   **Reportes oficiales**; la interfaz ya no ofrece el informe libre (título y
+   observaciones). Los informes libres enviados antes se siguen leyendo como texto
+   y el endpoint `POST /tutorings/{tutoring}/reports` se conserva por compatibilidad.
+   Todo lo enviado queda accesible desde Informes del Coordinador de Carrera.
+   **Leer informe** muestra el formato oficial o, si es libre, el texto enviado.
    **Reporte de evaluación diagnóstica** abre el formato oficial calculado con las
    notas diagnósticas registradas: encabezado (facultad, carrera, fecha, docente,
    asignatura, ciclo, período y paralelo), estudiantes *en la lista* (inscripciones
