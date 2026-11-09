@@ -89,7 +89,7 @@ class SessionReportAndDegreeTest extends TeacherTestCase
         $this->putJson($this->path('/sessions'), [...$data, 'date' => '2026-09-27'])->assertUnprocessable()->assertJsonValidationErrors('topic_ids');
     }
 
-    public function test_reports_store_a_snapshot_visible_to_the_coordinator_and_survive_later_changes(): void
+    public function test_free_reports_store_a_snapshot_hidden_from_the_coordinator(): void
     {
         $enrollment = $this->enrollment();
         $this->putJson($this->path('/students/'.$enrollment->getKey().'/grades/diagnostic'), ['value' => 8])->assertOk();
@@ -101,7 +101,8 @@ class SessionReportAndDegreeTest extends TeacherTestCase
         $this->enrollment();
         $this->assertSame(1, Reporte::query()->findOrFail($id)->summary['active_enrollment_count']);
         Sanctum::actingAs($this->coordinator, ['access-api']);
-        $this->getJson(self::API.'/tutorings/'.$this->tutoring->getKey().'/reports')->assertOk()->assertJsonPath('data.0.id', $id)->assertJsonFragment(['type' => 'Resultados de septiembre']);
+        // El informe libre no es un formato oficial: el coordinador no lo ve.
+        $this->getJson(self::API.'/tutorings/'.$this->tutoring->getKey().'/reports')->assertOk()->assertJsonCount(0, 'data');
         $this->assertStringContainsString('El estudiante mejoró', Reporte::query()->findOrFail($id)->content);
     }
 

@@ -188,6 +188,26 @@ class ScheduleAndSupervisionTest extends TutoringTestCase
         $this->assertDatabaseCount('reporte', 3);
     }
 
+    public function test_the_coordinator_only_sees_official_reports(): void
+    {
+        $tutoring = $this->createTutoring();
+        [, $official] = $this->createSupervisionRecords($tutoring);
+        Reporte::query()->create([
+            'fk_asig_tutoria' => $tutoring->getKey(), 'fk_id_usuario' => $this->coordinator->getKey(),
+            'tipo_reporte' => 'Informe de tutorías', 'fecha_generacion' => now(), 'content' => 'Informe libre', 'summary' => ['as_of' => '2026-09-10'],
+        ]);
+        Reporte::query()->create([
+            'fk_asig_tutoria' => $tutoring->getKey(), 'fk_id_usuario' => $this->coordinator->getKey(),
+            'tipo_reporte' => 'Sin resumen', 'fecha_generacion' => now(),
+        ]);
+        Sanctum::actingAs($this->coordinator, ['*']);
+
+        $this->getJson(self::API.'/tutorings/'.$tutoring->getKey().'/reports')->assertOk()
+            ->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $official->getKey());
+        $this->getJson(self::API.'/reports')->assertOk()
+            ->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $official->getKey());
+    }
+
     public function test_reports_include_content_and_summary_for_only_the_selected_tutoring(): void
     {
         $own = $this->createTutoring();
@@ -391,7 +411,7 @@ class ScheduleAndSupervisionTest extends TutoringTestCase
         ]);
         $report = Reporte::query()->create([
             'fk_asig_tutoria' => $tutoring->getKey(), 'fk_id_usuario' => $this->coordinator->getKey(),
-            'tipo_reporte' => 'Seguimiento', 'fecha_generacion' => now(),
+            'tipo_reporte' => 'Seguimiento', 'fecha_generacion' => now(), 'summary' => ['format' => 'tutoring_follow_up'],
         ]);
 
         return [$attendance, $report];

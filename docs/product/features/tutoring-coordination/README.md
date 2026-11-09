@@ -170,7 +170,7 @@ permiso `403`.
 | PATCH | `/tutorings/{tutoring}/schedules/{schedule}/deactivate` | Baja lógica. |
 | GET | `/tutorings/{tutoring}/attendance` | Asistencia; `page`, `per_page`. |
 | GET | `/tutorings/{tutoring}/sessions` | Sesiones de la más reciente a la primera, con `number`, `date`, `topics`, `present_count`, `absent_count` y `attendance`; `page`, `per_page`. |
-| GET | `/tutorings/{tutoring}/reports` | Informes y resumen; `page`, `per_page`. |
+| GET | `/tutorings/{tutoring}/reports` | Informes con formato oficial (`summary.format`: `diagnostic_evaluation`, `diagnostic_grades`, `tutoring_follow_up` o `final_pao`) y resumen; `page`, `per_page`. Los informes libres no se listan. |
 
 `day` usa `lunes`, `martes`, `miercoles`, `jueves`, `viernes`, `sabado` o
 `domingo`; la interfaz muestra las tildes correspondientes. Las horas usan

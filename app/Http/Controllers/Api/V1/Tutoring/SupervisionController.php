@@ -47,6 +47,7 @@ class SupervisionController extends Controller
             ->whereHas('inscripcion', fn (Builder $q) => $q->where('fk_asig_tutoria', $tutoring->getKey()));
 
         return TutoringReportResource::collection(Reporte::query()
+            ->official()
             ->where('fk_asig_tutoria', $tutoring->getKey())
             ->with('generadoPor')->orderByDesc('fecha_generacion')
             ->paginate(min(max($request->integer('per_page', 20), 1), 100)))
@@ -62,6 +63,7 @@ class SupervisionController extends Controller
         Gate::authorize('viewAny', AsignaturaTutoria::class);
 
         $query = Reporte::query()
+            ->official()
             ->with(['generadoPor', 'asignaturaTutoria.ciclo.carrera', 'asignaturaTutoria.paralelo'])
             ->whereHas('asignaturaTutoria.ciclo', fn (Builder $q) => $access->scopeCareer($q, $request->user()));
 
