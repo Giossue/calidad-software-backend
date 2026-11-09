@@ -70,6 +70,13 @@ return [
     'timezone' => 'UTC',
 
     /*
+    | Zona horaria de los horarios de clase (hora local de la universidad). Decide
+    | si una tutoría está en curso, por ejemplo para tomar asistencia.
+    */
+
+    'schedule_timezone' => env('APP_SCHEDULE_TIMEZONE', 'America/Guayaquil'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------

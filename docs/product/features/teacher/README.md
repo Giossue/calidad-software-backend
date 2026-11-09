@@ -175,6 +175,12 @@ grupo diagnóstico.
   lista o desde Contenido («Asignar temas a esta sesión»); si no tiene ninguno
   vinculado, los que se registraron ese día en la tutoría. Contenido se filtra
   por sesión y, en «Todas», indica en qué sesión se trató cada tema.
+- La asistencia **solo se toma mientras la tutoría está en curso**: la fecha es
+  hoy y la hora actual está dentro de uno de sus horarios activos de hoy (inicio y
+  fin incluidos). Sin horario registrado no se puede tomar. Fuera de esa franja la
+  lista de hoy tampoco se puede modificar. Los horarios se leen en la hora local de
+  la universidad (`APP_SCHEDULE_TIMEZONE`, por defecto `America/Guayaquil`),
+  aunque la aplicación trabaje en UTC.
 - Las sesiones se identifican por tutoría y fecha. Repetir el guardado actualiza
   la sesión y la asistencia, conservando las demás fechas.
 - La UI exige marcar a todos los estudiantes activos. La API admite guardar un
@@ -223,7 +229,7 @@ falta de permiso, `403`; elementos anidados ajenos, `404`.
 | PATCH | `/tutorings/{tutoring}/topics/{topic}/activities/{activity}/methodologies/{methodology}/deactivate` | Baja lógica de la metodología. |
 | GET | `/tutorings/{tutoring}/sessions` | Sesiones con asistencia y temas; `date`, `page`, `per_page`. |
 | GET | `/tutorings/{tutoring}/attendance` | Asistencia actual e histórica; `date`, `page`, `per_page`. |
-| PUT | `/tutorings/{tutoring}/sessions` | `date`, `topics_covered`, `topic_ids`, `attendance: [{enrollment_id, present}]`. |
+| PUT | `/tutorings/{tutoring}/sessions` | `date` (hoy, durante el horario de la tutoría), `topics_covered`, `topic_ids`, `attendance: [{enrollment_id, present}]`. |
 | GET | `/tutorings/{tutoring}/reports` | Informes conservados; `page`, `per_page`. |
 | POST | `/tutorings/{tutoring}/reports` | `title`, `observations` opcional; el servidor calcula `summary` y `content`. |
 | GET | `/tutorings/{tutoring}/reports/diagnostic/preview` | `date` opcional (hoy por defecto); devuelve el reporte diagnóstico calculado sin guardarlo. |

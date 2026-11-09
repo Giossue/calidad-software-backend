@@ -33,6 +33,7 @@ class AbsenceNoticeTest extends TeacherTestCase
             ->assertJsonPath('data.0.reason', 'Cita médica programada');
 
         // El aviso es informativo: el docente decide si el estudiante queda presente o ausente.
+        $this->classNow();
         $this->putJson($this->path('/sessions'), ['date' => '2026-09-29', 'topics_covered' => false, 'attendance' => [
             ['enrollment_id' => $noticed->getKey(), 'present' => false],
             ['enrollment_id' => $other->getKey(), 'present' => true],
