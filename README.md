@@ -25,6 +25,20 @@ en `.env`. Configura también `CORS_ALLOWED_ORIGINS` con los orígenes exactos d
 frontend, separados por comas. La API se sirve por defecto en
 `http://localhost:8000`.
 
+## Datos de demostración (solo local)
+
+Después de `php artisan db:seed`, puedes cargar un escenario completo de la
+carrera Software (período vigente, paralelos A y B, coordinadores, docentes,
+estudiantes, tutorías con sesiones, asistencia y notas, y temas de titulación):
+
+```bash
+php artisan db:seed --class=DemoDataSeeder
+```
+
+No forma parte de `DatabaseSeeder`, se niega a correr en producción y no hace
+nada si ya existe `coordinador.demo@ueb.edu.ec`. Las cuentas y su contraseña
+compartida se describen en `database/seeders/DemoDataSeeder.php`.
+
 ## API de autenticación
 
 La API expone:
