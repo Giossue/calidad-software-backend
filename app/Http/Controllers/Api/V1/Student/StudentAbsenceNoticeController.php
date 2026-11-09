@@ -8,6 +8,7 @@ use App\Models\AsignaturaTutoria;
 use App\Models\Asistencia;
 use App\Models\InscripcionTutoria;
 use App\Models\Usuario;
+use Carbon\CarbonInterface;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -30,6 +31,35 @@ class StudentAbsenceNoticeController extends Controller
             ->keyBy(fn (Asistencia $record) => $record->fecha->toDateString());
 
         return response()->json(['data' => $notices->map(fn (AbsenceNotice $notice) => self::present($notice, $attendance->get($notice->date->toDateString())))->all()]);
+    }
+
+    /**
+     * Próximas clases en las que el estudiante aún puede avisar: días con horario
+     * activo, desde hoy hasta el fin del período y sin un aviso ya enviado. Son las
+     * mismas reglas que valida store(), para ofrecerlas en un desplegable.
+     */
+    public function availableDates(Request $request, AsignaturaTutoria $tutoring): JsonResponse
+    {
+        $enrollment = $this->enrollment($request, $tutoring);
+        $slots = $tutoring->horarios()->where('estado', true)->orderBy('hora_inicio')->get()->groupBy('dia_semana');
+        $taken = AbsenceNotice::query()->where('enrollment_id', $enrollment->getKey())->whereDate('date', '>=', today())
+            ->pluck('date')->map(fn (CarbonInterface $date) => $date->toDateString())->all();
+        $end = $tutoring->periodo->fecha_fin ?? today()->addWeeks(16);
+
+        $dates = [];
+        for ($day = today(); $day->lte($end); $day = $day->addDay()) {
+            $slot = $slots->get(self::DAYS[$day->dayOfWeek])?->first();
+            if ($slot && ! in_array($day->toDateString(), $taken, true)) {
+                $dates[] = [
+                    'date' => $day->toDateString(),
+                    'day_of_week' => self::DAYS[$day->dayOfWeek],
+                    'start_time' => substr((string) $slot->hora_inicio, 0, 5),
+                    'end_time' => substr((string) $slot->hora_fin, 0, 5),
+                ];
+            }
+        }
+
+        return response()->json(['data' => $dates]);
     }
 
     public function store(Request $request, AsignaturaTutoria $tutoring): JsonResponse

@@ -151,6 +151,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::get('tutoring/{tutoring}/topics/{topic}/files/{file}', [StudentTopicFileController::class, 'download'])->name('tutoring.topics.files.download');
             Route::get('tutoring/{tutoring}/sessions', [StudentTutoringController::class, 'sessions'])->name('tutoring.sessions');
             Route::get('tutoring/{tutoring}/absence-notices', [StudentAbsenceNoticeController::class, 'index'])->name('tutoring.absence-notices.index');
+            Route::get('tutoring/{tutoring}/absence-notices/available-dates', [StudentAbsenceNoticeController::class, 'availableDates'])->name('tutoring.absence-notices.available-dates');
             Route::post('tutoring/{tutoring}/absence-notices', [StudentAbsenceNoticeController::class, 'store'])->name('tutoring.absence-notices.store');
         });
 
