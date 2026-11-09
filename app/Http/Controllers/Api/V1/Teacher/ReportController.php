@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\V1\Teacher;
 
 use App\Actions\Teacher\DiagnosticEvaluationReport;
+use App\Actions\Teacher\DiagnosticGradesReport;
 use App\Actions\Teacher\FinalPaoReport;
 use App\Actions\Teacher\SendTutoringReport;
 use App\Actions\Teacher\TutoringFollowUpReport;
@@ -14,6 +15,7 @@ use App\Http\Requests\Api\V1\Teacher\FollowUpReportPreviewRequest;
 use App\Http\Requests\Api\V1\Teacher\FollowUpReportRequest;
 use App\Http\Requests\Api\V1\Teacher\ReportRequest;
 use App\Http\Requests\Api\V1\Teacher\TeacherListRequest;
+use App\Http\Requests\Api\V1\Teacher\TeacherMutationRequest;
 use App\Http\Resources\Api\V1\TutoringReportResource;
 use App\Models\AsignaturaTutoria;
 use Illuminate\Http\JsonResponse;
@@ -41,6 +43,16 @@ class ReportController extends Controller
     public function storeDiagnostic(DiagnosticReportRequest $request, AsignaturaTutoria $tutoring, DiagnosticEvaluationReport $report): JsonResponse
     {
         return TutoringReportResource::make($report->send($request->user(), $tutoring, $request->validated()))->response()->setStatusCode(201);
+    }
+
+    public function previewDiagnosticGrades(TeacherListRequest $request, AsignaturaTutoria $tutoring, DiagnosticGradesReport $report): JsonResponse
+    {
+        return response()->json(['data' => $report->build($request->user(), $tutoring)]);
+    }
+
+    public function storeDiagnosticGrades(TeacherMutationRequest $request, AsignaturaTutoria $tutoring, DiagnosticGradesReport $report): JsonResponse
+    {
+        return TutoringReportResource::make($report->send($request->user(), $tutoring))->response()->setStatusCode(201);
     }
 
     public function previewFollowUp(FollowUpReportPreviewRequest $request, AsignaturaTutoria $tutoring, TutoringFollowUpReport $report): JsonResponse

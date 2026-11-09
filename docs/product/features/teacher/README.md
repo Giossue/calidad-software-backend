@@ -29,6 +29,7 @@ de coordinación.
 | DOC-16 | Contenido | Deshabilitar metodologías mediante baja lógica. |
 | DOC-17 | Informes | Generar un consolidado y dejarlo disponible al Coordinador de Carrera. |
 | DOC-19 | Informes | Generar el Reporte de la Evaluación Diagnóstica con el formato oficial y enviarlo a coordinación. |
+| DOC-22 | Informes | Generar las Calificaciones de la Evaluación Diagnóstica (formato 1.a) y enviarlas a coordinación. |
 | DOC-20 | Informes | Generar el Reporte de Seguimiento a las Tutorías Académicas de un parcial con el formato oficial y enviarlo a coordinación. |
 | DOC-21 | Informes | Generar el Informe final PAO (ejecución de tutorías) de sus asignaturas del período con el formato oficial y enviarlo a coordinación. |
 | DOC-18 | Titulación | Consultar las asignaciones propias vigentes como tutor o par académico. |
@@ -90,6 +91,11 @@ de coordinación.
    docente elige la fecha y escribe las observaciones, revisa la vista previa, puede
    **Imprimir o guardar PDF** y lo envía con **Enviar a coordinación**. Se exige al
    menos una nota diagnóstica.
+   **Calificaciones diagnósticas** abre el formato «1.a Calificaciones Diagnóstica»:
+   encabezado (facultad, carrera, período, docente, asignatura, ciclo y paralelo),
+   la lista de inscripciones activas con número, cédula, apellidos y nombres y
+   calificación sobre 10 («No asiste» si no hay nota) y la firma del docente. Se
+   imprime o se envía a coordinación; exige al menos una nota diagnóstica.
    **Reporte de seguimiento** genera el «Reporte de Seguimiento a las Tutorías
    Académicas» de un parcial. El docente elige el parcial (primero o segundo), el
    rango de fechas de las tutorías y la fecha de presentación, y escribe la
@@ -178,7 +184,7 @@ grupo diagnóstico.
   posteriores en la tutoría no modifican un informe anterior. Un reintento
   idéntico devuelve el mismo informe. Su entrega consiste en disponibilidad en el
   módulo de supervisión, sin correo externo. Los reportes de evaluación diagnóstica,
-  de seguimiento y el informe final PAO se imprimen o guardan en PDF desde el navegador; el anexo de
+  las calificaciones diagnósticas, el de seguimiento y el informe final PAO se imprimen o guardan en PDF desde el navegador; el anexo de
   calificaciones del reporte diagnóstico va en una página aparte.
 - La consulta mantiene notas anteriores de cualquier tipo y asistencias sin
   sesión. Estas últimas muestran `topics_covered: null`; al guardar su fecha se
@@ -219,6 +225,8 @@ falta de permiso, `403`; elementos anidados ajenos, `404`.
 | POST | `/tutorings/{tutoring}/reports` | `title`, `observations` opcional; el servidor calcula `summary` y `content`. |
 | GET | `/tutorings/{tutoring}/reports/diagnostic/preview` | `date` opcional (hoy por defecto); devuelve el reporte diagnóstico calculado sin guardarlo. |
 | POST | `/tutorings/{tutoring}/reports/diagnostic` | `date` (hasta hoy), `observations` opcional; guarda el reporte con `summary.format = diagnostic_evaluation`. |
+| GET | `/tutorings/{tutoring}/reports/diagnostic-grades/preview` | Calificaciones diagnósticas calculadas sin guardarlas. |
+| POST | `/tutorings/{tutoring}/reports/diagnostic-grades` | Guarda las calificaciones con `summary.format = diagnostic_grades`. |
 | GET | `/tutorings/{tutoring}/reports/follow-up/preview` | `partial` (1 o 2), `from`, `to` (hasta hoy, no anterior a `from`), `date`; devuelve el reporte de seguimiento sin guardarlo. |
 | POST | `/tutorings/{tutoring}/reports/follow-up` | Igual que la vista previa más `observations` opcional; guarda el reporte con `summary.format = tutoring_follow_up`. |
 | GET | `/tutorings/{tutoring}/reports/final-pao/preview` | `date`; `tutoring_ids[]` opcional (por defecto, todas las elegibles); devuelve el informe y `available_tutorings` sin guardarlo. |
