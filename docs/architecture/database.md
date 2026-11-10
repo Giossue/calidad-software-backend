@@ -13,6 +13,9 @@ fuente de verdad del esquema. Eloquent es el acceso predeterminado.
 - `foreignId()->constrained()` con política de borrado explícita.
 - Enums de negocio se guardan como strings y se castean a enums PHP.
 - `date` para fechas académicas, `time` para hora local y timestamps para eventos.
+- La sesión PostgreSQL usa la zona `UTC` (`DB_TIMEZONE`), igual que `app.timezone`:
+  Laravel escribe los timestamps sin desfase y, con otra zona de sesión, quedarían
+  corridos según la configuración del servidor.
 - `decimal` para porcentajes/notas; nunca `float` para valores exactos.
 
 ## Esquema académico vigente

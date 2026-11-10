@@ -97,6 +97,9 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => env('DB_SSLMODE', 'prefer'),
+            // Laravel escribe las fechas sin desfase en la zona de la aplicación (UTC): la
+            // sesión debe usar la misma zona, o las fechas quedan corridas según el servidor.
+            'timezone' => env('DB_TIMEZONE', 'UTC'),
         ],
 
         'sqlsrv' => [
