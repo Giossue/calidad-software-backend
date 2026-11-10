@@ -74,6 +74,12 @@ estados booleanos del baseline PostgreSQL con los estados textuales de la API.
 Comprueba primero que el historial permita una conversión sin ambigüedades.
 Las inconsistencias detienen la operación dentro de una transacción.
 
+La migración `2026_11_10_110000_allow_discarded_degree_topic_status` admite el
+estado `descartado` en PostgreSQL: es el que recibe la propuesta pendiente que
+el estudiante reemplaza al proponer una alternativa (`replace_pending`). Como
+`pendiente`, no tiene revisor ni fecha de revisión. Antes de esta migración el
+reemplazo fallaba con un error 500 por los check constraints.
+
 También amplía el texto de observaciones y permite administrador o coordinador
 de titulación en los triggers de revisión y observación. No amplía los roles
 permitidos para estudiante o docente en otras relaciones.
