@@ -20,6 +20,7 @@ class TutoringTeacherResource extends JsonResource
             'email' => $this->correo,
             'phone' => $this->telefono,
             'is_active' => $this->estado,
+            'profile_completed' => ! $this->must_complete_profile,
             'can_manage' => $request->user()->can('updateTutoringTeacher', $this->resource),
             'career_ids' => $this->whenLoaded('teachingCareers', fn () => $this->teachingCareers->pluck('id_carrera')->all()),
             'tutorings' => $this->whenLoaded('asignaturasTutoria', fn () => $this->asignaturasTutoria->map(fn (AsignaturaTutoria $tutoring) => [

@@ -218,6 +218,32 @@ class SubjectAndTeacherTest extends TutoringTestCase
         ])->assertOk()->assertJsonPath('data.name', 'María Torres')->assertJsonPath('data.email', 'maria.torres@ueb.edu.ec');
     }
 
+    public function test_once_the_teacher_completes_the_profile_the_coordinator_cannot_change_email_or_identification(): void
+    {
+        $teacher = Usuario::factory()->withRole('docente')->create([
+            'correo' => 'ana.torres@ueb.edu.ec', 'must_complete_profile' => true,
+        ]);
+        $cedula = $teacher->cedula;
+        $teacher->teachingCareers()->attach($this->career);
+        Sanctum::actingAs($this->coordinator, ['*']);
+        $url = self::API.'/teachers/'.$teacher->getKey();
+        // Mientras no completa su perfil, el coordinador aún corrige errores de tipeo.
+        $this->getJson(self::API.'/teachers')->assertOk()->assertJsonPath('data.0.profile_completed', false);
+        $this->patchJson($url, ['email' => 'ana.torres2@ueb.edu.ec'])->assertOk();
+
+        $teacher->forceFill(['must_complete_profile' => false])->save();
+        $this->getJson(self::API.'/teachers')->assertOk()->assertJsonPath('data.0.profile_completed', true);
+        $this->patchJson($url, ['email' => 'otro.correo@ueb.edu.ec'])->assertUnprocessable()
+            ->assertJsonValidationErrors(['email' => 'El docente ya completó su perfil: su correo no se puede cambiar.']);
+        $this->patchJson($url, ['identification' => Usuario::factory()->make()->cedula])->assertUnprocessable()
+            ->assertJsonValidationErrors(['identification' => 'El docente ya completó su perfil: su cédula no se puede cambiar.']);
+        // Enviar los mismos valores (el formulario manda todos los campos) sí se acepta.
+        $this->patchJson($url, ['identification' => $cedula, 'email' => 'ANA.TORRES2@ueb.edu.ec', 'name' => 'Ana Torres', 'phone' => '0999999999'])
+            ->assertOk()->assertJsonPath('data.name', 'Ana Torres');
+        $this->assertSame('ana.torres2@ueb.edu.ec', $teacher->refresh()->correo);
+        $this->assertSame($cedula, $teacher->cedula);
+    }
+
     public function test_teacher_management_only_allows_teachers_linked_to_a_coordinated_career(): void
     {
         $own = Usuario::factory()->withRole('docente')->create();

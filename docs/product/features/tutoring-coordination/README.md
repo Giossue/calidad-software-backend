@@ -16,7 +16,7 @@ React del repositorio `calidad-software-frontend`.
 | COOR-04 | Asignar asignatura a ciclo | Asignatura y ciclo activos, de la misma carrera; repetir la asignación no duplica el vínculo. |
 | COOR-05 | Asignar tutoría a ciclo | Ciclo compatible dentro de la carrera; actualiza el paralelo y registra el vínculo ciclo/período. |
 | COOR-06 | Registrar docente | Valida cédula ecuatoriana o pasaporte extranjero, nombre, correo institucional y teléfono; asigna exclusivamente rol docente y envía contraseña provisional, que debe cambiarse al primer ingreso. |
-| COOR-07 | Actualizar docente | Edita una cuenta docente dentro del alcance autorizado. |
+| COOR-07 | Actualizar docente | Edita una cuenta docente dentro del alcance autorizado. Cuando el docente ya completó su perfil (`profile_completed`), su cédula y su correo no se pueden cambiar; el administrador sí puede corregirlos. |
 | COOR-08 | Quitar docente de la carrera | El coordinador solo desvincula al docente de su carrera; desactivar la cuenta es tarea del administrador. |
 | COOR-09 | Registrar tutoría | Asignatura vinculada a ciclo, período y modalidad activos; puede quedar inicialmente sin docente. |
 | COOR-10 | Actualizar tutoría | Edita período y modalidad; protege el período si existen inscripciones. |
@@ -155,7 +155,7 @@ permiso `403`.
 | GET | `/teachers` | Cuentas vinculadas al alcance autorizado; filtros `search`, `career_id`, `page`, `per_page`; incluye `can_manage`. |
 | GET | `/available-teachers` | Docentes activos para seleccionar; filtro `search`, máximo 100 resultados. |
 | POST | `/teachers` | `career_id`, `identification`, `name`, `email`, `phone`. |
-| PATCH | `/teachers/{teacher}` | `identification`, `name`, `email`, `phone`. |
+| PATCH | `/teachers/{teacher}` | `identification`, `name`, `email`, `phone`; `identification` y `email` se rechazan si cambian y el docente ya completó su perfil. |
 | GET | `/tutorings` | Listado; filtros `search`, `career_id`, `page`, `per_page`. |
 | POST | `/tutorings` | `subject_id`, `cycle_id`, `period_id`, `modality_id`. |
 | PATCH | `/tutorings/{tutoring}` | `period_id`, `modality_id`. |

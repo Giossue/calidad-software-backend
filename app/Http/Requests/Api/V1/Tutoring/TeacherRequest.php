@@ -34,13 +34,34 @@ class TeacherRequest extends FormRequest
 
         return [
             'career_id' => $creating ? ['required', 'integer', Rule::exists('carrera', 'id_carrera')->where('estado', true)] : ['prohibited'],
-            'identification' => [($creating ? 'required' : 'sometimes'), 'string', new CedulaOPasaporte,
+            'identification' => [($creating ? 'required' : 'sometimes'), 'string',
+                ...$this->lockedOnceVerified($teacher, 'cedula', 'cédula'), new CedulaOPasaporte,
                 Rule::unique('usuario', 'cedula')->ignore($teacher)],
             'name' => [($creating ? 'required' : 'sometimes'), 'string', 'max:150', 'regex:/^[\pL\s]+$/u'],
-            'email' => [($creating ? 'required' : 'sometimes'), 'email:rfc', 'max:150', InstitutionalEmail::rule(),
+            'email' => [($creating ? 'required' : 'sometimes'), ...$this->lockedOnceVerified($teacher, 'correo', 'correo'),
+                'email:rfc', 'max:150', InstitutionalEmail::rule(),
                 Rule::unique('usuario', 'correo')->ignore($teacher)],
             'phone' => [($creating ? 'required' : 'sometimes'), 'digits:10'],
         ];
+    }
+
+    /**
+     * Cuando el docente ya completó su perfil (confirmó sus datos al ingresar), el coordinador
+     * no puede cambiarle la cédula ni el correo; reenviar el mismo valor sí se acepta.
+     *
+     * @return array<int, \Closure>
+     */
+    private function lockedOnceVerified(mixed $teacher, string $column, string $label): array
+    {
+        if (! $teacher instanceof Usuario || $teacher->must_complete_profile) {
+            return [];
+        }
+
+        return [function (string $attribute, mixed $value, \Closure $fail) use ($teacher, $column, $label): void {
+            if (is_string($value) && mb_strtolower(trim($value)) !== mb_strtolower((string) $teacher->$column)) {
+                $fail("El docente ya completó su perfil: su {$label} no se puede cambiar.");
+            }
+        }];
     }
 
     /** @return array<string, string> */
