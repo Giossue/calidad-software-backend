@@ -51,6 +51,18 @@ en PostgreSQL.
 - Restrict es el borrado por defecto de historia académica. Cascade requiere que
   el hijo no tenga valor ni auditoría independiente.
 - Operaciones con varias escrituras relacionadas usan `DB::transaction()`.
+- `periodo_academico` admite un solo registro con `estado = true`: índice único
+  parcial `periodo_academico_single_active_unique` (PostgreSQL y SQLite).
+- `estudiante_periodo` guarda el ciclo de cada estudiante por período: único
+  (`fk_usuario`, `fk_periodo`), FK a `usuario` (cascade, dato derivado), a
+  `periodo_academico` y a `ciclo` (restrict). Lo mantiene `StudentCycle::syncPeriod`
+  desde las inscripciones activas; no se edita a mano. `fk_ciclo` es la fila de
+  ciclo con paralelo de las tutorías del número más alto (la que suma más
+  inscripciones; a igualdad, la de menor id), así el paralelo del estudiante se
+  conserva. Solo si ninguna de esas filas tiene paralelo se usa el ciclo base del
+  número.
+- `subjects.cycle_number` (nullable) es el número de ciclo de la malla. La tabla
+  `subject_cycle` queda como vínculo heredado: ya no ata asignaturas a paralelos.
 - `carrera.codigo` (nullable, único) identifica la carrera y su malla: dos
   carreras pueden compartir `nombre` si su código difiere, por eso `nombre` ya no
   es único. Las carreras previas conservan código `NULL` hasta que el

@@ -67,9 +67,11 @@ class CoordinatorAccessTest extends TutoringTestCase
         $this->career->update(['estado' => false]);
         $this->period->update(['estado' => false]);
         $this->modality->update(['estado' => false]);
-        foreach (['careers', 'cycles', 'periods', 'modalities'] as $resource) {
+        foreach (['careers', 'cycles', 'modalities'] as $resource) {
             $this->getJson(self::API.'/'.$resource)->assertOk()->assertJsonCount(0, 'data');
         }
+        // Los períodos pasados siguen listados como historial, marcados como no vigentes.
+        $this->getJson(self::API.'/periods')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.is_active', false);
     }
 
     public function test_coordinator_without_careers_sees_no_owned_records(): void

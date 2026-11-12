@@ -12,6 +12,7 @@ use App\Models\Subject;
 use App\Models\Usuario;
 use App\Support\StudentCycle;
 use App\Support\TutoringCoordinatorAccess;
+use App\Support\TutoringPeriod;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -55,10 +56,6 @@ class ManageTutoring
                             'estado' => true,
                         ]
                     );
-
-                    if (! $subject->cycles()->whereKey($targetCycle->getKey())->exists()) {
-                        $subject->cycles()->syncWithoutDetaching([$targetCycle->getKey()]);
-                    }
 
                     $this->validatePlacement($subject, $targetCycle, $data['period_id'], $data['modality_id']);
                     $this->assertUnique($subject->getKey(), $targetCycle->getKey(), $data['period_id']);
@@ -191,6 +188,7 @@ class ManageTutoring
         return $this->save(function () use ($tutoring, $data): AsignaturaTutoria {
             $tutoring = AsignaturaTutoria::query()->whereKey($tutoring->getKey())->lockForUpdate()->firstOrFail();
             $this->assertActive($tutoring);
+            TutoringPeriod::assertCurrent($tutoring);
 
             if (! empty($data['cycle_id']) && (int) $data['cycle_id'] !== (int) $tutoring->fk_ciclo) {
                 $cycle = Ciclo::query()->whereKey($data['cycle_id'])->firstOrFail();
@@ -314,6 +312,7 @@ class ManageTutoring
     {
         return $this->save(function () use ($tutoring, $data): AsignaturaTutoria {
             $tutoring = AsignaturaTutoria::query()->whereKey($tutoring->getKey())->lockForUpdate()->firstOrFail();
+            TutoringPeriod::assertCurrent($tutoring);
             $periodId = $data['period_id'] ?? $tutoring->fk_periodo;
             $modalityId = $data['modality_id'] ?? $tutoring->fk_modalidad;
             if ($periodId !== $tutoring->fk_periodo && $tutoring->inscripciones()->exists()) {
@@ -333,6 +332,7 @@ class ManageTutoring
         return $this->save(function () use ($tutoring, $cycle): AsignaturaTutoria {
             $tutoring = AsignaturaTutoria::query()->whereKey($tutoring->getKey())->lockForUpdate()->firstOrFail();
             $this->assertActive($tutoring);
+            TutoringPeriod::assertCurrent($tutoring);
             if ($cycle->fk_carrera !== $tutoring->ciclo->fk_carrera) {
                 throw ValidationException::withMessages(['cycle_id' => 'El ciclo debe pertenecer a la carrera de la tutoría.']);
             }
@@ -354,6 +354,7 @@ class ManageTutoring
             $tutoring = AsignaturaTutoria::query()->whereKey($tutoring->getKey())->lockForUpdate()->firstOrFail();
             $teacher = Usuario::query()->whereKey($teacher->getKey())->lockForUpdate()->firstOrFail();
             $this->assertActive($tutoring);
+            TutoringPeriod::assertCurrent($tutoring);
             if (! $teacher->estado || ! $teacher->hasRole('docente')) {
                 throw ValidationException::withMessages(['teacher_id' => 'Selecciona un docente habilitado.']);
             }
@@ -386,6 +387,18 @@ class ManageTutoring
             }
 
             return $tutoring->refresh();
+        });
+    }
+
+    /** Deshabilita una tutoría del período vigente; las de otros períodos son de solo consulta. */
+    public function deactivate(AsignaturaTutoria $tutoring): AsignaturaTutoria
+    {
+        return DB::transaction(function () use ($tutoring): AsignaturaTutoria {
+            $tutoring = AsignaturaTutoria::query()->whereKey($tutoring->getKey())->lockForUpdate()->firstOrFail();
+            TutoringPeriod::assertCurrent($tutoring);
+            $tutoring->update(['estado' => false]);
+
+            return $tutoring;
         });
     }
 
@@ -431,8 +444,12 @@ class ManageTutoring
         if ($subject && (! $subject->is_active || $subject->career_id !== $cycle->fk_carrera)) {
             throw ValidationException::withMessages(['cycle_id' => 'La asignatura y el ciclo deben estar activos y pertenecer a la misma carrera.']);
         }
-        if ($subject && ! $subject->cycles()->whereKey($cycle->getKey())->exists()) {
-            throw ValidationException::withMessages(['subject_id' => 'Asigna primero la asignatura al ciclo.']);
+        // La asignatura es de un número de ciclo; el paralelo del período lo da la fila de ciclo elegida.
+        if ($subject && $subject->cycleNumber() === null) {
+            throw ValidationException::withMessages(['subject_id' => 'Asigna primero el ciclo de la asignatura en Asignaturas.']);
+        }
+        if ($subject && $subject->cycleNumber() !== (int) $cycle->numero) {
+            throw ValidationException::withMessages(['cycle_id' => "El paralelo debe ser del ciclo {$subject->cycleNumber()}, el de la asignatura."]);
         }
         if (! $cycle->fk_paralelo || ! Paralelo::query()->whereKey($cycle->fk_paralelo)->where('estado', true)->exists()) {
             throw ValidationException::withMessages(['cycle_id' => 'El ciclo necesita un paralelo activo.']);

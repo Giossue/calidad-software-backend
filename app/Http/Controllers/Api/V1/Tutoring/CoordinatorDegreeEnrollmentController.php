@@ -89,6 +89,8 @@ class CoordinatorDegreeEnrollmentController extends Controller
             })
             ->with([
                 'ciclo.paralelo',
+                'periodRecords.periodo',
+                'periodRecords.ciclo',
                 'matriculasTitulacion' => fn ($q) => $q
                     ->where('fk_periodo', $currentPeriod->getKey()),
             ]);
@@ -131,6 +133,7 @@ class CoordinatorDegreeEnrollmentController extends Controller
                     'email' => $student->correo,
                     'phone' => $student->telefono,
                     ...app(StudentCycle::class)->describe($student),
+                    'cycle_history' => app(StudentCycle::class)->history($student),
                     'is_degree_enrolled' => $matricula !== null,
                     'degree_enrollment_id' => $matricula?->getKey(),
                     'enrolled_at' => $matricula?->fecha_matricula?->toDateString(),

@@ -127,8 +127,9 @@ class SubjectAndTeacherTest extends TutoringTestCase
         Sanctum::actingAs($this->coordinator, ['*']);
         $payload = ['career_id' => $this->career->getKey(), 'code' => 'SW-001', 'name' => 'Algoritmos', 'cycle_id' => $this->cycle->getKey()];
 
+        // `cycle_id` se acepta por compatibilidad y aporta solo su número de ciclo.
         $this->postJson(self::API.'/subjects', $payload)->assertCreated()
-            ->assertJsonPath('data.cycle_ids', [$this->cycle->getKey()]);
+            ->assertJsonPath('data.cycle_number', $this->cycle->numero)->assertJsonPath('data.cycle_ids', []);
 
         $this->postJson(self::API.'/subjects', array_replace($payload, ['code' => 'SW-002', 'cycle_id' => $this->otherCycle->getKey()]))
             ->assertUnprocessable()->assertJsonValidationErrors('cycle_id');
@@ -370,50 +371,22 @@ class SubjectAndTeacherTest extends TutoringTestCase
         Notification::assertNothingSent();
     }
 
-    public function test_coordinator_can_create_subject_with_cycle_and_parallel_or_new_parallel(): void
+    public function test_subject_creation_no_longer_selects_parallels_or_periods(): void
     {
         $parallel = Paralelo::query()->create(['nombre' => 'B', 'estado' => true]);
         Sanctum::actingAs($this->coordinator, ['*']);
+        $payload = ['career_id' => $this->career->getKey(), 'code' => 'CS-PAR-1', 'name' => 'Programación I', 'cycle_number' => 1];
 
-        // 1. Create with existing parallel
-        $response = $this->postJson(self::API.'/subjects', [
-            'career_id' => $this->career->getKey(),
-            'code' => 'CS-PAR-1',
-            'name' => 'Programación I',
-            'cycle_id' => $this->cycle->getKey(),
+        foreach ([
             'parallel_id' => $parallel->getKey(),
-        ])->assertCreated();
-
-        $subjectId = $response->json('data.id');
-        $createdCycle = Ciclo::query()->where('fk_carrera', $this->career->getKey())
-            ->where('numero', $this->cycle->numero)
-            ->where('fk_paralelo', $parallel->getKey())
-            ->firstOrFail();
-
-        $this->assertDatabaseHas('subject_cycle', [
-            'subject_id' => $subjectId,
-            'cycle_id' => $createdCycle->getKey(),
-        ]);
-
-        // 2. Create with new parallel name
-        $response2 = $this->postJson(self::API.'/subjects', [
-            'career_id' => $this->career->getKey(),
-            'code' => 'CS-PAR-2',
-            'name' => 'Programación II',
-            'cycle_id' => $this->cycle->getKey(),
+            'parallel_ids' => [$parallel->getKey()],
             'new_parallel_name' => 'C',
-        ])->assertCreated();
-
-        $newParallel = Paralelo::query()->where('nombre', 'C')->firstOrFail();
-        $createdCycle2 = Ciclo::query()->where('fk_carrera', $this->career->getKey())
-            ->where('numero', $this->cycle->numero)
-            ->where('fk_paralelo', $newParallel->getKey())
-            ->firstOrFail();
-
-        $this->assertDatabaseHas('subject_cycle', [
-            'subject_id' => $response2->json('data.id'),
-            'cycle_id' => $createdCycle2->getKey(),
-        ]);
+            'period_id' => $this->period->getKey(),
+        ] as $field => $value) {
+            $this->postJson(self::API.'/subjects', [...$payload, $field => $value])->assertUnprocessable()->assertJsonValidationErrors($field);
+        }
+        $this->assertDatabaseMissing('subjects', ['code' => 'CS-PAR-1']);
+        $this->assertDatabaseMissing('paralelo', ['nombre' => 'C']);
     }
 
     public function test_coordinator_can_assign_and_unassign_parallels_to_subject(): void
@@ -466,34 +439,24 @@ class SubjectAndTeacherTest extends TutoringTestCase
         $this->assertDatabaseHas('paralelo', ['id_paralelo' => $response->json('data.id'), 'nombre' => 'D']);
     }
 
-    public function test_subject_code_is_optional_and_subject_can_have_multiple_parallels(): void
+    public function test_subject_code_is_optional(): void
     {
-        $parallel1 = Paralelo::query()->create(['nombre' => 'P1', 'estado' => true]);
-        $parallel2 = Paralelo::query()->create(['nombre' => 'P2', 'estado' => true]);
         Sanctum::actingAs($this->coordinator, ['*']);
 
-        // Subject without code and with multiple parallels
         $response = $this->postJson(self::API.'/subjects', [
             'career_id' => $this->career->getKey(),
             'name' => 'Materia Sin Código',
-            'cycle_id' => $this->cycle->getKey(),
-            'parallel_ids' => [$parallel1->getKey(), $parallel2->getKey()],
+            'cycle_number' => $this->cycle->numero,
         ])->assertCreated()
             ->assertJsonPath('data.code', null)
-            ->assertJsonPath('data.name', 'MATERIA SIN CODIGO');
+            ->assertJsonPath('data.name', 'MATERIA SIN CODIGO')
+            ->assertJsonPath('data.cycle_number', $this->cycle->numero);
 
-        $subjectId = $response->json('data.id');
         $this->assertDatabaseHas('subjects', [
-            'id' => $subjectId,
+            'id' => $response->json('data.id'),
             'code' => null,
             'name' => 'MATERIA SIN CODIGO',
         ]);
-
-        $this->assertSame(2, Ciclo::query()->where('fk_carrera', $this->career->getKey())
-            ->where('numero', $this->cycle->numero)
-            ->whereIn('fk_paralelo', [$parallel1->getKey(), $parallel2->getKey()])
-            ->count());
-
-        $this->assertSame(2, \DB::table('subject_cycle')->where('subject_id', $subjectId)->count());
+        $this->assertDatabaseMissing('subject_cycle', ['subject_id' => $response->json('data.id')]);
     }
 }

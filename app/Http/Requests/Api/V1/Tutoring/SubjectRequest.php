@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\V1\Tutoring;
 
+use App\Models\Ciclo;
 use App\Models\Subject;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -58,23 +59,16 @@ class SubjectRequest extends FormRequest
                 Rule::unique('subjects', 'code')
                     ->where('career_id', $careerId)
                     ->ignore($this->route('subject'))],
+            // La asignatura es de un número de ciclo de la malla; los paralelos se eligen en cada tutoría del período.
+            'cycle_number' => ['nullable', 'integer', 'min:1', 'max:'.$this->maxCycle($careerId)],
             'cycle_id' => $creating
                 ? ['nullable', 'integer', Rule::exists('ciclo', 'id_ciclo')->where('estado', true)->where('fk_carrera', $careerId)]
                 : ['prohibited'],
-            'parallel_id' => $creating
-                ? ['nullable', 'integer', Rule::exists('paralelo', 'id_paralelo')->where('estado', true)]
-                : ['prohibited'],
-            'parallel_ids' => $creating
-                ? ['nullable', 'array']
-                : ['prohibited'],
-            'parallel_ids.*' => ['integer', Rule::exists('paralelo', 'id_paralelo')->where('estado', true)],
-            'new_parallel_name' => $creating
-                ? ['nullable', 'string', 'max:50']
-                : ['prohibited'],
+            'parallel_id' => ['prohibited'],
+            'parallel_ids' => ['prohibited'],
+            'new_parallel_name' => ['prohibited'],
+            'period_id' => ['prohibited'],
             'modality_id' => ['nullable', 'integer', Rule::exists('modalidad', 'id_modalidad')->where('estado', true)],
-            'period_id' => $creating
-                ? ['nullable', 'integer', Rule::exists('periodo_academico', 'id_periodo')->where('estado', true)]
-                : ['prohibited'],
             'next_subject_ids' => ['sometimes', 'nullable', 'array', 'max:10'],
             'next_subject_ids.*' => ['integer', 'distinct', Rule::exists('subjects', 'id')->where('career_id', $careerId),
                 Rule::notIn($subject instanceof Subject ? [$subject->getKey()] : [])],
@@ -89,10 +83,24 @@ class SubjectRequest extends FormRequest
         ];
     }
 
+    /** Mayor número de ciclo activo de la carrera; 0 si aún no tiene ciclos. */
+    private function maxCycle(?int $careerId): int
+    {
+        return (int) Ciclo::query()->where('fk_carrera', $careerId)->where('estado', true)->max('numero');
+    }
+
     /** @return array<string, string> */
     public function messages(): array
     {
+        $sections = 'Los paralelos se eligen al crear cada tutoría del período, no en la asignatura.';
+
         return [
+            'cycle_number.max' => 'El ciclo debe estar entre 1 y :max, los ciclos de la carrera.',
+            'cycle_number.min' => 'El ciclo debe ser 1 o mayor.',
+            'parallel_id.prohibited' => $sections,
+            'parallel_ids.prohibited' => $sections,
+            'new_parallel_name.prohibited' => $sections,
+            'period_id.prohibited' => 'La asignatura pertenece a la malla y no a un período; el período se elige en cada tutoría.',
             'next_subject_ids.*.exists' => 'La asignatura que continúa debe pertenecer a la misma carrera.',
             'next_subject_ids.*.not_in' => 'Una asignatura no puede continuar en sí misma.',
         ];

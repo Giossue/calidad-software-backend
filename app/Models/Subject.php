@@ -12,18 +12,33 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $career_id
  * @property string|null $code
  * @property string $name
+ * @property int|null $cycle_number número de ciclo de la malla; el paralelo se elige en cada tutoría del período
  * @property int|null $modality_id
  * @property bool $is_active
  * @property-read Carrera|null $career
  */
 class Subject extends Model
 {
-    protected $fillable = ['career_id', 'code', 'name', 'modality_id', 'is_active'];
+    protected $fillable = ['career_id', 'code', 'name', 'cycle_number', 'modality_id', 'is_active'];
 
     /** @return array<string, string> */
     protected function casts(): array
     {
-        return ['is_active' => 'boolean'];
+        return ['is_active' => 'boolean', 'cycle_number' => 'integer'];
+    }
+
+    /**
+     * Número de ciclo de la asignatura. Las filas registradas solo con vínculos
+     * a ciclos (p. ej. por seeders antiguos) usan el menor de esos números.
+     */
+    public function cycleNumber(): ?int
+    {
+        if ($this->cycle_number !== null) {
+            return $this->cycle_number;
+        }
+        $number = $this->relationLoaded('cycles') ? $this->cycles->min('numero') : $this->cycles()->min('ciclo.numero');
+
+        return $number === null ? null : (int) $number;
     }
 
     /** @return BelongsTo<Carrera, $this> */

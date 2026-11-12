@@ -3,6 +3,7 @@
 namespace App\Actions\AcademicPeriods;
 
 use App\Models\PeriodoAcademico;
+use App\Support\StudentCycle;
 use Symfony\Component\HttpFoundation\Response;
 
 class ActivateAcademicPeriod
@@ -28,6 +29,8 @@ class ActivateAcademicPeriod
             ->update(['estado' => false]);
 
         $academicPeriod->update(['estado' => true]);
+        // El ciclo de cada estudiante pasa a ser el que tiene registrado en este período.
+        app(StudentCycle::class)->followActivePeriod($academicPeriod);
 
         return $academicPeriod->refresh();
     }

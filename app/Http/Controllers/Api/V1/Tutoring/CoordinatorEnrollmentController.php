@@ -16,6 +16,7 @@ use App\Support\InstitutionalEmail;
 use App\Support\PendingSubjects;
 use App\Support\ProvisionalPassword;
 use App\Support\StudentCycle;
+use App\Support\TutoringPeriod;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -71,6 +72,7 @@ class CoordinatorEnrollmentController extends Controller
         $enrollment = DB::transaction(function () use ($tutoring, $data): InscripcionTutoria {
             $locked = AsignaturaTutoria::query()->whereKey($tutoring->getKey())->lockForUpdate()->firstOrFail();
             Gate::authorize('view', $locked);
+            TutoringPeriod::assertCurrent($locked);
 
             if (isset($data['student_id'])) {
                 $student = Usuario::query()->whereKey($data['student_id'])->lockForUpdate()->firstOrFail();
@@ -79,6 +81,7 @@ class CoordinatorEnrollmentController extends Controller
                 }
                 app(StudentCycle::class)->assertCanTakeTutorings($student);
                 PendingSubjects::assertCanTake($student, $locked);
+                app(StudentCycle::class)->assertSingleSectionPerSubject($student, $locked);
             } else {
                 $password = ProvisionalPassword::generate();
                 $student = Usuario::query()->create([
@@ -129,6 +132,7 @@ class CoordinatorEnrollmentController extends Controller
     {
         Gate::authorize('view', $tutoring);
         abort_unless($enrollment->fk_asig_tutoria === $tutoring->getKey(), 404);
+        TutoringPeriod::assertCurrent($tutoring);
 
         $enrollment->update(['estado' => false]);
 
@@ -142,6 +146,8 @@ class CoordinatorEnrollmentController extends Controller
 
         $student = $enrollment->estudiante;
         abort_unless($student->estado, 422);
+        TutoringPeriod::assertCurrent($tutoring);
+        app(StudentCycle::class)->assertSingleSectionPerSubject($student, $tutoring);
 
         $enrollment->update(['estado' => true]);
 

@@ -151,7 +151,8 @@ class CatalogImportTest extends TutoringTestCase
             ->assertJsonPath('data.errors.1.messages.0', 'El ciclo «7» no existe en la carrera indicada.');
 
         $subject = Subject::query()->where('code', 'SW-101')->firstOrFail();
-        $this->assertSame([$this->cycle->getKey()], $subject->cycles()->pluck('ciclo.id_ciclo')->all());
+        // La columna «ciclo» da el número de ciclo de la malla, sin vincular paralelos.
+        $this->assertSame($this->cycle->numero, $subject->cycle_number);
     }
 
     public function test_degree_coordinator_imports_sections_into_current_period(): void

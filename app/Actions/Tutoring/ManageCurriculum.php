@@ -115,10 +115,11 @@ class ManageCurriculum
                     'career_id' => $data['career_id'],
                     'code' => $row['code'],
                     'name' => $row['name'],
+                    'cycle_number' => (int) $row['cycle'],
                     'modality_id' => $modalityId,
                     'is_active' => true,
                 ]);
-                $subject->cycles()->attach($this->cycleIds($data['career_id'], (int) $row['cycle']));
+                $this->ensureCycle($data['career_id'], (int) $row['cycle']);
                 $created[] = ['row' => $row, 'subject' => $subject];
             }
 
@@ -144,7 +145,7 @@ class ManageCurriculum
     /** @return EloquentCollection<int, Subject> */
     private function existingSubjects(int $careerId): EloquentCollection
     {
-        return Subject::query()->where('career_id', $careerId)->with('cycles:ciclo.id_ciclo,ciclo.numero')->orderBy('id')->get(['id', 'code', 'name']);
+        return Subject::query()->where('career_id', $careerId)->with('cycles:ciclo.id_ciclo,ciclo.numero')->orderBy('id')->get(['id', 'code', 'name', 'cycle_number']);
     }
 
     private function matches(?string $code, string $name, string $reference): bool
@@ -180,22 +181,17 @@ class ManageCurriculum
         if ($subject === null) {
             return false;
         }
-        $cycle = $subject->cycles->max('numero');
 
-        return $cycle !== null ? (int) $cycle : null;
+        return $subject->cycleNumber();
     }
 
-    /**
-     * Ciclos (uno por paralelo) del número dado; si la carrera aún no lo tiene, lo crea.
-     *
-     * @return list<int>
-     */
-    private function cycleIds(int $careerId, int $number): array
+    /** La carrera tiene el ciclo de ese número; si aún no, se crea sin paralelo. */
+    private function ensureCycle(int $careerId, int $number): void
     {
-        $ids = Ciclo::query()->where('fk_carrera', $careerId)->where('numero', $number)->where('estado', true)->pluck('id_ciclo')->map(fn ($id): int => (int) $id)->all();
-
-        return $ids !== [] ? array_values($ids) : [(int) Ciclo::query()->create([
-            'fk_carrera' => $careerId, 'numero' => $number, 'nombre' => "Ciclo {$number}", 'fk_paralelo' => null, 'estado' => true,
-        ])->getKey()];
+        if (! Ciclo::query()->where('fk_carrera', $careerId)->where('numero', $number)->exists()) {
+            Ciclo::query()->create([
+                'fk_carrera' => $careerId, 'numero' => $number, 'nombre' => "Ciclo {$number}", 'fk_paralelo' => null, 'estado' => true,
+            ]);
+        }
     }
 }

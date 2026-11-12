@@ -31,7 +31,21 @@ alfanuméricos en mayúsculas (regla `CedulaOPasaporte`).
 
 - Nombre, fecha inicial, fecha final y estado.
 - La fecha final no puede ser anterior a la inicial.
-- La regla sobre cuántos períodos pueden estar activos queda pendiente de negocio.
+- Solo un período puede estar activo (vigente); lo garantiza un índice único
+  parcial en la base. El trabajo diario es del período vigente; las tutorías de
+  períodos anteriores son historial de solo consulta.
+
+### StudentPeriod (`estudiante_periodo`)
+
+- Un registro por estudiante y período con el ciclo que cursó en él.
+- Se calcula de sus inscripciones activas en tutorías del período: el número de
+  ciclo más alto. `usuario.fk_ciclo` sigue el registro del período vigente.
+
+### Subject
+
+- Pertenece a la malla de una carrera: código, nombre, número de ciclo y previas.
+- No lleva paralelos: paralelo, modalidad, docente y horario se eligen en cada
+  tutoría del período.
 
 ### DegreeTopic
 
@@ -88,6 +102,7 @@ alfanuméricos en mayúsculas (regla `CedulaOPasaporte`).
 
 ```text
 Usuario(estudiante) 1 ── * TemaTitulacion * ── 1 PeriodoAcademico
+Usuario(estudiante) 1 ── * EstudiantePeriodo * ── 1 PeriodoAcademico (ciclo del período)
 TemaTitulacion      1 ── * AsignacionDocente * ── 1 Usuario(docente)
 TemaTitulacion   1 ── 0..1 FichaSeguimiento
 FichaSeguimiento 1 ── * ActividadAvance * ── 1 Usuario(docente)

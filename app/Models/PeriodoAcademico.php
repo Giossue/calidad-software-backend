@@ -6,6 +6,7 @@
 
 namespace App\Models;
 
+use App\Support\StudentCycle;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -102,6 +103,7 @@ class PeriodoAcademico extends Model
 
             if ($periodoIniciaHoy) {
                 $periodoIniciaHoy->update(['estado' => true]);
+                app(StudentCycle::class)->followActivePeriod($periodoIniciaHoy);
                 $activos = collect([$periodoIniciaHoy]);
             }
         }
@@ -121,6 +123,12 @@ class PeriodoAcademico extends Model
         }
 
         return $activos->first();
+    }
+
+    /** Período marcado como vigente, sin recalcular la vigencia por fechas. */
+    public static function active(): ?self
+    {
+        return static::query()->where('estado', true)->first();
     }
 
     /**

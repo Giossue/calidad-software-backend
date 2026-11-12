@@ -54,6 +54,15 @@ class AdministrativeCatalogsTest extends TestCase
             $table->timestamps();
         });
 
+        // Al habilitar un período, el ciclo de cada estudiante sigue su registro del período.
+        Schema::create('estudiante_periodo', function (Blueprint $table): void {
+            $table->increments('id_estudiante_periodo');
+            $table->unsignedInteger('fk_usuario');
+            $table->unsignedInteger('fk_periodo');
+            $table->unsignedInteger('fk_ciclo');
+            $table->timestamps();
+        });
+
         Schema::create('modalidad', function (Blueprint $table): void {
             $table->increments('id_modalidad');
             $table->string('nombre', 100)->unique();

@@ -7,6 +7,7 @@
 namespace App\Models;
 
 use App\Observers\TutoringEnrollmentObserver;
+use App\Support\StudentCycle;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
@@ -35,6 +36,21 @@ class InscripcionTutoria extends Model
         'fk_asig_tutoria', 'fk_id_usuario',
         'fecha_inscripcion', 'estado', 'final_result', 'final_result_at',
     ];
+
+    /**
+     * Cada alta, rehabilitación o baja de una inscripción recalcula el ciclo del
+     * estudiante en el período de la tutoría, venga de coordinación, del docente,
+     * del avance automático o de una importación.
+     */
+    protected static function booted(): void
+    {
+        static::saved(function (InscripcionTutoria $enrollment): void {
+            if ($enrollment->wasRecentlyCreated || $enrollment->wasChanged(['estado', 'fk_asig_tutoria', 'fk_id_usuario'])) {
+                app(StudentCycle::class)->syncEnrollment($enrollment);
+            }
+        });
+        static::deleted(fn (InscripcionTutoria $enrollment) => app(StudentCycle::class)->syncEnrollment($enrollment));
+    }
 
     protected function casts(): array
     {

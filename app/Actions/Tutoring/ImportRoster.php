@@ -6,6 +6,7 @@ use App\Actions\Users\CreateAccount;
 use App\Imports\CatalogLookup;
 use App\Models\AsignaturaTutoria;
 use App\Models\Carrera;
+use App\Models\Ciclo;
 use App\Models\InscripcionTutoria;
 use App\Models\Modalidad;
 use App\Models\Paralelo;
@@ -69,7 +70,9 @@ class ImportRoster
         $subject = $this->findSubject($careerId, $roster['subject']);
         $period = PeriodoAcademico::query()->where('estado', true)->orderByDesc('fecha_inicio')->first();
         $section = $this->findByName(Paralelo::query()->where('estado', true)->get(), 'nombre', $roster['section']);
-        $baseCycle = $subject?->cycles()->where('ciclo.fk_carrera', $careerId)->where('ciclo.estado', true)->orderBy('ciclo.numero')->first();
+        $cycleNumber = $subject?->cycleNumber();
+        $baseCycle = $cycleNumber === null ? null : Ciclo::query()->where('fk_carrera', $careerId)->where('numero', $cycleNumber)
+            ->where('estado', true)->orderByRaw('fk_paralelo is null desc')->orderBy('id_ciclo')->first();
 
         if ($subject === null) {
             $report['errors'][] = "La asignatura «{$roster['subject']}» no está registrada en {$career->nombre}. Regístrala en Asignaturas.";
@@ -229,6 +232,7 @@ class ImportRoster
         }
         $enrollment = InscripcionTutoria::query()->firstOrNew(['fk_asig_tutoria' => $tutoring->getKey(), 'fk_id_usuario' => $student->getKey()]);
         if (! $enrollment->exists || ! $enrollment->estado) {
+            $this->cycles->assertSingleSectionPerSubject($student, $tutoring);
             $enrollment->fill(['fecha_inscripcion' => $enrollment->fecha_inscripcion ?? today(), 'estado' => true])->save();
         }
     }

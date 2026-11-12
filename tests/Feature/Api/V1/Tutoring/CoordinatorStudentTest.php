@@ -162,15 +162,18 @@ class CoordinatorStudentTest extends TutoringTestCase
         $this->assertTrue($student->paralelos()->whereKey($this->cycle->fk_paralelo)->exists());
     }
 
-    public function test_coordinator_assigns_or_changes_the_cycle_of_a_student(): void
+    public function test_coordinator_assigns_a_first_cycle_but_does_not_change_it_afterwards(): void
     {
         $student = Usuario::factory()->withRole('estudiante')->create(['fk_carrera' => $this->career->getKey()]);
         $second = $this->createCycle($this->career, null, 6);
         $path = self::API."/students/{$student->getKey()}/cycle";
 
-        $this->actingAs($this->coordinator)->patchJson($path, ['cycle_id' => $this->cycle->getKey()])->assertOk()->assertJsonPath('data.cycle_number', 1);
         $this->actingAs($this->coordinator)->patchJson($path, ['cycle_id' => $second->getKey()])->assertOk()
             ->assertJsonPath('data.cycle_number', 6)->assertJsonPath('data.academic_stage', 'titulacion');
+        $this->assertDatabaseHas('usuario', ['id_usuario' => $student->getKey(), 'fk_ciclo' => $second->getKey()]);
+        // Con un ciclo registrado, el ciclo cambia solo con las tutorías del período.
+        $this->actingAs($this->coordinator)->patchJson($path, ['cycle_id' => $this->cycle->getKey()])->assertUnprocessable()
+            ->assertJsonPath('errors.cycle_id.0', 'El ciclo del estudiante se actualiza solo con sus tutorías del período.');
         $this->assertDatabaseHas('usuario', ['id_usuario' => $student->getKey(), 'fk_ciclo' => $second->getKey()]);
 
         $this->actingAs($this->coordinator)->patchJson($path, ['cycle_id' => $this->otherCycle->getKey()])->assertForbidden();

@@ -107,7 +107,7 @@ class AdvanceApprovedStudents
             ->where('fk_asig_tutoria', $tutoring->getKey())
             ->where('fk_id_usuario', $student->getKey())
             ->first();
-        if ($existing !== null) {
+        if ($existing !== null || $this->cycles->takesSubjectElsewhere($student, $tutoring)) {
             return;
         }
 

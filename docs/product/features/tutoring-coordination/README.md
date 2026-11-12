@@ -13,13 +13,13 @@ React del repositorio `calidad-software-frontend`.
 | COOR-01 | Registrar asignatura | Carrera autorizada, código y nombre obligatorios; código único por carrera. |
 | COOR-02 | Actualizar asignatura | Permite corregir código y nombre de una asignatura seleccionada. |
 | COOR-03 | Deshabilitar asignatura | Baja lógica; conserva vínculos con ciclos y tutorías anteriores. |
-| COOR-04 | Asignar asignatura a ciclo | Asignatura y ciclo activos, de la misma carrera; repetir la asignación no duplica el vínculo. |
-| COOR-05 | Asignar tutoría a ciclo | Ciclo compatible dentro de la carrera; actualiza el paralelo y registra el vínculo ciclo/período. |
+| COOR-04 | Asignar asignatura a ciclo | La asignatura guarda su número de ciclo de la malla (`cycle_number`, de 1 al mayor ciclo activo de la carrera); no lleva paralelos. |
+| COOR-05 | Asignar tutoría a ciclo | Fila de ciclo con paralelo de la carrera y del número de ciclo de la asignatura; actualiza el paralelo y registra el vínculo ciclo/período. |
 | COOR-06 | Registrar docente | Valida cédula ecuatoriana o pasaporte extranjero, nombre, correo institucional y teléfono; asigna exclusivamente rol docente y envía contraseña provisional, que debe cambiarse al primer ingreso. |
 | COOR-07 | Actualizar docente | Edita una cuenta docente dentro del alcance autorizado. Cuando el docente ya completó su perfil (`profile_completed`), su cédula y su correo no se pueden cambiar; el administrador sí puede corregirlos. |
 | COOR-08 | Quitar docente de la carrera | El coordinador solo desvincula al docente de su carrera; desactivar la cuenta es tarea del administrador. |
-| COOR-09 | Registrar tutoría | Asignatura vinculada a ciclo, período y modalidad activos; puede quedar inicialmente sin docente. |
-| COOR-10 | Actualizar tutoría | Edita período y modalidad; protege el período si existen inscripciones. |
+| COOR-09 | Registrar tutoría | Asignatura con número de ciclo; el paralelo del período se elige con la fila de ciclo (`cycle_id`) de ese número. Período vigente y modalidad activa; puede quedar inicialmente sin docente. |
+| COOR-10 | Actualizar tutoría | Edita período y modalidad; protege el período si existen inscripciones. Las tutorías de un período no vigente son de solo consulta. |
 | COOR-11 | Deshabilitar tutoría | Baja lógica; conserva horarios, inscripciones, asistencia e informes. |
 | COOR-12 | Asignar docente a tutoría | Tutoría activa y cuenta activa con rol docente. |
 | COOR-13 | Registrar horario | Día, inicio, fin y aula obligatorios; duración positiva y sin superposición activa en la misma tutoría. |
@@ -88,8 +88,10 @@ carrera elegida.
    la cédula y el correo no pueden duplicarse. El registro envía una contraseña
    provisional al correo institucional mediante la configuración de correo del
    backend.
-4. En **Tutorías**, registrar una oferta seleccionando asignatura, ciclo,
-   período y modalidad. El paralelo se toma del ciclo. Posteriormente puede
+4. En **Tutorías**, registrar una oferta seleccionando asignatura, paralelo
+   (fila de ciclo del número de la asignatura), período y modalidad. El listado
+   muestra el período vigente; los anteriores se consultan con el filtro de
+   período y no se editan. Posteriormente puede
    **Asignar docente** o cambiar el responsable por otro docente habilitado.
 5. Abrir el detalle de la tutoría para registrar horarios con día, inicio, fin y
    aula. Los horarios se pueden editar y deshabilitar; la duración se obtiene de
@@ -108,12 +110,27 @@ administración haga los cambios de su cuenta.
 
 - La carrera de una asignatura no cambia mediante su edición. Su código es
   único dentro de la carrera, incluidos los registros deshabilitados.
-- Una tutoría nueva requiere asignatura activa y previamente vinculada a un
-  ciclo activo de su carrera, con paralelo activo, período activo y modalidad
-  activa. La combinación asignatura/ciclo/período es única incluso después de
-  deshabilitar una oferta.
-- Cambiar el ciclo de una tutoría exige compatibilidad con su asignatura y su
-  carrera. El paralelo se toma del ciclo de destino.
+- Una asignatura pertenece a la malla: código, nombre, número de ciclo
+  (`subjects.cycle_number`) y previas. No lleva paralelos; los paralelos que
+  tiene en un período son los de sus tutorías de ese período. Nada se copia al
+  cambiar de período: malla, carreras, docentes y paralelos simplemente persisten.
+- Una tutoría nueva requiere asignatura activa con número de ciclo y una fila de
+  ciclo activa de su carrera, con paralelo activo y del mismo número
+  («El paralelo debe ser del ciclo N, el de la asignatura.»), período vigente y
+  modalidad activa. La combinación asignatura/ciclo/período es única incluso
+  después de deshabilitar una oferta.
+- Cambiar el ciclo de una tutoría exige una fila del mismo número de ciclo de su
+  asignatura y de su carrera. El paralelo se toma del ciclo de destino.
+- Solo hay un período vigente, garantizado por un índice único parcial sobre
+  `periodo_academico.estado`. Las tutorías de otro período son historial de solo
+  consulta: editar, configurar, cambiar ciclo o docente, deshabilitar, habilitar,
+  inscribir, reinscribir o retirar estudiantes responde `422` en `period_id`
+  («La tutoría pertenece a un período académico que no está vigente; solo puede
+  consultarse.»). El avance automático sí inscribe en tutorías de períodos posteriores.
+- Un estudiante no puede estar inscrito activamente en dos tutorías de la misma
+  asignatura en un período (p. ej. paralelos A y B): «El estudiante ya está
+  inscrito en «Asignatura» en otro paralelo de este período.» El avance automático
+  y la carga de listados omiten o marcan esa fila.
 - Una tutoría con inscripciones conserva período, ciclo y paralelo. La regla
   incluye las inscripciones deshabilitadas para preservar la interpretación de
   sus datos históricos.
@@ -145,19 +162,19 @@ permiso `403`.
 | --- | --- | --- |
 | GET | `/careers` | Carreras activas del alcance autorizado. |
 | GET | `/cycles` | Ciclos activos de carreras activas del alcance autorizado. |
-| GET | `/periods` | Períodos activos. |
+| GET | `/periods` | Todos los períodos, del más reciente al más antiguo, con `is_active`. |
 | GET | `/modalities` | Modalidades activas. |
-| GET | `/subjects` | Listado; filtros `search`, `career_id`, `page`, `per_page`. |
-| POST | `/subjects` | `career_id`, `code`, `name`. |
-| PATCH | `/subjects/{subject}` | `code`, `name`. |
+| GET | `/subjects` | Listado; filtros `search`, `career_id`, `cycle_number`, `page`, `per_page`. Devuelve `cycle_number`; `cycle_ids` y `parallel_ids` son vínculos heredados, solo informativos. |
+| POST | `/subjects` | `career_id`, `code`, `name`, `cycle_number`, `modality_id`, `next_subject_ids`. `cycle_id` se acepta por compatibilidad y aporta su número; `parallel_id`, `parallel_ids`, `new_parallel_name` y `period_id` se rechazan. |
+| PATCH | `/subjects/{subject}` | `code`, `name`, `cycle_number`, `modality_id`, `next_subject_ids`. No cambia el número si la asignatura tiene tutorías activas del período vigente en otro número. |
 | PATCH | `/subjects/{subject}/deactivate` | Baja lógica. |
 | PUT | `/subjects/{subject}/cycles/{cycle}` | Vincular al ciclo indicado; sin cuerpo obligatorio. |
 | GET | `/teachers` | Cuentas vinculadas al alcance autorizado; filtros `search`, `career_id`, `page`, `per_page`; incluye `can_manage`. |
 | GET | `/available-teachers` | Docentes activos para seleccionar; filtro `search`, máximo 100 resultados. |
 | POST | `/teachers` | `career_id`, `identification`, `name`, `email`, `phone`. |
 | PATCH | `/teachers/{teacher}` | `identification`, `name`, `email`, `phone`; `identification` y `email` se rechazan si cambian y el docente ya completó su perfil. |
-| GET | `/tutorings` | Listado; filtros `search`, `career_id`, `page`, `per_page`. |
-| POST | `/tutorings` | `subject_id`, `cycle_id`, `period_id`, `modality_id`. |
+| GET | `/tutorings` | Listado de un período: `period_id` o, por defecto, el vigente (vacío si no hay). `meta.period` = `{ id, name, is_active }` o `null`. Filtros `search`, `career_id`, `cycle_number`, `status`, `page`, `per_page`. |
+| POST | `/tutorings` | `subject_id`, `cycle_id` (fila con paralelo del número de ciclo de la asignatura), `period_id` (por defecto el vigente), `modality_id`. |
 | PATCH | `/tutorings/{tutoring}` | `period_id`, `modality_id`. |
 | PATCH | `/tutorings/{tutoring}/deactivate` | Baja lógica. |
 | PATCH | `/tutorings/{tutoring}/activate` | Rehabilita una tutoría; exige período, ciclo y carrera activos y conserva docente e inscripciones. |
@@ -348,13 +365,33 @@ estado de los commits y del push.
 - **Nuevo estudiante** registra al estudiante en el ciclo de la pestaña (si el ciclo
   tiene varios paralelos, se elige uno) y lo ubica en el paralelo de ese ciclo. La
   tutoría inicial opcional debe ser del mismo ciclo; los ciclos de titulación no la admiten.
-- **Cambiar ciclo / Asignar ciclo** (`PATCH /students/{student}/cycle`) mueve al
-  estudiante a otro ciclo de una carrera coordinada; conserva sus tutorías.
+- **Asignar ciclo** (`PATCH /students/{student}/cycle`) solo da el primer ciclo a un
+  estudiante que aún no tiene uno. Con ciclo registrado responde `422` en `cycle_id`:
+  «El ciclo del estudiante se actualiza solo con sus tutorías del período.» El
+  registro, las importaciones y completar el perfil siguen fijando el ciclo inicial.
 - Un estudiante sin ciclo toma el de su primera tutoría al inscribirse (coordinación
   o docente). Los importados por carga masiva quedan en «Sin ciclo».
+- **Ciclo por período** (`estudiante_periodo`): cada alta, rehabilitación o baja de
+  una inscripción (coordinación, docente, avance automático o carga de listados)
+  recalcula `StudentCycle::syncPeriod`. El ciclo del período es el número más alto
+  entre las inscripciones activas del estudiante en tutorías de ese período, guardado
+  como el ciclo base (sin paralelo) de ese número o, si la carrera no lo tiene, como
+  el ciclo de la tutoría. Sin inscripciones activas en el período, el registro se
+  elimina. Si el período es el vigente, `usuario.fk_ciclo` lo sigue (solo cambia si
+  difiere el número o la carrera), y al habilitarse un período los estudiantes toman
+  el ciclo registrado en él.
 - `GET /students` y `GET /degree-students` aceptan `cycle_number`; `GET /students`
   acepta `without_cycle=1`. Ambos devuelven `cycle_id`, `cycle_number`, `cycle_name`,
-  `section_name` y `academic_stage` (`tutorias` o `titulacion`).
+  `section_name`, `academic_stage` (`tutorias` o `titulacion`) y `cycle_history`:
+  `[{ period_id, period_name, cycle_number, cycle_name }]`, del período más reciente
+  al más antiguo.
+- La migración `2026_11_12_110000_create_estudiante_periodo_table` crea la tabla y
+  la rellena con las inscripciones activas existentes; no modifica `usuario.fk_ciclo`.
+  `2026_11_12_120000_add_cycle_number_to_subjects_table` rellena `cycle_number` con
+  el menor número de los ciclos vinculados de cada asignatura y conserva
+  `subject_cycle`. `2026_11_12_100000_enforce_single_active_academic_period` deja un
+  solo período activo (el que está en curso o, si ninguno, el de inicio más reciente)
+  antes de crear el índice único parcial.
 - La migración `2026_10_27_100000_add_cycle_to_usuario_table` crea la columna y la
   rellena con el ciclo de la inscripción activa más reciente o, si no hay, con el único
   ciclo de la carrera que use alguno de los paralelos del estudiante.

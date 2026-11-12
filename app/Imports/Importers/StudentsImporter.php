@@ -92,7 +92,7 @@ class StudentsImporter extends AccountImporter
             return [];
         }
 
-        $subjects = Subject::query()->where('career_id', $careerId)->with('cycles:id_ciclo,numero')->get(['id', 'code', 'name']);
+        $subjects = Subject::query()->where('career_id', $careerId)->with('cycles:id_ciclo,numero')->get(['id', 'code', 'name', 'cycle_number']);
 
         return array_values($names->map(function (string $name) use ($subjects, $studentCycle): int {
             $needle = CatalogLookup::normalize($name);
@@ -102,7 +102,7 @@ class StudentsImporter extends AccountImporter
                 throw ValidationException::withMessages([self::PENDING_COLUMN => "La asignatura pendiente «{$name}» no existe en la carrera indicada."]);
             }
 
-            $level = $subject->cycles->min('numero');
+            $level = $subject->cycleNumber();
             if ($studentCycle !== null && $level !== null && $level >= $studentCycle) {
                 throw ValidationException::withMessages([self::PENDING_COLUMN => "«{$subject->name}» es de {$level}.º ciclo: solo se arrastran asignaturas de ciclos anteriores al {$studentCycle}.º."]);
             }

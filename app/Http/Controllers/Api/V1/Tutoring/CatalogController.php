@@ -46,7 +46,8 @@ class CatalogController extends Controller
 
         PeriodoAcademico::sincronizarVigencia();
 
-        return AcademicPeriodResource::collection(PeriodoAcademico::query()->where('estado', true)->orderByDesc('fecha_inicio')->get());
+        // Todos los períodos, del más reciente al más antiguo: el vigente trae `is_active` y los demás son historial.
+        return AcademicPeriodResource::collection(PeriodoAcademico::query()->orderByDesc('fecha_inicio')->orderByDesc('id_periodo')->get());
     }
 
     public function modalities(): AnonymousResourceCollection

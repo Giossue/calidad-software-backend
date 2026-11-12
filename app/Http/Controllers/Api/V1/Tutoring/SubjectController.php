@@ -30,7 +30,8 @@ class SubjectController extends Controller
             $query->whereHas('cycles', fn (Builder $q) => $q->where('ciclo.id_ciclo', $cycleId));
         }
         if ($cycleNumber = $request->integer('cycle_number')) {
-            $query->whereHas('cycles', fn (Builder $q) => $q->where('ciclo.numero', $cycleNumber));
+            $query->where(fn (Builder $q) => $q->where('cycle_number', $cycleNumber)
+                ->orWhere(fn (Builder $legacy) => $legacy->whereNull('cycle_number')->whereHas('cycles', fn (Builder $c) => $c->where('ciclo.numero', $cycleNumber))));
         }
         if ($status = $request->string('status')->toString()) {
             $query->where('is_active', $status === 'active');
@@ -39,7 +40,7 @@ class SubjectController extends Controller
             $query->where(fn (Builder $q) => $q->whereLike('name', "%{$search}%")->orWhereLike('code', "%{$search}%"));
         }
 
-        return TutoringSubjectResource::collection($query->orderByRaw('(select min(c.numero) from subject_cycle sc join ciclo c on c.id_ciclo = sc.cycle_id where sc.subject_id = subjects.id) asc nulls last')->orderBy('name')->paginate(min(max($request->integer('per_page', 15), 1), 100)));
+        return TutoringSubjectResource::collection($query->orderByRaw('coalesce(subjects.cycle_number, (select min(c.numero) from subject_cycle sc join ciclo c on c.id_ciclo = sc.cycle_id where sc.subject_id = subjects.id)) asc nulls last')->orderBy('name')->paginate(min(max($request->integer('per_page', 15), 1), 100)));
     }
 
     public function store(SubjectRequest $request, ManageSubject $action): JsonResponse
@@ -48,12 +49,9 @@ class SubjectController extends Controller
             'career_id' => $request->integer('career_id'),
             'code' => $request->filled('code') ? $request->string('code')->toString() : null,
             'name' => $request->string('name')->toString(),
+            'cycle_number' => $request->integer('cycle_number') ?: null,
             'cycle_id' => $request->integer('cycle_id') ?: null,
-            'parallel_id' => $request->integer('parallel_id') ?: null,
-            'parallel_ids' => $request->input('parallel_ids') ?: [],
-            'new_parallel_name' => $request->string('new_parallel_name')->toString() ?: null,
             'modality_id' => $request->integer('modality_id') ?: null,
-            'period_id' => $request->integer('period_id') ?: null,
             ...($request->has('next_subject_ids') ? ['next_subject_ids' => $request->validated('next_subject_ids') ?? []] : []),
         ])->load('career', 'cycles.periodos', 'modality', 'nextSubjects', 'previousSubjects'))
             ->response()->setStatusCode(Response::HTTP_CREATED);

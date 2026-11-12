@@ -215,6 +215,16 @@ class Usuario extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Ciclo del estudiante en cada período académico.
+     *
+     * @return HasMany<EstudiantePeriodo, $this>
+     */
+    public function periodRecords(): HasMany
+    {
+        return $this->hasMany(EstudiantePeriodo::class, 'fk_usuario');
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>

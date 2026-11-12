@@ -18,6 +18,7 @@ use App\Support\PendingSubjects;
 use App\Support\ProvisionalPassword;
 use App\Support\StudentCycle;
 use App\Support\TutoringCoordinatorAccess;
+use App\Support\TutoringPeriod;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -57,7 +58,7 @@ class CoordinatorStudentController extends Controller
                     )
                     ->orWhereHas('ciclo', fn (Builder $q2) => $q2->whereIn('fk_carrera', $careerIds));
             })
-            ->with(['ciclo.paralelo', 'pendingSubjects:subjects.id,subjects.code,subjects.name', 'inscripciones' => fn ($q) => $q
+            ->with(['ciclo.paralelo', 'periodRecords.periodo', 'periodRecords.ciclo', 'pendingSubjects:subjects.id,subjects.code,subjects.name', 'inscripciones' => fn ($q) => $q
                 ->where('estado', true)
                 ->whereHas('asignaturaTutoria.ciclo', fn (Builder $q2) => $q2->whereIn('fk_carrera', $careerIds))
                 ->with(['asignaturaTutoria' => fn ($q2) => $q2->with(self::TUTORING_RELATIONS)]),
@@ -126,6 +127,7 @@ class CoordinatorStudentController extends Controller
             if (! $belongs || $cycles->isDegreeCycle($cycle)) {
                 throw ValidationException::withMessages(['tutoring_id' => 'Selecciona una tutoría activa del ciclo del estudiante.']);
             }
+            TutoringPeriod::assertCurrent(AsignaturaTutoria::query()->findOrFail((int) $data['tutoring_id']), 'tutoring_id');
         }
 
         $password = ProvisionalPassword::generate();
@@ -162,7 +164,7 @@ class CoordinatorStudentController extends Controller
             return $student;
         });
 
-        $student->load(['ciclo.paralelo', 'pendingSubjects:subjects.id,subjects.code,subjects.name', 'inscripciones' => fn ($q) => $q
+        $student->load(['ciclo.paralelo', 'periodRecords.periodo', 'periodRecords.ciclo', 'pendingSubjects:subjects.id,subjects.code,subjects.name', 'inscripciones' => fn ($q) => $q
             ->where('estado', true)
             ->whereHas('asignaturaTutoria.ciclo', fn (Builder $q2) => $q2->whereIn('fk_carrera', $careerIds))
             ->with(['asignaturaTutoria' => fn ($q2) => $q2->with(self::TUTORING_RELATIONS)]),
@@ -212,7 +214,9 @@ class CoordinatorStudentController extends Controller
 
         $tutoring = AsignaturaTutoria::query()->with(self::TUTORING_RELATIONS)->findOrFail((int) $data['tutoring_id']);
         Gate::authorize('view', $tutoring);
+        TutoringPeriod::assertCurrent($tutoring);
         PendingSubjects::assertCanTake($student, $tutoring, 'tutoring_id');
+        app(StudentCycle::class)->assertSingleSectionPerSubject($student, $tutoring, 'tutoring_id');
 
         $enrollment = DB::transaction(function () use ($student, $tutoring): InscripcionTutoria {
             $locked = AsignaturaTutoria::query()->whereKey($tutoring->getKey())->lockForUpdate()->firstOrFail();
@@ -242,13 +246,17 @@ class CoordinatorStudentController extends Controller
     {
         Gate::authorize('viewAny', AsignaturaTutoria::class);
         abort_unless($enrollment->fk_id_usuario === $student->getKey(), 404);
+        TutoringPeriod::assertCurrent($enrollment->asignaturaTutoria);
 
         $enrollment->update(['estado' => false]);
 
         return response()->json(['data' => EnrollmentResource::make($enrollment->refresh()->load(self::ENROLLMENT_RELATIONS))]);
     }
 
-    /** Asigna o cambia el ciclo que cursa el estudiante dentro de las carreras del coordinador. */
+    /**
+     * Asigna el primer ciclo a un estudiante que aún no tiene uno. Después, el
+     * ciclo cambia solo con sus inscripciones en tutorías del período.
+     */
     public function updateCycle(Request $request, Usuario $student, TutoringCoordinatorAccess $access, StudentCycle $cycles): JsonResponse
     {
         Gate::authorize('viewAny', AsignaturaTutoria::class);
@@ -262,9 +270,12 @@ class CoordinatorStudentController extends Controller
         ], [], ['cycle_id' => 'ciclo']);
         $cycle = Ciclo::query()->findOrFail((int) $data['cycle_id']);
         $access->authorizeCareer($request->user(), $cycle->fk_carrera);
+        if ($student->fk_ciclo !== null) {
+            throw ValidationException::withMessages(['cycle_id' => 'El ciclo del estudiante se actualiza solo con sus tutorías del período.']);
+        }
 
         $cycles->assign($student, $cycle);
-        $student->load(['ciclo.paralelo', 'pendingSubjects:subjects.id,subjects.code,subjects.name', 'inscripciones' => fn ($q) => $q
+        $student->load(['ciclo.paralelo', 'periodRecords.periodo', 'periodRecords.ciclo', 'pendingSubjects:subjects.id,subjects.code,subjects.name', 'inscripciones' => fn ($q) => $q
             ->where('estado', true)
             ->whereHas('asignaturaTutoria.ciclo', fn (Builder $q2) => $q2->where('fk_carrera', $cycle->fk_carrera))
             ->with(['asignaturaTutoria' => fn ($q2) => $q2->with(self::TUTORING_RELATIONS)]),
@@ -286,6 +297,7 @@ class CoordinatorStudentController extends Controller
             'phone' => $student->telefono,
             'is_active' => $student->estado,
             ...app(StudentCycle::class)->describe($student),
+            'cycle_history' => app(StudentCycle::class)->history($student),
             'pending_subjects' => $student->relationLoaded('pendingSubjects')
                 ? $student->pendingSubjects->map(fn (Subject $subject) => ['id' => $subject->id, 'code' => $subject->code, 'name' => $subject->name])->values()
                 : [],

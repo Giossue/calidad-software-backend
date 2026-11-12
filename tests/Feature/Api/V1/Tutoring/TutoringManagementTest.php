@@ -23,8 +23,8 @@ class TutoringManagementTest extends TutoringTestCase
         $this->assertDatabaseHas('ciclo_periodo', ['fk_ciclo' => $this->cycle->getKey(), 'fk_periodo' => $this->period->getKey(), 'estado' => true]);
         $modality = Modalidad::query()->create(['nombre' => 'Virtual', 'estado' => true]);
         $this->patchJson($url, ['modality_id' => $modality->getKey()])->assertOk()->assertJsonPath('data.modality_id', $modality->getKey());
-        $cycle = $this->createCycle($this->career, number: 2);
-        $subject->cycles()->attach($cycle);
+        // Otro paralelo del mismo número de ciclo de la asignatura.
+        $cycle = $this->createCycle($this->career);
         $this->putJson($url.'/cycle', ['cycle_id' => $cycle->getKey()])->assertOk()
             ->assertJsonPath('data.cycle_id', $cycle->getKey())->assertJsonPath('data.section_id', $cycle->fk_paralelo);
         $this->assertDatabaseHas('ciclo_periodo', ['fk_ciclo' => $cycle->getKey(), 'fk_periodo' => $this->period->getKey(), 'estado' => true]);
@@ -153,8 +153,9 @@ class TutoringManagementTest extends TutoringTestCase
         Sanctum::actingAs($this->coordinator, ['*']);
         $url = self::API.'/tutorings/'.$tutoring->getKey().'/cycle';
         $this->putJson($url, ['cycle_id' => $this->otherCycle->getKey()])->assertUnprocessable()->assertJsonValidationErrors('cycle_id');
-        $unlinkedCycle = $this->createCycle($this->career, number: 2);
-        $this->putJson($url, ['cycle_id' => $unlinkedCycle->getKey()])->assertUnprocessable()->assertJsonValidationErrors('subject_id');
+        // Un paralelo de otro número de ciclo no corresponde a la asignatura.
+        $otherNumber = $this->createCycle($this->career, number: 2);
+        $this->putJson($url, ['cycle_id' => $otherNumber->getKey()])->assertUnprocessable()->assertJsonValidationErrors('cycle_id');
         $this->assertSame($this->cycle->getKey(), $tutoring->refresh()->fk_ciclo);
     }
 
@@ -196,8 +197,9 @@ class TutoringManagementTest extends TutoringTestCase
         ]);
         $cycle = $this->createCycle($this->career, number: 2);
         $tutoring->subject->cycles()->attach($cycle);
+        // La base admite un solo período vigente: el otro período queda inactivo.
         $period = PeriodoAcademico::query()->create([
-            'nombre' => 'PAO 2027', 'fecha_inicio' => '2027-01-01', 'fecha_fin' => '2027-06-30', 'estado' => true,
+            'nombre' => 'PAO 2027', 'fecha_inicio' => '2027-01-01', 'fecha_fin' => '2027-06-30', 'estado' => false,
         ]);
         Sanctum::actingAs($this->coordinator, ['*']);
         $url = self::API.'/tutorings/'.$tutoring->getKey();
@@ -234,11 +236,9 @@ class TutoringManagementTest extends TutoringTestCase
         $this->assertNull($tutoring->refresh()->fk_docente);
     }
 
-    public function test_update_preserves_current_inactive_period_and_modality_but_rejects_new_inactive_options(): void
+    public function test_update_preserves_the_current_inactive_modality_and_past_period_tutorings_are_read_only(): void
     {
         $tutoring = $this->createTutoring();
-        $otherTutoring = $this->createTutoring(subject: $this->createSubject(code: 'CS-102'));
-        $this->period->update(['estado' => false]);
         $this->modality->update(['estado' => false]);
         $otherPeriod = PeriodoAcademico::query()->create([
             'nombre' => 'PAO 2027', 'fecha_inicio' => '2027-01-01', 'fecha_fin' => '2027-06-30', 'estado' => false,
@@ -255,13 +255,15 @@ class TutoringManagementTest extends TutoringTestCase
         $this->assertSame($this->period->getKey(), $tutoring->refresh()->fk_periodo);
         $this->assertSame($this->modality->getKey(), $tutoring->fk_modalidad);
 
-        $otherPeriod->update(['estado' => true]);
         $otherModality->update(['estado' => true]);
         $this->patchJson($url, ['modality_id' => $otherModality->getKey()])->assertOk()
             ->assertJsonPath('data.modality_id', $otherModality->getKey())
             ->assertJsonPath('data.period_id', $this->period->getKey());
-        $this->patchJson(self::API.'/tutorings/'.$otherTutoring->getKey(), ['period_id' => $otherPeriod->getKey()])->assertOk()
-            ->assertJsonPath('data.period_id', $otherPeriod->getKey())
-            ->assertJsonPath('data.modality_id', $this->modality->getKey());
+
+        // Al dejar de estar vigente, el período queda como historial de solo consulta.
+        $this->period->update(['estado' => false]);
+        $this->patchJson($url, ['modality_id' => $otherModality->getKey()])->assertUnprocessable()
+            ->assertJsonPath('errors.period_id.0', 'La tutoría pertenece a un período académico que no está vigente; solo puede consultarse.');
+        $this->assertSame($otherModality->getKey(), $tutoring->refresh()->fk_modalidad);
     }
 }

@@ -27,6 +27,8 @@ class TutoringSubjectResource extends JsonResource
             'period_id' => $linkedPeriod?->id_periodo,
             'period_name' => $linkedPeriod?->nombre,
             'is_active' => $this->is_active,
+            // Número de ciclo de la malla. `cycle_ids` y `parallel_ids` son vínculos heredados, solo informativos.
+            'cycle_number' => $this->cycleNumber(),
             'cycle_ids' => $this->whenLoaded('cycles', fn () => $this->cycles->pluck('id_ciclo')->all()),
             'parallel_ids' => $this->whenLoaded('cycles', fn () => $this->cycles->pluck('fk_paralelo')->filter()->unique()->values()->all()),
             // Secuencia de la malla: a qué asignaturas continúa y cuáles hay que aprobar antes.

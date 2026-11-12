@@ -112,12 +112,15 @@ class CurriculumTest extends TutoringTestCase
         $this->assertSame('PROGRAMACION I', $two->name);
         $this->assertTrue($two->is_active);
         $this->assertSame($this->modality->getKey(), $two->modality_id);
-        $this->assertSame([$this->second->getKey()], $two->cycles()->pluck('ciclo.id_ciclo')->all());
+        // La asignatura queda en su número de ciclo, sin vincularse a paralelos.
+        $this->assertSame(2, $two->cycle_number);
+        $this->assertSame([], $two->cycles()->pluck('ciclo.id_ciclo')->all());
         $this->assertSame(['PROGRAMACION II'], $two->nextSubjects()->pluck('name')->all());
         $this->assertSame(['ALGORITMOS'], $two->previousSubjects()->pluck('name')->all());
         // Un ciclo que la carrera aún no tiene se crea.
         $physics = Subject::query()->where('name', 'FISICA')->firstOrFail();
-        $this->assertSame([4], $physics->cycles()->pluck('ciclo.numero')->all());
+        $this->assertSame(4, $physics->cycle_number);
+        $this->assertTrue(Ciclo::query()->where('fk_carrera', $this->career->getKey())->where('numero', 4)->exists());
         $this->assertSame(['Cálculo', 'REDES'], $physics->previousSubjects()->orderBy('subjects.id')->pluck('name')->all());
         $this->assertSame(['FISICA'], $existing->nextSubjects()->pluck('name')->all());
     }

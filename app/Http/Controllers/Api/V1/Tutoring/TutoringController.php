@@ -11,6 +11,7 @@ use App\Http\Requests\Api\V1\Tutoring\TutoringRequest;
 use App\Http\Resources\Api\V1\TutoringResource;
 use App\Models\AsignaturaTutoria;
 use App\Models\Ciclo;
+use App\Models\PeriodoAcademico;
 use App\Models\Usuario;
 use App\Support\TutoringCoordinatorAccess;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,8 +28,18 @@ class TutoringController extends Controller
     public function index(Request $request, TutoringCoordinatorAccess $access): AnonymousResourceCollection
     {
         Gate::authorize('viewAny', AsignaturaTutoria::class);
+        $request->validate(['period_id' => ['nullable', 'integer']]);
+        // El listado muestra un solo período: el pedido o, por defecto, el vigente.
+        $period = $request->filled('period_id')
+            ? PeriodoAcademico::query()->find($request->integer('period_id'))
+            : PeriodoAcademico::active();
         $query = AsignaturaTutoria::query()->with(self::RELATIONS)
             ->whereHas('ciclo', fn (Builder $q) => $access->scopeCareer($q, $request->user()));
+        if ($period === null) {
+            $query->whereRaw('1 = 0');
+        } else {
+            $query->where('fk_periodo', $period->getKey());
+        }
         if ($careerId = $request->integer('career_id')) {
             $query->whereHas('ciclo', fn (Builder $q) => $q->where('fk_carrera', $careerId));
         }
@@ -49,7 +60,10 @@ class TutoringController extends Controller
             ->orderByRaw('(select numero from ciclo where ciclo.id_ciclo = asignatura_tutoria.fk_ciclo) asc nulls last')
             ->orderBy('nombre')
             ->orderByDesc('id_asig_tutoria')
-            ->paginate(min(max($request->integer('per_page', 15), 1), 100)));
+            ->paginate(min(max($request->integer('per_page', 15), 1), 100)))
+            ->additional(['meta' => ['period' => $period === null ? null : [
+                'id' => $period->getKey(), 'name' => $period->nombre, 'is_active' => $period->estado,
+            ]]]);
     }
 
     public function store(TutoringRequest $request, ManageTutoring $action): JsonResponse
@@ -80,12 +94,11 @@ class TutoringController extends Controller
         return TutoringResource::make($action->update($tutoring, $changes)->load(self::RELATIONS));
     }
 
-    public function deactivate(AsignaturaTutoria $tutoring): TutoringResource
+    public function deactivate(AsignaturaTutoria $tutoring, ManageTutoring $action): TutoringResource
     {
         Gate::authorize('update', $tutoring);
-        $tutoring->update(['estado' => false]);
 
-        return TutoringResource::make($tutoring->refresh()->load(self::RELATIONS));
+        return TutoringResource::make($action->deactivate($tutoring)->load(self::RELATIONS));
     }
 
     public function activate(AsignaturaTutoria $tutoring, ManageTutoring $action): TutoringResource

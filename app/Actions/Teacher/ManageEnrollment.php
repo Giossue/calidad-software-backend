@@ -12,6 +12,7 @@ use App\Support\PendingSubjects;
 use App\Support\ProvisionalPassword;
 use App\Support\StudentCycle;
 use App\Support\TeacherWorkspace;
+use App\Support\TutoringPeriod;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -25,6 +26,7 @@ class ManageEnrollment
     public function create(Usuario $teacher, AsignaturaTutoria $tutoring, array $data): InscripcionTutoria
     {
         return $this->workspace->write($teacher, $tutoring, function (AsignaturaTutoria $locked) use ($data): InscripcionTutoria {
+            TutoringPeriod::assertCurrent($locked);
             if (isset($data['student_id'])) {
                 $student = Usuario::query()->whereKey($data['student_id'])->lockForUpdate()->firstOrFail();
                 if (! $student->estado || ! $student->hasRole('estudiante') || ! $student->paralelos()->whereKey($locked->fk_paralelo)->wherePivot('estado', true)->exists()) {
@@ -32,6 +34,7 @@ class ManageEnrollment
                 }
                 $this->cycles->assertCanTakeTutorings($student);
                 PendingSubjects::assertCanTake($student, $locked);
+                $this->cycles->assertSingleSectionPerSubject($student, $locked);
             } else {
                 $password = ProvisionalPassword::generate();
                 $student = Usuario::query()->create([
@@ -75,6 +78,7 @@ class ManageEnrollment
     {
         return $this->workspace->write($teacher, $tutoring, function () use ($tutoring, $enrollment): InscripcionTutoria {
             $this->workspace->enrollment($tutoring, $enrollment);
+            TutoringPeriod::assertCurrent($tutoring);
             $enrollment->update(['estado' => false]);
 
             return $enrollment->refresh()->load(self::RELATIONS);
