@@ -93,6 +93,10 @@ carrera elegida.
    muestra el período vigente; los anteriores se consultan con el filtro de
    período y no se editan. Posteriormente puede
    **Asignar docente** o cambiar el responsable por otro docente habilitado.
+   El horario es opcional al crear o editar la tutoría: el formulario parte sin
+   filas y `schedules: []` crea o deja la tutoría sin horario activo. Cada fila
+   agregada pide día, inicio y fin válidos. Sin horario el docente no puede tomar
+   asistencia hasta definirlo en su pestaña **Horarios**.
 5. Abrir el detalle de la tutoría para registrar horarios con día, inicio, fin y
    aula. Los horarios se pueden editar y deshabilitar; la duración se obtiene de
    las horas de inicio y fin.

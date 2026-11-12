@@ -54,8 +54,11 @@ de coordinación.
 1. Iniciar sesión y completar el flujo de verificación y 2FA que corresponda.
    El panel docente abre **Mis tutorías** y presenta siete secciones en **Docencia**.
 2. En **Mis tutorías**, consultar asignatura, período, ciclo, paralelo, estado,
-   número de inscritos y horarios. El menú de cada fila abre sus secciones con
-   `?tutoring=<id>` para conservar el contexto.
+   número de inscritos y horarios. Una tutoría sin horario activo dice
+   «Sin horario» en la lista y, al abrirla, una línea pide definirlo en
+   «Horarios». En **Horarios** el horario es obligatorio para el docente (al
+   menos una fila de día, inicio y fin; `schedules` exige `min:1`). El menú de
+   cada fila abre sus secciones con `?tutoring=<id>` para conservar el contexto.
 3. En **Estudiantes**, seleccionar una tutoría. **Registrar estudiante** permite
    buscar una cuenta activa del mismo paralelo o registrar una nueva con cédula
    ecuatoriana, nombre, correo `@ueb.edu.ec` o

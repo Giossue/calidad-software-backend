@@ -366,6 +366,37 @@ class ScheduleAndSupervisionTest extends TutoringTestCase
             ->assertJsonPath('data.schedules.0.day', 'martes');
     }
 
+    public function test_coordinator_can_create_and_configure_a_tutoring_without_schedules(): void
+    {
+        $teacher = Usuario::factory()->withRole('docente')->create();
+        $subject = $this->createSubject();
+        Sanctum::actingAs($this->coordinator, ['*']);
+
+        $created = $this->postJson(self::API.'/tutorings', [
+            ...$this->tutoringPayload($subject),
+            'teacher_id' => $teacher->getKey(),
+            'schedules' => [],
+        ])->assertCreated()->assertJsonPath('data.teacher_id', $teacher->getKey());
+        $this->assertSame([], $created->json('data.schedules'));
+        $this->assertDatabaseMissing('horario', ['fk_asig_tutoria' => $created->json('data.id')]);
+
+        // Quitar todas las franjas al editar deja la tutoría sin horario activo.
+        $tutoring = $this->createTutoring(subject: $this->createSubject(code: 'CS-206', name: 'Redes'));
+        $url = self::API.'/tutorings/'.$tutoring->getKey().'/configuration';
+        $this->putJson($url, [
+            'teacher_id' => $teacher->getKey(),
+            'schedules' => [['day' => 'lunes', 'start_time' => '08:00', 'end_time' => '10:00']],
+        ])->assertOk();
+        $this->putJson($url, ['teacher_id' => $teacher->getKey(), 'schedules' => []])
+            ->assertOk()->assertJsonPath('data.teacher_id', $teacher->getKey());
+        $this->assertDatabaseMissing('horario', ['fk_asig_tutoria' => $tutoring->getKey(), 'estado' => true]);
+
+        $fresh = $this->createTutoring(subject: $this->createSubject(code: 'CS-207', name: 'Bases de datos'));
+        $this->putJson(self::API.'/tutorings/'.$fresh->getKey().'/configuration', ['teacher_id' => $teacher->getKey(), 'schedules' => []])
+            ->assertOk();
+        $this->assertDatabaseMissing('horario', ['fk_asig_tutoria' => $fresh->getKey()]);
+    }
+
     public function test_available_teachers_endpoint_returns_busy_schedules(): void
     {
         $teacher = Usuario::factory()->withRole('docente')->create();
