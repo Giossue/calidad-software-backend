@@ -25,9 +25,9 @@ class ProcessBulkImport implements ShouldQueue
         'careers' => '/panel/careers',
         'cycles' => '/panel/careers',
         'academic-periods' => '/panel/periods',
-        'subjects' => '/panel/tutoring-subjects',
-        'teachers' => '/panel/tutoring-teachers',
-        'students' => '/panel/tutoring-students',
+        'subjects' => '/panel/tutoring-curriculum',
+        'teachers' => '/panel/tutoring-users?pestana=docentes',
+        'students' => '/panel/tutoring-users?pestana=estudiantes',
         'sections' => '/panel/degree-students',
     ];
 
