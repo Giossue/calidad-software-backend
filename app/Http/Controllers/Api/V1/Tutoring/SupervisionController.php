@@ -2,14 +2,17 @@
 
 namespace App\Http\Controllers\Api\V1\Tutoring;
 
+use App\Actions\Teacher\ManageEnrollment;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Api\V1\TutoringAttendanceResource;
+use App\Http\Resources\Api\V1\TutoringGradeResource;
 use App\Http\Resources\Api\V1\TutoringReportResource;
 use App\Http\Resources\Api\V1\TutoringSupervisionSessionResource;
 use App\Models\AsignaturaTutoria;
 use App\Models\Asistencia;
 use App\Models\Reporte;
 use App\Models\TutoringSession;
+use App\Models\Usuario;
 use App\Support\TutoringCoordinatorAccess;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
@@ -37,6 +40,19 @@ class SupervisionController extends Controller
             ->with(['topics', 'attendance.estudiante'])
             ->orderByDesc('date')->orderByDesc('id')
             ->paginate(min(max($request->integer('per_page', 20), 1), 100)));
+    }
+
+    /** Notas por etapa de los estudiantes inscritos (solo consulta; también en períodos pasados). */
+    public function grades(AsignaturaTutoria $tutoring): AnonymousResourceCollection
+    {
+        Gate::authorize('view', $tutoring);
+
+        return TutoringGradeResource::collection($tutoring->inscripciones()
+            ->where('estado', true)
+            ->with(ManageEnrollment::RELATIONS)
+            ->orderBy(Usuario::query()->select('nombre')->whereColumn('usuario.id_usuario', 'inscripcion_tutoria.fk_id_usuario'))
+            ->orderBy('id_inscripcion')
+            ->get());
     }
 
     public function reports(Request $request, AsignaturaTutoria $tutoring): AnonymousResourceCollection

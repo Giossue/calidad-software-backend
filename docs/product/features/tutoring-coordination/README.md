@@ -102,6 +102,9 @@ carrera elegida.
    las horas de inicio y fin.
 6. Consultar en ese detalle la asistencia registrada y los informes disponibles.
    Estas vistas no registran asistencia ni generan informes nuevos.
+   La pestaña **Notas** muestra, por estudiante inscrito, una fila por etapa
+   (Diagnóstico, Parcial 1, Parcial 2) con su nota y el resultado final que
+   registró el docente. Es solo consulta, también en períodos pasados.
 7. Usar **Desactivar** para retirar asignaturas, tutorías u horarios; un docente se quita de la carrera con **Quitar de la carrera**.
    La operación conserva sus registros históricos. Una tutoría deshabilitada
    permite seguir consultando asistencia e informes.
@@ -192,6 +195,7 @@ permiso `403`.
 | GET | `/tutorings/{tutoring}/attendance` | Asistencia; `page`, `per_page`. |
 | GET | `/tutorings/{tutoring}/sessions` | Sesiones de la más reciente a la primera, con `number`, `date`, `topics`, `present_count`, `absent_count` y `attendance`; `page`, `per_page`. |
 | GET | `/tutorings/{tutoring}/reports` | Informes con formato oficial (`summary.format`: `diagnostic_evaluation`, `diagnostic_grades`, `tutoring_follow_up` o `final_pao`) y resumen; `page`, `per_page`. Los informes libres no se listan. |
+| GET | `/tutorings/{tutoring}/grades` | Notas de solo consulta de los estudiantes con inscripción activa, por nombre: `enrollment_id`, `student_id`, `identification`, `name`, `grades` (una entrada por etapa con `stage` `diagnostic`/`partial`/`partial_two`, `label` y `value` decimal en texto o `null`), `final_result` (`approved`, `failed` o `null`) y `suggested_result`. Sin paginar; legible en períodos pasados. Misma autorización por carrera que la supervisión. |
 
 `day` usa `lunes`, `martes`, `miercoles`, `jueves`, `viernes`, `sabado` o
 `domingo`; la interfaz muestra las tildes correspondientes. Las horas usan

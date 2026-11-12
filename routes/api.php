@@ -277,6 +277,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::get('tutorings/{tutoring}/attendance', [TutoringSupervisionController::class, 'attendance'])->name('tutorings.attendance');
             Route::get('tutorings/{tutoring}/sessions', [TutoringSupervisionController::class, 'sessions'])->name('tutorings.sessions');
             Route::get('tutorings/{tutoring}/reports', [TutoringSupervisionController::class, 'reports'])->name('tutorings.reports');
+            Route::get('tutorings/{tutoring}/grades', [TutoringSupervisionController::class, 'grades'])->name('tutorings.grades');
             Route::get('reports', [TutoringSupervisionController::class, 'allReports'])->name('tutorings.all-reports');
 
             Route::get('tutorings/{tutoring}/students', [CoordinatorEnrollmentController::class, 'index'])->name('tutorings.students.index');
