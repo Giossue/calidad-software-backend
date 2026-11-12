@@ -19,7 +19,7 @@ class CareersImporter implements Importer
 
     public function columns(): array
     {
-        return ['facultad' => true, 'nombre' => true, 'ciclos' => false, 'modalidad' => false, 'codigo' => false];
+        return ['facultad' => true, 'nombre' => true, 'ciclos' => false, 'modalidad' => true, 'codigo' => false];
     }
 
     public function example(): array

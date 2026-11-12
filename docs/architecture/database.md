@@ -63,6 +63,11 @@ en PostgreSQL.
   número.
 - `subjects.cycle_number` (nullable) es el número de ciclo de la malla. La tabla
   `subject_cycle` queda como vínculo heredado: ya no ata asignaturas a paralelos.
+- `subjects.modality_id` es obligatorio (no existe «Sin modalidad»), con FK a
+  `modalidad` (restrict: una modalidad en uso no se borra). La migración rellenó
+  las asignaturas sin modalidad con la de su carrera y se detiene, nombrándolas,
+  si alguna carrera tampoco la tiene. `carrera.fk_modalidad` sigue nullable en BD,
+  pero la API exige la modalidad al crear una carrera y no permite quitarla.
 - `carrera.codigo` (nullable, único) identifica la carrera y su malla: dos
   carreras pueden compartir `nombre` si su código difiere, por eso `nombre` ya no
   es único. Las carreras previas conservan código `NULL` hasta que el

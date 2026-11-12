@@ -74,7 +74,7 @@ abstract class TutoringTestCase extends TestCase
         $cycle ??= $this->cycle;
         $subject = Subject::query()->create([
             'career_id' => $cycle->fk_carrera, 'code' => $code,
-            'name' => $name, 'is_active' => true,
+            'name' => $name, 'modality_id' => $this->modality->getKey(), 'is_active' => true,
         ]);
         $subject->cycles()->attach($cycle);
 

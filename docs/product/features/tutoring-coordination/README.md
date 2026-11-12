@@ -165,8 +165,8 @@ permiso `403`.
 | GET | `/periods` | Todos los períodos, del más reciente al más antiguo, con `is_active`. |
 | GET | `/modalities` | Modalidades activas. |
 | GET | `/subjects` | Listado; filtros `search`, `career_id`, `cycle_number`, `page`, `per_page`. Devuelve `cycle_number`; `cycle_ids` y `parallel_ids` son vínculos heredados, solo informativos. |
-| POST | `/subjects` | `career_id`, `code`, `name`, `cycle_number`, `modality_id`, `next_subject_ids`. `cycle_id` se acepta por compatibilidad y aporta su número; `parallel_id`, `parallel_ids`, `new_parallel_name` y `period_id` se rechazan. |
-| PATCH | `/subjects/{subject}` | `code`, `name`, `cycle_number`, `modality_id`, `next_subject_ids`. No cambia el número si la asignatura tiene tutorías activas del período vigente en otro número. |
+| POST | `/subjects` | `career_id`, `code`, `name`, `cycle_number`, `modality_id` (obligatorio), `next_subject_ids`. `cycle_id` se acepta por compatibilidad y aporta su número; `parallel_id`, `parallel_ids`, `new_parallel_name` y `period_id` se rechazan. |
+| PATCH | `/subjects/{subject}` | `code`, `name`, `cycle_number`, `modality_id` (puede omitirse, nunca quedar vacío), `next_subject_ids`. No cambia el número si la asignatura tiene tutorías activas del período vigente en otro número. |
 | PATCH | `/subjects/{subject}/deactivate` | Baja lógica. |
 | PUT | `/subjects/{subject}/cycles/{cycle}` | Vincular al ciclo indicado; sin cuerpo obligatorio. |
 | GET | `/teachers` | Cuentas vinculadas al alcance autorizado; filtros `search`, `career_id`, `page`, `per_page`; incluye `can_manage`. |

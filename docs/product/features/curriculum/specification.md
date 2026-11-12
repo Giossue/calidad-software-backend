@@ -22,6 +22,9 @@ sin tener que crearlas después una por una.
   paralelo; si la carrera aún no tiene el ciclo, se crea) y registra sus previas.
   Todo ocurre en una sola transacción: si una fila tiene errores no se crea
   ninguna.
+- Toda asignatura tiene modalidad. Si la carrera no tiene modalidad, la
+  importación se rechaza (422): «La carrera no tiene modalidad; pide al
+  administrador que la registre.»
 - El código y el nombre de una asignatura son únicos dentro de la carrera. Una
   fila cuyo código o nombre ya existe en la carrera es un error; la malla se
   puede importar por partes (lo ya importado no se repite).

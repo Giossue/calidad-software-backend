@@ -28,6 +28,7 @@ class AcademicCatalogTest extends TestCase
             'faculty_id' => $faculty->getKey(),
             'name' => 'Ingeniería de Software',
             'code' => 'SW-2020',
+            'modality_id' => $this->modalityId(),
         ]);
 
         $careerId = $response->assertCreated()
@@ -64,6 +65,7 @@ class AcademicCatalogTest extends TestCase
             'faculty_id' => $faculty->getKey(),
             'name' => 'Ingeniería de Software',
             'code' => 'SW-2020',
+            'modality_id' => $this->modalityId(),
         ])->assertCreated()->json('data.id');
 
         $cycles = Ciclo::query()->where('fk_carrera', $careerId)->orderBy('numero')->get();
@@ -85,6 +87,7 @@ class AcademicCatalogTest extends TestCase
             'name' => 'Tecnología Superior',
             'code' => 'TS-01',
             'cycles_count' => 4,
+            'modality_id' => $this->modalityId(),
         ])->assertCreated()->json('data.id');
 
         $this->assertSame(4, Ciclo::query()->where('fk_carrera', $careerId)->count());
@@ -94,6 +97,7 @@ class AcademicCatalogTest extends TestCase
             'name' => 'Sin ciclos',
             'code' => 'SC-01',
             'cycles_count' => 13,
+            'modality_id' => $this->modalityId(),
         ])->assertUnprocessable()->assertJsonValidationErrors('cycles_count');
     }
 
@@ -101,7 +105,7 @@ class AcademicCatalogTest extends TestCase
     {
         $this->actingAsAdministrator();
         $faculty = Facultad::query()->create(['nombre' => 'Facultad de Ingeniería', 'estado' => true]);
-        $careerId = $this->postJson('/api/v1/admin/careers', ['faculty_id' => $faculty->getKey(), 'name' => 'Software', 'code' => 'SW-01', 'cycles_count' => 4])
+        $careerId = $this->postJson('/api/v1/admin/careers', ['faculty_id' => $faculty->getKey(), 'name' => 'Software', 'code' => 'SW-01', 'cycles_count' => 4, 'modality_id' => $this->modalityId()])
             ->assertCreated()->json('data.id');
 
         $this->getJson('/api/v1/admin/careers')->assertOk()->assertJsonPath('data.0.cycle_levels', 4);
@@ -128,11 +132,13 @@ class AcademicCatalogTest extends TestCase
         $this->postJson('/api/v1/admin/careers', [
             'faculty_id' => $faculty->getKey(),
             'name' => 'Matemática',
+            'modality_id' => $this->modalityId(),
         ])->assertUnprocessable()->assertJsonValidationErrors(['code' => 'El campo código de carrera es obligatorio.']);
         $this->postJson('/api/v1/admin/careers', [
             'faculty_id' => $faculty->getKey(),
             'name' => 'Matemática',
             'code' => str_repeat('M', 31),
+            'modality_id' => $this->modalityId(),
         ])->assertUnprocessable()->assertJsonValidationErrors('code');
         $this->assertDatabaseCount('carrera', 0);
 
@@ -140,6 +146,7 @@ class AcademicCatalogTest extends TestCase
             'faculty_id' => $faculty->getKey(),
             'name' => 'Matemática',
             'code' => '  mat-2019  ',
+            'modality_id' => $this->modalityId(),
         ])->assertCreated()->assertJsonPath('data.code', 'MAT-2019')->json('data.id');
 
         $this->patchJson('/api/v1/admin/careers/'.$careerId, ['code' => ''])
@@ -165,6 +172,7 @@ class AcademicCatalogTest extends TestCase
             'faculty_id' => $other->getKey(),
             'name' => 'Enfermería',
             'code' => 'FIS-01',
+            'modality_id' => $this->modalityId(),
         ])->assertUnprocessable()->assertJsonValidationErrors(['code' => 'Ya existe una carrera con este código. El código de carrera es único institucionalmente.']);
 
         // El código se guarda en mayúsculas: escrito en minúsculas también choca.
@@ -172,11 +180,13 @@ class AcademicCatalogTest extends TestCase
             'faculty_id' => $other->getKey(),
             'name' => 'Enfermería',
             'code' => ' fis-01 ',
+            'modality_id' => $this->modalityId(),
         ])->assertUnprocessable()->assertJsonValidationErrors('code');
         $this->postJson('/api/v1/admin/careers', [
             'faculty_id' => $other->getKey(),
             'name' => 'Enfermería',
             'code' => 'enf-01',
+            'modality_id' => $this->modalityId(),
         ])->assertCreated()->assertJsonPath('data.code', 'ENF-01');
 
         $this->patchJson('/api/v1/admin/careers/'.$second->getKey(), ['code' => 'FIS-01'])
@@ -199,11 +209,13 @@ class AcademicCatalogTest extends TestCase
             'faculty_id' => $faculty->getKey(),
             'name' => 'Matemática',
             'code' => 'MAT-2024',
+            'modality_id' => $this->modalityId(),
         ])->assertCreated()->assertJsonPath('data.name', 'Matemática')->assertJsonPath('data.code', 'MAT-2024');
         $this->postJson('/api/v1/admin/careers', [
             'faculty_id' => $faculty->getKey(),
             'name' => 'Física',
             'code' => 'FIS-02',
+            'modality_id' => $this->modalityId(),
         ])->assertCreated();
 
         // Mismo nombre y mismo código: rechazado.
@@ -211,6 +223,7 @@ class AcademicCatalogTest extends TestCase
             'faculty_id' => $faculty->getKey(),
             'name' => 'Física',
             'code' => 'FIS-01',
+            'modality_id' => $this->modalityId(),
         ])->assertUnprocessable()->assertJsonValidationErrors([
             'name' => 'Ya existe una carrera con este nombre y este código. Para registrar otra malla de la carrera, usa un código distinto.',
             'code',
@@ -247,9 +260,10 @@ class AcademicCatalogTest extends TestCase
         $this->actingAsAdministrator();
         $faculty = Facultad::query()->create(['nombre' => 'Facultad de Ciencias', 'estado' => true]);
         Carrera::query()->create(['fk_facultad' => $faculty->getKey(), 'nombre' => 'Física', 'codigo' => 'FIS-01', 'estado' => true]);
+        $this->modalityId();
 
         $id = $this->post('/api/v1/imports/careers', [
-            'file' => UploadedFile::fake()->createWithContent('carreras.csv', "facultad,nombre,codigo\nFacultad de Ciencias,Física,FIS-02\nFacultad de Ciencias,Física,FIS-01\nFacultad de Ciencias,Química,\n"),
+            'file' => UploadedFile::fake()->createWithContent('carreras.csv', "facultad,nombre,modalidad,codigo\nFacultad de Ciencias,Física,Presencial,FIS-02\nFacultad de Ciencias,Física,Presencial,FIS-01\nFacultad de Ciencias,Química,Presencial,\n"),
         ], ['Accept' => 'application/json'])->assertSuccessful()->json('data.id');
 
         $this->getJson('/api/v1/imports/'.$id)
@@ -277,6 +291,7 @@ class AcademicCatalogTest extends TestCase
         $this->postJson('/api/v1/admin/careers', [
             'faculty_id' => $faculty->getKey(),
             'name' => 'Enfermería',
+            'modality_id' => $this->modalityId(),
         ])->assertForbidden();
 
         $this->patchJson('/api/v1/admin/careers/'.$career->getKey().'/deactivate')
@@ -475,26 +490,33 @@ class AcademicCatalogTest extends TestCase
         $this->assertSame('Presencial', $data['modality_name']);
     }
 
-    public function test_career_modality_remains_optional(): void
+    public function test_career_modality_is_required_and_cannot_be_removed(): void
     {
         $this->actingAsAdministrator();
         $faculty = Facultad::query()->create(['nombre' => 'Facultad de Ciencias', 'estado' => true]);
+        $payload = ['faculty_id' => $faculty->getKey(), 'name' => 'Matemática Pura', 'code' => 'MP-01'];
 
-        $response = $this->postJson('/api/v1/admin/careers', [
-            'faculty_id' => $faculty->getKey(),
-            'name' => 'Matemática Pura',
-            'code' => 'MP-01',
-        ]);
+        $this->postJson('/api/v1/admin/careers', $payload)
+            ->assertUnprocessable()->assertJsonValidationErrors('modality_id');
+        $this->postJson('/api/v1/admin/careers', [...$payload, 'modality_id' => null])
+            ->assertUnprocessable()->assertJsonValidationErrors('modality_id');
+        $this->assertDatabaseMissing('carrera', ['codigo' => 'MP-01']);
 
-        $careerId = $response->assertCreated()
-            ->assertJsonPath('data.modality_id', null)
-            ->json('data.id');
+        $presencial = Modalidad::query()->create(['nombre' => 'Presencial', 'estado' => true]);
+        $careerId = $this->postJson('/api/v1/admin/careers', [...$payload, 'modality_id' => $presencial->getKey()])
+            ->assertCreated()->json('data.id');
 
-        $modality = Modalidad::query()->create(['nombre' => 'Virtual', 'estado' => true]);
+        $this->patchJson('/api/v1/admin/careers/'.$careerId, ['modality_id' => null])
+            ->assertUnprocessable()->assertJsonValidationErrors('modality_id');
+        $this->assertDatabaseHas('carrera', ['id_carrera' => $careerId, 'fk_modalidad' => $presencial->getKey()]);
 
-        $this->patchJson('/api/v1/admin/careers/'.$careerId, ['modality_id' => $modality->getKey()])
+        $virtual = Modalidad::query()->create(['nombre' => 'Virtual', 'estado' => true]);
+        $this->patchJson('/api/v1/admin/careers/'.$careerId, ['modality_id' => $virtual->getKey()])
             ->assertOk()
-            ->assertJsonPath('data.modality_id', $modality->getKey());
+            ->assertJsonPath('data.modality_id', $virtual->getKey());
+        $this->patchJson('/api/v1/admin/careers/'.$careerId, ['name' => 'Matemática'])
+            ->assertOk()
+            ->assertJsonPath('data.modality_id', $virtual->getKey());
     }
 
     public function test_career_rejects_an_inactive_or_unknown_modality(): void
@@ -549,6 +571,11 @@ class AcademicCatalogTest extends TestCase
 
         $this->postJson('/api/v1/admin/sections', ['name' => 'Paralelo A'])->assertForbidden();
         $this->getJson('/api/v1/admin/sections')->assertForbidden();
+    }
+
+    private function modalityId(): int
+    {
+        return Modalidad::query()->firstOrCreate(['nombre' => 'Presencial'], ['estado' => true])->getKey();
     }
 
     private function actingAsAdministrator(): Usuario

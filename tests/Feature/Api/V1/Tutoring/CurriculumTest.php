@@ -161,7 +161,7 @@ class CurriculumTest extends TutoringTestCase
         $this->assertFalse(Schema::hasColumn('subjects', 'curriculum_id'));
         $this->assertFalse(Schema::hasColumn('usuario', 'curriculum_id'));
 
-        $this->postJson(self::API.'/subjects', ['career_id' => $this->career->getKey(), 'name' => 'Redes', 'cycle_id' => $this->cycle->getKey()])
+        $this->postJson(self::API.'/subjects', ['career_id' => $this->career->getKey(), 'name' => 'Redes', 'cycle_id' => $this->cycle->getKey(), 'modality_id' => $this->modality->getKey()])
             ->assertCreated();
     }
 }

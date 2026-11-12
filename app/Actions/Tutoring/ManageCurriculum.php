@@ -4,7 +4,6 @@ namespace App\Actions\Tutoring;
 
 use App\Http\Requests\Api\V1\Tutoring\SubjectRequest;
 use App\Imports\CatalogLookup;
-use App\Models\Carrera;
 use App\Models\Ciclo;
 use App\Models\Subject;
 use App\Models\Usuario;
@@ -105,9 +104,11 @@ class ManageCurriculum
             throw ValidationException::withMessages(['subjects' => count($invalid) === 1 ? 'Hay 1 asignatura con errores; corrígela antes de importar la malla.' : 'Hay '.count($invalid).' asignaturas con errores; corrígelas antes de importar la malla.']);
         }
 
-        return DB::transaction(function () use ($data, $rows): int {
+        // Las asignaturas de la malla llevan la modalidad de la carrera.
+        $modalityId = ManageSubject::careerModality($data['career_id']);
+
+        return DB::transaction(function () use ($data, $rows, $modalityId): int {
             $existing = $this->existingSubjects($data['career_id']);
-            $modalityId = Carrera::query()->whereKey($data['career_id'])->value('fk_modalidad');
 
             $created = [];
             foreach ($rows as $row) {

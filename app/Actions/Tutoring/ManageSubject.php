@@ -4,6 +4,7 @@ namespace App\Actions\Tutoring;
 
 use App\Http\Requests\Api\V1\Tutoring\SubjectRequest;
 use App\Models\AsignaturaTutoria;
+use App\Models\Carrera;
 use App\Models\Ciclo;
 use App\Models\Paralelo;
 use App\Models\Subject;
@@ -21,6 +22,8 @@ class ManageSubject
      * No lleva paralelos; el paralelo se elige al crear cada tutoría del período.
      * `cycle_id` se acepta por compatibilidad y aporta solo su número de ciclo.
      *
+     * Toda asignatura tiene modalidad: sin una elegida, toma la de su carrera.
+     *
      * @param  array{career_id: int, code?: string|null, name: string, cycle_number?: int|null, cycle_id?: int|null, modality_id?: int|null, next_subject_ids?: array<int, int>|null}  $data
      */
     public function create(Usuario $user, array $data): Subject
@@ -36,7 +39,7 @@ class ManageSubject
                 'code' => ! empty($data['code']) ? trim($data['code']) : null,
                 'name' => SubjectRequest::normalizeName($data['name']),
                 'cycle_number' => $cycleNumber ?: null,
-                'modality_id' => ! empty($data['modality_id']) ? (int) $data['modality_id'] : null,
+                'modality_id' => ! empty($data['modality_id']) ? (int) $data['modality_id'] : self::careerModality($data['career_id']),
                 'is_active' => true,
             ]);
 
@@ -46,6 +49,20 @@ class ManageSubject
 
             return $subject;
         });
+    }
+
+    /**
+     * Modalidad de la carrera, que heredan sus asignaturas. Una carrera sin
+     * modalidad no puede recibir asignaturas.
+     */
+    public static function careerModality(int $careerId): int
+    {
+        $modalityId = Carrera::query()->whereKey($careerId)->value('fk_modalidad');
+        if ($modalityId === null) {
+            throw ValidationException::withMessages(['career_id' => 'La carrera no tiene modalidad; pide al administrador que la registre.']);
+        }
+
+        return (int) $modalityId;
     }
 
     /**
@@ -107,15 +124,11 @@ class ManageSubject
         $subject->fill(array_filter([
             'code' => array_key_exists('code', $data) ? ($data['code'] !== null && trim($data['code']) !== '' ? trim($data['code']) : null) : null,
             'name' => isset($data['name']) ? SubjectRequest::normalizeName($data['name']) : null,
-            'modality_id' => array_key_exists('modality_id', $data) ? ($data['modality_id'] ? (int) $data['modality_id'] : null) : null,
+            'modality_id' => ! empty($data['modality_id']) ? (int) $data['modality_id'] : null,
         ], fn ($value) => $value !== null))->save();
 
         if (array_key_exists('code', $data) && ($data['code'] === null || trim($data['code']) === '')) {
             $subject->forceFill(['code' => null])->save();
-        }
-
-        if (array_key_exists('modality_id', $data) && empty($data['modality_id'])) {
-            $subject->forceFill(['modality_id' => null])->save();
         }
 
         if (array_key_exists('next_subject_ids', $data)) {

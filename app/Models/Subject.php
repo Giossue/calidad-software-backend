@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $code
  * @property string $name
  * @property int|null $cycle_number número de ciclo de la malla; el paralelo se elige en cada tutoría del período
- * @property int|null $modality_id
+ * @property int $modality_id toda asignatura tiene modalidad
  * @property bool $is_active
  * @property-read Carrera|null $career
  */

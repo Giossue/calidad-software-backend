@@ -68,7 +68,8 @@ class SubjectRequest extends FormRequest
             'parallel_ids' => ['prohibited'],
             'new_parallel_name' => ['prohibited'],
             'period_id' => ['prohibited'],
-            'modality_id' => ['nullable', 'integer', Rule::exists('modalidad', 'id_modalidad')->where('estado', true)],
+            // Toda asignatura tiene modalidad; al editar puede omitirse, nunca quitarse.
+            'modality_id' => [$creating ? 'required' : 'sometimes', 'required', 'integer', Rule::exists('modalidad', 'id_modalidad')->where('estado', true)],
             'next_subject_ids' => ['sometimes', 'nullable', 'array', 'max:10'],
             'next_subject_ids.*' => ['integer', 'distinct', Rule::exists('subjects', 'id')->where('career_id', $careerId),
                 Rule::notIn($subject instanceof Subject ? [$subject->getKey()] : [])],

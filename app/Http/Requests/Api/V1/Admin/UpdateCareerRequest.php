@@ -62,7 +62,7 @@ class UpdateCareerRequest extends FormRequest
             ],
             'modality_id' => [
                 'sometimes',
-                'nullable',
+                'required',
                 'integer',
                 Rule::exists('modalidad', 'id_modalidad')->where(
                     fn (Builder $query): Builder => $query->where('estado', true),

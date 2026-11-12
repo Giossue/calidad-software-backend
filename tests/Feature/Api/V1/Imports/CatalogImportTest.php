@@ -125,6 +125,24 @@ class CatalogImportTest extends TutoringTestCase
         $this->assertSame(2, Ciclo::query()->where('fk_carrera', $career->getKey())->count());
     }
 
+    public function test_career_import_requires_the_modality_column(): void
+    {
+        Sanctum::actingAs($this->admin, ['*']);
+
+        $this->upload('careers', "facultad,nombre\nCiencias,Electrónica\n")
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['file']);
+
+        $response = $this->upload('careers', "facultad,nombre,modalidad\nCiencias,Electrónica,\nCiencias,Mecánica,Presencial\n");
+
+        $this->getJson('/api/v1/imports/'.$response->json('data.id'))
+            ->assertJsonPath('data.created_count', 1)
+            ->assertJsonPath('data.errors.0.row', 2)
+            ->assertJsonPath('data.errors.0.messages.0', 'El campo modalidad es obligatorio.');
+        $this->assertDatabaseMissing('carrera', ['nombre' => 'Electrónica']);
+        $this->assertSame($this->modality->getKey(), Carrera::query()->where('nombre', 'Mecánica')->value('fk_modalidad'));
+    }
+
     public function test_admin_imports_cycles_and_academic_periods(): void
     {
         Sanctum::actingAs($this->admin, ['*']);
@@ -153,6 +171,8 @@ class CatalogImportTest extends TutoringTestCase
         $subject = Subject::query()->where('code', 'SW-101')->firstOrFail();
         // La columna «ciclo» da el número de ciclo de la malla, sin vincular paralelos.
         $this->assertSame($this->cycle->numero, $subject->cycle_number);
+        // Sin columna «modalidad», la asignatura toma la modalidad de su carrera.
+        $this->assertSame($this->modality->getKey(), $subject->modality_id);
     }
 
     public function test_degree_coordinator_imports_sections_into_current_period(): void

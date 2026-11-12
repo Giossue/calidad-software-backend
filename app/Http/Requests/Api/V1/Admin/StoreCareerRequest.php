@@ -47,7 +47,7 @@ class StoreCareerRequest extends FormRequest
             ],
             'cycles_count' => ['nullable', 'integer', 'min:0', 'max:12'],
             'modality_id' => [
-                'nullable',
+                'required',
                 'integer',
                 Rule::exists('modalidad', 'id_modalidad')->where(
                     fn (Builder $query): Builder => $query->where('estado', true),

@@ -99,14 +99,14 @@ class AcademicPeriodWorkTest extends TutoringTestCase
         $this->baseCycles(3);
         $this->actingAs($this->coordinator);
 
-        $created = $this->postJson(self::API.'/subjects', ['career_id' => $this->career->getKey(), 'name' => 'Redes', 'cycle_number' => 2])
+        $created = $this->postJson(self::API.'/subjects', ['career_id' => $this->career->getKey(), 'name' => 'Redes', 'cycle_number' => 2, 'modality_id' => $this->modality->getKey()])
             ->assertCreated()->assertJsonPath('data.cycle_number', 2);
         $id = $created->json('data.id');
         $this->assertDatabaseMissing('subject_cycle', ['subject_id' => $id]);
 
         $this->patchJson(self::API."/subjects/{$id}", ['cycle_number' => 3])->assertOk()->assertJsonPath('data.cycle_number', 3);
         $this->patchJson(self::API."/subjects/{$id}", ['cycle_number' => 4])->assertUnprocessable()->assertJsonValidationErrors('cycle_number');
-        $this->postJson(self::API.'/subjects', ['career_id' => $this->career->getKey(), 'name' => 'Bases', 'cycle_number' => 2, 'parallel_ids' => [$this->cycle->fk_paralelo]])
+        $this->postJson(self::API.'/subjects', ['career_id' => $this->career->getKey(), 'name' => 'Bases', 'cycle_number' => 2, 'parallel_ids' => [$this->cycle->fk_paralelo], 'modality_id' => $this->modality->getKey()])
             ->assertUnprocessable()->assertJsonValidationErrors('parallel_ids');
 
         $this->getJson(self::API.'/subjects?cycle_number=3')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $id);
@@ -115,7 +115,7 @@ class AcademicPeriodWorkTest extends TutoringTestCase
     public function test_creating_a_tutoring_picks_a_paralelo_row_of_the_subject_cycle(): void
     {
         $this->baseCycles(3);
-        $subject = Subject::query()->create(['career_id' => $this->career->getKey(), 'name' => 'Redes', 'cycle_number' => 2, 'is_active' => true]);
+        $subject = Subject::query()->create(['modality_id' => $this->modality->getKey(), 'career_id' => $this->career->getKey(), 'name' => 'Redes', 'cycle_number' => 2, 'is_active' => true]);
         $sectionB = Paralelo::query()->create(['nombre' => 'B', 'estado' => true]);
         $cycleTwoB = $this->createCycle($this->career, $sectionB, 2);
         $this->actingAs($this->coordinator);
@@ -172,7 +172,7 @@ class AcademicPeriodWorkTest extends TutoringTestCase
         $base = $this->baseCycles(2);
         $cycleTwo = $this->createCycle($this->career, $this->cycle->paralelo, 2);
         $first = $this->createSubject($this->cycle, 'CS-101', 'Programación I');
-        $next = Subject::query()->create(['career_id' => $this->career->getKey(), 'code' => 'CS-201', 'name' => 'Programación II', 'cycle_number' => 2, 'is_active' => true]);
+        $next = Subject::query()->create(['modality_id' => $this->modality->getKey(), 'career_id' => $this->career->getKey(), 'code' => 'CS-201', 'name' => 'Programación II', 'cycle_number' => 2, 'is_active' => true]);
         $first->nextSubjects()->attach($next);
         $student = $this->student($this->cycle);
         $past = $this->tutoringIn($this->pastPeriod, $this->cycle, $first);

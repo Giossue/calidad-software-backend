@@ -2005,6 +2005,9 @@ class UebCatalogSeeder extends Seeder
                                 'career_id' => $career->id_carrera,
                                 'code' => $code,
                                 'name' => $name,
+                                // La asignatura siempre tiene modalidad: la de su carrera.
+                                'modality_id' => $career->fk_modalidad ?? $modality->id_modalidad,
+                                'cycle_number' => $cycleNumber,
                                 'is_active' => true,
                                 'created_at' => $now,
                                 'updated_at' => $now,

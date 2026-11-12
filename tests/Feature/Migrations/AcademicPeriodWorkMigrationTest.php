@@ -71,7 +71,7 @@ class AcademicPeriodWorkMigrationTest extends TutoringTestCase
         $cycleThree = $this->createCycle($this->career, $this->cycle->paralelo, 3);
         $subject = $this->createSubject($cycleThree);
         $subject->cycles()->attach($cycleTwo);
-        $loose = Subject::query()->create(['career_id' => $this->career->getKey(), 'name' => 'Libre', 'is_active' => true]);
+        $loose = Subject::query()->create(['modality_id' => $this->modality->getKey(), 'career_id' => $this->career->getKey(), 'name' => 'Libre', 'is_active' => true]);
 
         $migration->up();
 

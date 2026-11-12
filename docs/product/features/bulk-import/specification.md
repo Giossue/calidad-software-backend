@@ -30,10 +30,10 @@ Las columnas entre corchetes son opcionales.
 | type | Columnas |
 |---|---|
 | `faculties` | nombre |
-| `careers` | facultad, nombre, [ciclos], [modalidad], [codigo] |
+| `careers` | facultad, nombre, [ciclos], modalidad, [codigo] |
 | `cycles` | carrera, numero, nombre |
 | `academic-periods` | nombre, fecha_inicio, fecha_fin (AAAA-MM-DD) |
-| `subjects` | carrera, nombre, [codigo], [ciclo], [modalidad] |
+| `subjects` | carrera, nombre, [codigo], [ciclo], [modalidad]⁵ |
 | `sections` | nombre |
 | `users` (admin) | correo, [cedula], [nombres], [apellidos], rol, [facultad]¹, [carrera]¹, [ciclo]², [telefono] |
 | `teachers` (coordinador) | correo, [cedula], [nombres], [apellidos], [rol]³, facultad, carrera, [ciclo], [telefono] |
@@ -56,6 +56,8 @@ el primero activo. Docentes y coordinadores ignoran la columna.
 anterior al del estudiante. Si el correo ya está registrado como estudiante de esa
 carrera, la fila solo reemplaza su lista de pendientes y se informa como aviso.
 Ver [secuencia de asignaturas](../subject-sequence/specification.md).
+⁵ Si se omite, la asignatura toma la modalidad de su carrera; si la carrera no
+tiene modalidad, la fila es un error. No existe «Sin modalidad».
 
 `apellidos` y `nombres` se guardan en el único campo de nombre como
 «Apellidos Nombres»; si ambos faltan, se usa un nombre provisional derivado del correo.

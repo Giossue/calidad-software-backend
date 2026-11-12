@@ -7,6 +7,7 @@ use App\Http\Requests\Api\V1\Tutoring\SubjectRequest;
 use App\Imports\CatalogLookup;
 use App\Imports\FormRequestValidator;
 use App\Imports\Importer;
+use App\Models\Carrera;
 use App\Models\Subject;
 use App\Models\Usuario;
 
@@ -41,7 +42,8 @@ class SubjectsImporter implements Importer
             'name' => $row['nombre'],
             'code' => $row['codigo'],
             'cycle_id' => $this->lookup->cycleId($careerId, $row['ciclo']),
-            'modality_id' => $this->lookup->modalityId($row['modalidad']),
+            // Sin columna «modalidad», la asignatura toma la de su carrera.
+            'modality_id' => $this->lookup->modalityId($row['modalidad']) ?? Carrera::query()->whereKey($careerId)->value('fk_modalidad'),
         ], fn (mixed $value): bool => $value !== null), $user);
 
         $this->subjects->create($user, [
@@ -49,7 +51,7 @@ class SubjectsImporter implements Importer
             'code' => $data['code'] ?? null,
             'name' => $data['name'],
             'cycle_id' => $data['cycle_id'] ?? null,
-            'modality_id' => $data['modality_id'] ?? null,
+            'modality_id' => $data['modality_id'],
         ]);
 
         return null;

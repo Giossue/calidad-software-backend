@@ -139,7 +139,7 @@ class SubjectSequenceTest extends TutoringTestCase
     public function test_information_technology_curriculum_is_loaded_by_code_and_name(): void
     {
         $ti = Carrera::query()->create(['fk_facultad' => $this->career->fk_facultad, 'fk_modalidad' => $this->modality->getKey(), 'nombre' => 'Tecnologías de la Información', 'estado' => true]);
-        $make = fn (?string $code, string $name) => Subject::query()->create(['career_id' => $ti->getKey(), 'code' => $code, 'name' => $name, 'is_active' => true]);
+        $make = fn (?string $code, string $name) => Subject::query()->create(['modality_id' => $this->modality->getKey(), 'career_id' => $ti->getKey(), 'code' => $code, 'name' => $name, 'is_active' => true]);
         $algorithms = $make('TI-B1-001', 'ALGORITMOS Y FUNDAMENTOS DE PROGRAMACION');
         $poo = $make('TI-B2-006', 'PROGRAMACION ORIENTADA A OBJETOS');
         $algebra = $make('TI-B1-002', 'ALGEBRA LINEAL');
@@ -160,7 +160,7 @@ class SubjectSequenceTest extends TutoringTestCase
 
     public function test_software_curriculum_is_loaded_by_code_or_by_name_when_the_code_is_missing(): void
     {
-        $make = fn (?string $code, string $name) => Subject::query()->create(['career_id' => $this->career->getKey(), 'code' => $code, 'name' => $name, 'is_active' => true]);
+        $make = fn (?string $code, string $name) => Subject::query()->create(['modality_id' => $this->modality->getKey(), 'career_id' => $this->career->getKey(), 'code' => $code, 'name' => $name, 'is_active' => true]);
         $calculus = $make('SW-B1-004', 'CÁLCULO I');
         $calculusTwo = $make(null, 'Cálculo  II');
         $calculusThree = $make('SW-B3-014', 'CALCULO III');
@@ -174,7 +174,7 @@ class SubjectSequenceTest extends TutoringTestCase
         $internship = $make(null, 'PRÁCTICAS PREPROFESIONALES');
         $community = $make(null, 'PRÁCTICAS DE SERVICIO COMUNITARIO');
         // La carrera de Administración no se toca aunque comparta nombres.
-        $otherCalculus = Subject::query()->create(['career_id' => $this->otherCareer->getKey(), 'code' => 'SW-B1-004', 'name' => 'CALCULO I', 'is_active' => true]);
+        $otherCalculus = Subject::query()->create(['modality_id' => $this->modality->getKey(), 'career_id' => $this->otherCareer->getKey(), 'code' => 'SW-B1-004', 'name' => 'CALCULO I', 'is_active' => true]);
 
         $migration = require database_path('migrations/2026_11_09_100100_load_software_subject_sequences.php');
         $migration->up();
