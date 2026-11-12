@@ -14,8 +14,8 @@ Objective: a malla is the career itself (as in proyecto-grado-silabos); uploadin
 
 | ID | Specs | Scope | Route | Status | Commit |
 |---|---|---|---|---|---|
-| T1 | S1,S2 | Career code: backend (migration, requests, resources, career import) + frontend admin (form, list, detail) and "Nombre · código" labels | delegated (parallel writer, trigger a) | in progress | |
-| T2 | S2-S5 | Malla import into the career + remove versions: backend (migration, ManageCurriculum, routes, Curricula callers) + frontend single Malla screen | delegated (parallel writer, trigger a) | in progress | |
+| T1 | S1,S2 | Career code: backend (migration, requests, resources, career import) + frontend admin (form, list, detail) and "Nombre · código" labels | delegated (parallel writer, trigger a) | done | backend d94b0ba, frontend 5b474df |
+| T2 | S2-S5 | Malla import into the career + remove versions: backend (migration, ManageCurriculum, routes, Curricula callers) + frontend single Malla screen | delegated (parallel writer, trigger a) | done | backend 4999362, frontend 2268c96 |
 
 Risk: item 1 (migration drops `curricula`, `subjects.curriculum_id`, `usuario.curriculum_id`) and item 3 (API change of `tutoring-coordination/curricula`, career unique name). Independent verifier after both units.
 
@@ -25,3 +25,4 @@ Risk: item 1 (migration drops `curricula`, `subjects.curriculum_id`, `usuario.cu
 - **L2 (2026-11-11, user, earlier):** "no no, hablo de tener más de una malla, pasa que a nivel institucional, tener una malla distinta se considera como una nueva "carrera" por así decirlo, porque el código de carrera cambio, y es como si fuera aislado por así decirlo uno del otro"
 - **L3 (analysis):** Silabos has no malla entity: `carreras.codigo_carrera` (unique) is the malla; two mallas = two careers with the same name and different code; the coordinator imports the malla Excel (preview, then confirm), which creates the subjects; one Malla screen. Calidad today: `curricula` versions per career with `up_to_cycle` pinning, a read-only Malla page, subjects created in Asignaturas, no career code, career name globally unique.
 - **L4 (2026-11-11, user):** "ok, hagamoslo 1. EL admin crea las carreras, y digamos que es el coordinador quien sube las mallas 2. las que tiene el mismo sistema nomás, no creemos más cosas por favor"
+- **L5 (progress):** T1+T2 done. Seam check: backend 430/439 (3 pre-existing date/429 failures), frontend vitest 364 passed, tsc/build OK. Independent verifier: S1-S5 pass, no blockers; advisory fixed: career code stored uppercase. Migrations verified up/down/up on SQLite and on a throwaway PostgreSQL database (dropped). Pending: run the migration on the local DB (backup first), push on user request. Known gap: no subject reactivation endpoint; CatalogLookup resolves careers by name in imports (ambiguous if two careers share a name).
