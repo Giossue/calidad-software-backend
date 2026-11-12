@@ -3,9 +3,11 @@
 namespace Tests\Feature\Api\V1\Tutoring;
 
 use App\Models\AsignaturaTutoria;
+use App\Models\Horario;
 use App\Models\InscripcionTutoria;
 use App\Models\Modalidad;
 use App\Models\PeriodoAcademico;
+use App\Models\Tema;
 use App\Models\Usuario;
 use Laravel\Sanctum\Sanctum;
 
@@ -265,5 +267,56 @@ class TutoringManagementTest extends TutoringTestCase
         $this->patchJson($url, ['modality_id' => $otherModality->getKey()])->assertUnprocessable()
             ->assertJsonPath('errors.period_id.0', 'La tutoría pertenece a un período académico que no está vigente; solo puede consultarse.');
         $this->assertSame($otherModality->getKey(), $tutoring->refresh()->fk_modalidad);
+    }
+
+    public function test_coordinator_deletes_a_tutoring_without_records_and_its_schedules(): void
+    {
+        $tutoring = $this->createTutoring();
+        Horario::query()->create([
+            'fk_asig_tutoria' => $tutoring->getKey(), 'dia_semana' => 'lunes',
+            'hora_inicio' => '08:00:00', 'hora_fin' => '10:00:00', 'estado' => true,
+        ]);
+        Sanctum::actingAs($this->coordinator, ['*']);
+        $this->deleteJson(self::API.'/tutorings/'.$tutoring->getKey())->assertNoContent();
+        $this->assertDatabaseMissing('asignatura_tutoria', ['id_asig_tutoria' => $tutoring->getKey()]);
+        $this->assertDatabaseMissing('horario', ['fk_asig_tutoria' => $tutoring->getKey()]);
+    }
+
+    public function test_a_tutoring_with_students_cannot_be_deleted(): void
+    {
+        $tutoring = $this->createTutoring();
+        $student = Usuario::factory()->withRole('estudiante')->create();
+        InscripcionTutoria::query()->create([
+            'fk_asig_tutoria' => $tutoring->getKey(), 'fk_id_usuario' => $student->getKey(), 'fecha_inscripcion' => '2026-05-02', 'estado' => false,
+        ]);
+        Sanctum::actingAs($this->coordinator, ['*']);
+        $this->deleteJson(self::API.'/tutorings/'.$tutoring->getKey())->assertUnprocessable()
+            ->assertJsonValidationErrors(['tutoring' => 'No se puede eliminar: la tutoría ya tiene estudiantes o registros. Desactívala en su lugar.']);
+        $this->assertDatabaseHas('asignatura_tutoria', ['id_asig_tutoria' => $tutoring->getKey()]);
+    }
+
+    public function test_tutorings_of_other_careers_or_past_periods_cannot_be_deleted(): void
+    {
+        $foreign = $this->createTutoring($this->otherCycle);
+        $past = $this->createTutoring();
+        $this->period->update(['estado' => false]);
+        Sanctum::actingAs($this->coordinator, ['*']);
+        $this->deleteJson(self::API.'/tutorings/'.$foreign->getKey())->assertForbidden();
+        $this->deleteJson(self::API.'/tutorings/'.$past->getKey())->assertUnprocessable()->assertJsonValidationErrors('period_id');
+        $this->assertDatabaseHas('asignatura_tutoria', ['id_asig_tutoria' => $past->getKey()]);
+    }
+
+    public function test_a_tutoring_with_content_cannot_be_deleted_and_keeps_its_schedules(): void
+    {
+        $tutoring = $this->createTutoring();
+        Horario::query()->create([
+            'fk_asig_tutoria' => $tutoring->getKey(), 'dia_semana' => 'martes',
+            'hora_inicio' => '08:00:00', 'hora_fin' => '10:00:00', 'estado' => true,
+        ]);
+        Tema::query()->create(['fk_asig_tutoria' => $tutoring->getKey(), 'nombre' => 'Derivadas', 'estado' => true]);
+        Sanctum::actingAs($this->coordinator, ['*']);
+        $this->deleteJson(self::API.'/tutorings/'.$tutoring->getKey())->assertUnprocessable()->assertJsonValidationErrors('tutoring');
+        $this->assertDatabaseHas('asignatura_tutoria', ['id_asig_tutoria' => $tutoring->getKey()]);
+        $this->assertDatabaseHas('horario', ['fk_asig_tutoria' => $tutoring->getKey()]);
     }
 }

@@ -101,6 +101,14 @@ class TutoringController extends Controller
         return TutoringResource::make($action->deactivate($tutoring)->load(self::RELATIONS));
     }
 
+    public function destroy(AsignaturaTutoria $tutoring, ManageTutoring $action): Response
+    {
+        Gate::authorize('update', $tutoring);
+        $action->delete($tutoring);
+
+        return response()->noContent();
+    }
+
     public function activate(AsignaturaTutoria $tutoring, ManageTutoring $action): TutoringResource
     {
         Gate::authorize('update', $tutoring);

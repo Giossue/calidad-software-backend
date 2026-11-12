@@ -13,6 +13,7 @@ use App\Models\Usuario;
 use App\Support\StudentCycle;
 use App\Support\TutoringCoordinatorAccess;
 use App\Support\TutoringPeriod;
+use Illuminate\Database\QueryException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -399,6 +400,33 @@ class ManageTutoring
             $tutoring->update(['estado' => false]);
 
             return $tutoring;
+        });
+    }
+
+    /**
+     * Elimina una tutoría creada por error: solo si nunca tuvo estudiantes ni registros
+     * (sesiones, temas, notas, informes). Sus horarios se eliminan con ella; si tiene
+     * historial, debe desactivarse en su lugar.
+     */
+    public function delete(AsignaturaTutoria $tutoring): void
+    {
+        $blocked = ValidationException::withMessages([
+            'tutoring' => 'No se puede eliminar: la tutoría ya tiene estudiantes o registros. Desactívala en su lugar.',
+        ]);
+
+        DB::transaction(function () use ($tutoring, $blocked): void {
+            $tutoring = AsignaturaTutoria::query()->whereKey($tutoring->getKey())->lockForUpdate()->firstOrFail();
+            TutoringPeriod::assertCurrent($tutoring);
+            if (DB::table('inscripcion_tutoria')->where('fk_asig_tutoria', $tutoring->getKey())->exists()) {
+                throw $blocked;
+            }
+            Horario::query()->where('fk_asig_tutoria', $tutoring->getKey())->delete();
+            try {
+                // Cualquier otro registro (temas, sesiones, informes) lo protege la base.
+                DB::transaction(fn () => $tutoring->delete());
+            } catch (QueryException) {
+                throw $blocked;
+            }
         });
     }
 

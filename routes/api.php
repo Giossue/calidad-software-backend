@@ -266,6 +266,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::patch('tutorings/{tutoring}', [TutoringController::class, 'update'])->name('tutorings.update');
             Route::patch('tutorings/{tutoring}/deactivate', [TutoringController::class, 'deactivate'])->name('tutorings.deactivate');
             Route::patch('tutorings/{tutoring}/activate', [TutoringController::class, 'activate'])->name('tutorings.activate');
+            Route::delete('tutorings/{tutoring}', [TutoringController::class, 'destroy'])->name('tutorings.destroy');
             Route::put('tutorings/{tutoring}/cycle', [TutoringController::class, 'assignCycle'])->name('tutorings.cycle.assign');
             Route::put('tutorings/{tutoring}/teacher', [TutoringController::class, 'assignTeacher'])->name('tutorings.teacher.assign');
             Route::put('tutorings/{tutoring}/configuration', [TutoringController::class, 'configure'])->name('tutorings.configuration');

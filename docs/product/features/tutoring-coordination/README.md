@@ -178,6 +178,7 @@ permiso `403`.
 | PATCH | `/tutorings/{tutoring}` | `period_id`, `modality_id`. |
 | PATCH | `/tutorings/{tutoring}/deactivate` | Baja lógica. |
 | PATCH | `/tutorings/{tutoring}/activate` | Rehabilita una tutoría; exige período, ciclo y carrera activos y conserva docente e inscripciones. |
+| DELETE | `/tutorings/{tutoring}` | Elimina una tutoría creada por error, con sus horarios, solo si nunca tuvo estudiantes ni registros y es del período vigente; si no, 422 y debe desactivarse. |
 | PUT | `/tutorings/{tutoring}/cycle` | `cycle_id`. |
 | PUT | `/tutorings/{tutoring}/teacher` | `teacher_id`. |
 | GET | `/tutorings/{tutoring}/schedules` | Horarios activos e históricos. |
