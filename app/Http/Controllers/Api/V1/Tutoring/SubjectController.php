@@ -26,9 +26,6 @@ class SubjectController extends Controller
         if ($careerId = $request->integer('career_id')) {
             $query->where('career_id', $careerId);
         }
-        if ($curriculumId = $request->integer('curriculum_id')) {
-            $query->where('curriculum_id', $curriculumId);
-        }
         if ($cycleId = $request->integer('cycle_id')) {
             $query->whereHas('cycles', fn (Builder $q) => $q->where('ciclo.id_ciclo', $cycleId));
         }
@@ -49,7 +46,6 @@ class SubjectController extends Controller
     {
         return TutoringSubjectResource::make($action->create($request->user(), [
             'career_id' => $request->integer('career_id'),
-            'curriculum_id' => $request->integer('curriculum_id') ?: null,
             'code' => $request->filled('code') ? $request->string('code')->toString() : null,
             'name' => $request->string('name')->toString(),
             'cycle_id' => $request->integer('cycle_id') ?: null,

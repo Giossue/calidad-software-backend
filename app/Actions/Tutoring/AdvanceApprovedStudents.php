@@ -2,12 +2,10 @@
 
 namespace App\Actions\Tutoring;
 
-use App\Imports\CatalogLookup;
 use App\Models\AsignaturaTutoria;
 use App\Models\InscripcionTutoria;
 use App\Models\Subject;
 use App\Models\Usuario;
-use App\Support\Curricula;
 use App\Support\PendingSubjects;
 use App\Support\StudentCycle;
 use Illuminate\Database\Eloquent\Builder;
@@ -27,19 +25,13 @@ class AdvanceApprovedStudents
     /** El docente registró que el estudiante aprobó la tutoría de `$enrollment`. */
     public function afterApproval(InscripcionTutoria $enrollment): void
     {
-        $tutoring = $enrollment->asignaturaTutoria()->with(['subject', 'periodo'])->first();
+        $tutoring = $enrollment->asignaturaTutoria()->with(['subject.nextSubjects', 'periodo'])->first();
         if ($tutoring?->subject === null || $tutoring->periodo === null) {
             return;
         }
         $student = $enrollment->estudiante;
 
-        // Las que continúan a la aprobada en cualquier versión de la malla (por nombre);
-        // solo se inscribe en las de la malla que sigue el estudiante.
-        $approvedName = CatalogLookup::normalize($tutoring->subject->name);
-        $nextSubjects = Subject::query()->where('career_id', $tutoring->subject->career_id)->whereHas('previousSubjects')->with('previousSubjects:id,name')->get()
-            ->filter(fn (Subject $next): bool => $next->previousSubjects->contains(fn (Subject $previous): bool => CatalogLookup::normalize($previous->name) === $approvedName));
-
-        foreach ($nextSubjects as $next) {
+        foreach ($tutoring->subject->nextSubjects as $next) {
             if (! $this->isEligible($student, $next)) {
                 continue;
             }
@@ -63,11 +55,6 @@ class AdvanceApprovedStudents
         if ($previousIds->isEmpty() || $tutoring->periodo === null || ! $tutoring->estado) {
             return;
         }
-        // Una previa aprobada en otra versión de la malla vale si se llama igual.
-        $previousNames = $tutoring->subject->previousSubjects->map(fn (Subject $subject): string => CatalogLookup::normalize($subject->name));
-        $previousIds = Subject::query()->where('career_id', $tutoring->subject->career_id)->get(['id', 'name'])
-            ->filter(fn (Subject $subject): bool => $previousNames->contains(CatalogLookup::normalize($subject->name)))
-            ->pluck('id')->merge($previousIds)->unique()->values();
 
         $candidateIds = InscripcionTutoria::query()
             ->where('final_result', InscripcionTutoria::APPROVED)
@@ -83,34 +70,27 @@ class AdvanceApprovedStudents
             ->each(fn (Usuario $student) => $this->enroll($student, $tutoring));
     }
 
-    /**
-     * Aprobó todas las previas de `$subject` y aún no aprueba `$subject`. Las
-     * asignaturas se comparan por nombre: lo aprobado con la malla anterior vale
-     * para la nueva.
-     */
+    /** Aprobó todas las previas de `$subject` y aún no aprueba `$subject`. */
     private function isEligible(Usuario $student, Subject $subject): bool
     {
-        $required = $subject->previousSubjects()->pluck('subjects.name')->map(fn (string $name): string => CatalogLookup::normalize($name));
+        $required = $subject->previousSubjects()->pluck('subjects.id');
         if ($required->isEmpty()) {
             return false;
         }
-        $approved = $this->approvedSubjectNames($student);
+        $approved = $this->approvedSubjectIds($student);
 
-        return $required->diff($approved)->isEmpty() && ! $approved->contains(CatalogLookup::normalize($subject->name));
+        return $required->diff($approved)->isEmpty() && ! $approved->contains($subject->getKey());
     }
 
-    /** @return Collection<int, string> */
-    private function approvedSubjectNames(Usuario $student): Collection
+    /** @return Collection<int, int> */
+    private function approvedSubjectIds(Usuario $student): Collection
     {
-        return Subject::query()
-            ->whereIn('id', AsignaturaTutoria::query()
-                ->whereHas('inscripciones', fn (Builder $query) => $query
-                    ->where('fk_id_usuario', $student->getKey())
-                    ->where('final_result', InscripcionTutoria::APPROVED))
-                ->whereNotNull('subject_id')
-                ->select('subject_id'))
-            ->pluck('name')
-            ->map(fn (string $name): string => CatalogLookup::normalize($name))
+        return AsignaturaTutoria::query()
+            ->whereHas('inscripciones', fn (Builder $query) => $query
+                ->where('fk_id_usuario', $student->getKey())
+                ->where('final_result', InscripcionTutoria::APPROVED))
+            ->whereNotNull('subject_id')
+            ->pluck('subject_id')
             ->unique()
             ->values();
     }
@@ -121,9 +101,6 @@ class AdvanceApprovedStudents
             return;
         }
         if ($tutoring->subject_id !== null && PendingSubjects::blockedSubjectIds($student)->contains((int) $tutoring->subject_id)) {
-            return;
-        }
-        if (! Curricula::follows($student, $tutoring)) {
             return;
         }
         $existing = InscripcionTutoria::query()

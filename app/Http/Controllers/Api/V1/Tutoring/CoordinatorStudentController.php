@@ -13,7 +13,6 @@ use App\Models\Subject;
 use App\Models\Usuario;
 use App\Notifications\ProvisionalPasswordNotification;
 use App\Rules\CedulaOPasaporte;
-use App\Support\Curricula;
 use App\Support\InstitutionalEmail;
 use App\Support\PendingSubjects;
 use App\Support\ProvisionalPassword;
@@ -198,9 +197,7 @@ class CoordinatorStudentController extends Controller
             $query->whereLike('nombre', "%{$search}%");
         }
 
-        // Solo las de la malla que sigue el estudiante.
-        return TutoringResource::collection($query->orderByDesc('id_asig_tutoria')->limit(200)->get()
-            ->filter(fn (AsignaturaTutoria $tutoring): bool => Curricula::follows($student, $tutoring))->take(50)->values());
+        return TutoringResource::collection($query->orderByDesc('id_asig_tutoria')->limit(50)->get());
     }
 
     public function enroll(Request $request, Usuario $student): JsonResponse

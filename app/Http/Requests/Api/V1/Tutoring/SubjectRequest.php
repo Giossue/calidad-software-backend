@@ -2,9 +2,7 @@
 
 namespace App\Http\Requests\Api\V1\Tutoring;
 
-use App\Models\Carrera;
 use App\Models\Subject;
-use App\Support\Curricula;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Normalizer;
@@ -53,15 +51,12 @@ class SubjectRequest extends FormRequest
         $creating = $this->isMethod('post');
         $subject = $this->route('subject');
         $careerId = $subject instanceof Subject ? $subject->career_id : $this->integer('career_id');
-        // Código y nombre son únicos dentro de cada versión de la malla.
-        $curriculumId = $subject instanceof Subject ? $subject->curriculum_id : ($this->integer('curriculum_id') ?: $this->curriculumInForce($careerId));
 
         return [
             'career_id' => $creating ? ['required', 'integer', Rule::exists('carrera', 'id_carrera')->where('estado', true)] : ['prohibited'],
-            'curriculum_id' => $creating ? ['nullable', 'integer', Rule::exists('curricula', 'id')->where('career_id', $careerId)] : ['prohibited'],
             'code' => ['nullable', 'string', 'max:30',
                 Rule::unique('subjects', 'code')
-                    ->where('curriculum_id', $curriculumId)
+                    ->where('career_id', $careerId)
                     ->ignore($this->route('subject'))],
             'cycle_id' => $creating
                 ? ['nullable', 'integer', Rule::exists('ciclo', 'id_ciclo')->where('estado', true)->where('fk_carrera', $careerId)]
@@ -81,22 +76,17 @@ class SubjectRequest extends FormRequest
                 ? ['nullable', 'integer', Rule::exists('periodo_academico', 'id_periodo')->where('estado', true)]
                 : ['prohibited'],
             'next_subject_ids' => ['sometimes', 'nullable', 'array', 'max:10'],
-            'next_subject_ids.*' => ['integer', 'distinct', Rule::exists('subjects', 'id')->where('career_id', $careerId)->where('curriculum_id', $curriculumId),
+            'next_subject_ids.*' => ['integer', 'distinct', Rule::exists('subjects', 'id')->where('career_id', $careerId),
                 Rule::notIn($subject instanceof Subject ? [$subject->getKey()] : [])],
             'name' => [
                 ($creating ? 'required' : 'sometimes'),
                 'string',
                 'max:150',
                 Rule::unique('subjects', 'name')
-                    ->where('curriculum_id', $curriculumId)
+                    ->where('career_id', $careerId)
                     ->ignore($this->route('subject')),
             ],
         ];
-    }
-
-    private function curriculumInForce(int $careerId): ?int
-    {
-        return $careerId > 0 && Carrera::query()->whereKey($careerId)->exists() ? Curricula::inForceAt($careerId)->id : null;
     }
 
     /** @return array<string, string> */

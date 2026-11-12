@@ -8,7 +8,7 @@ use Throwable;
 use ZipArchive;
 
 /**
- * Lee el archivo de una malla curricular nueva y devuelve sus asignaturas:
+ * Lee el archivo de la malla curricular de una carrera y devuelve sus asignaturas:
  * `[code, name, cycle, previous]`, donde `previous` son los códigos (o nombres)
  * de las asignaturas que hay que aprobar antes.
  *

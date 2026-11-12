@@ -16,7 +16,7 @@ class ManageSubject
 {
     public function __construct(private TutoringCoordinatorAccess $access) {}
 
-    /** @param array{career_id: int, curriculum_id?: int|null, code?: string|null, name: string, cycle_id?: int|null, parallel_id?: int|null, parallel_ids?: array<int>|null, new_parallel_name?: string|null, modality_id?: int|null, period_id?: int|null} $data */
+    /** @param array{career_id: int, code?: string|null, name: string, cycle_id?: int|null, parallel_id?: int|null, parallel_ids?: array<int>|null, new_parallel_name?: string|null, modality_id?: int|null, period_id?: int|null} $data */
     public function create(Usuario $user, array $data): Subject
     {
         $this->access->authorizeCareer($user, $data['career_id']);
@@ -24,7 +24,6 @@ class ManageSubject
         return DB::transaction(function () use ($data): Subject {
             $subject = Subject::query()->create([
                 'career_id' => $data['career_id'],
-                'curriculum_id' => $data['curriculum_id'] ?? null,
                 'code' => ! empty($data['code']) ? trim($data['code']) : null,
                 'name' => SubjectRequest::normalizeName($data['name']),
                 'modality_id' => ! empty($data['modality_id']) ? (int) $data['modality_id'] : null,
