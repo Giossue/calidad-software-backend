@@ -54,12 +54,4 @@ class ManageTeacher
 
         return $teacher->refresh()->load('roles', 'teachingCareers');
     }
-
-    public function deactivate(Usuario $teacher): Usuario
-    {
-        $teacher->update(['estado' => false]);
-        $teacher->tokens()->delete();
-
-        return $teacher->refresh()->load('roles', 'teachingCareers');
-    }
 }

@@ -257,7 +257,6 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::post('teachers/{teacher}/careers', [TutoringTeacherController::class, 'linkCareer'])->name('teachers.careers.link');
             Route::delete('teachers/{teacher}/careers/{career}', [TutoringTeacherController::class, 'unlinkCareer'])->name('teachers.careers.unlink');
             Route::patch('teachers/{teacher}', [TutoringTeacherController::class, 'update'])->name('teachers.update');
-            Route::patch('teachers/{teacher}/deactivate', [TutoringTeacherController::class, 'deactivate'])->name('teachers.deactivate');
 
             Route::get('tutorings', [TutoringController::class, 'index'])->name('tutorings.index');
             Route::post('tutorings', [TutoringController::class, 'store'])->name('tutorings.store');

@@ -175,11 +175,4 @@ class TeacherController extends Controller
     {
         return TutoringTeacherResource::make($action->update($teacher, $request->validated()));
     }
-
-    public function deactivate(Usuario $teacher, ManageTeacher $action): TutoringTeacherResource
-    {
-        Gate::authorize('updateTutoringTeacher', $teacher);
-
-        return TutoringTeacherResource::make($action->deactivate($teacher));
-    }
 }

@@ -17,7 +17,7 @@ React del repositorio `calidad-software-frontend`.
 | COOR-05 | Asignar tutoría a ciclo | Ciclo compatible dentro de la carrera; actualiza el paralelo y registra el vínculo ciclo/período. |
 | COOR-06 | Registrar docente | Valida cédula ecuatoriana o pasaporte extranjero, nombre, correo institucional y teléfono; asigna exclusivamente rol docente y envía contraseña provisional, que debe cambiarse al primer ingreso. |
 | COOR-07 | Actualizar docente | Edita una cuenta docente dentro del alcance autorizado. |
-| COOR-08 | Deshabilitar docente | Desactiva la cuenta y revoca sus tokens; mantiene asignaciones e historial. |
+| COOR-08 | Quitar docente de la carrera | El coordinador solo desvincula al docente de su carrera; desactivar la cuenta es tarea del administrador. |
 | COOR-09 | Registrar tutoría | Asignatura vinculada a ciclo, período y modalidad activos; puede quedar inicialmente sin docente. |
 | COOR-10 | Actualizar tutoría | Edita período y modalidad; protege el período si existen inscripciones. |
 | COOR-11 | Deshabilitar tutoría | Baja lógica; conserva horarios, inscripciones, asistencia e informes. |
@@ -96,7 +96,7 @@ carrera elegida.
    las horas de inicio y fin.
 6. Consultar en ese detalle la asistencia registrada y los informes disponibles.
    Estas vistas no registran asistencia ni generan informes nuevos.
-7. Usar **Desactivar** para retirar asignaturas, docentes, tutorías u horarios.
+7. Usar **Desactivar** para retirar asignaturas, tutorías u horarios; un docente se quita de la carrera con **Quitar de la carrera**.
    La operación conserva sus registros históricos. Una tutoría deshabilitada
    permite seguir consultando asistencia e informes.
 
@@ -156,7 +156,6 @@ permiso `403`.
 | GET | `/available-teachers` | Docentes activos para seleccionar; filtro `search`, máximo 100 resultados. |
 | POST | `/teachers` | `career_id`, `identification`, `name`, `email`, `phone`. |
 | PATCH | `/teachers/{teacher}` | `identification`, `name`, `email`, `phone`. |
-| PATCH | `/teachers/{teacher}/deactivate` | Baja de cuenta y revocación de tokens. |
 | GET | `/tutorings` | Listado; filtros `search`, `career_id`, `page`, `per_page`. |
 | POST | `/tutorings` | `subject_id`, `cycle_id`, `period_id`, `modality_id`. |
 | PATCH | `/tutorings/{tutoring}` | `period_id`, `modality_id`. |

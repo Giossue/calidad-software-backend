@@ -231,7 +231,6 @@ class SubjectAndTeacherTest extends TutoringTestCase
         foreach ([$foreign, $student] as $user) {
             $url = self::API.'/teachers/'.$user->getKey();
             $this->patchJson($url, ['name' => 'Cambio indebido'])->assertForbidden();
-            $this->patchJson($url.'/deactivate')->assertForbidden();
             $this->assertTrue($user->refresh()->estado);
         }
         $this->postJson(self::API.'/teachers', $this->teacherPayload($this->otherCareer))->assertForbidden();
@@ -285,20 +284,17 @@ class SubjectAndTeacherTest extends TutoringTestCase
         $this->postJson(self::API.'/teachers', $payload)->assertUnprocessable()->assertJsonValidationErrors(['identification', 'email']);
     }
 
-    public function test_teacher_deactivation_revokes_tokens_and_preserves_assignments(): void
+    public function test_coordinator_cannot_deactivate_a_teacher_account(): void
     {
+        // Desactivar la cuenta de un docente es tarea del administrador: el coordinador solo
+        // puede quitarlo de su carrera.
         $teacher = Usuario::factory()->withRole('docente')->create();
         $teacher->teachingCareers()->attach($this->career);
         $teacher->createToken('existing')->plainTextToken;
-        $tutoring = $this->createTutoring();
-        $tutoring->update(['fk_docente' => $teacher->getKey()]);
         Sanctum::actingAs($this->coordinator, ['*']);
-        $this->patchJson(self::API.'/teachers/'.$teacher->getKey().'/deactivate')->assertOk()->assertJsonPath('data.is_active', false);
-        $this->assertFalse($teacher->refresh()->estado);
-        $this->assertSame(0, $teacher->tokens()->count());
-        $this->assertSame($teacher->getKey(), $tutoring->refresh()->fk_docente);
-        $this->getJson(self::API.'/teachers')->assertOk()->assertJsonCount(1, 'data');
-        $this->getJson(self::API.'/available-teachers')->assertOk()->assertJsonCount(0, 'data');
+        $this->patchJson(self::API.'/teachers/'.$teacher->getKey().'/deactivate')->assertNotFound();
+        $this->assertTrue($teacher->refresh()->estado);
+        $this->assertSame(1, $teacher->tokens()->count());
     }
 
     public function test_coordinator_cannot_modify_privileged_or_shared_teacher_accounts(): void
@@ -313,11 +309,10 @@ class SubjectAndTeacherTest extends TutoringTestCase
             ->assertJsonPath('data.0.can_manage', false)->assertJsonPath('data.1.can_manage', false);
         foreach ([$shared, $privileged] as $teacher) {
             $this->patchJson(self::API.'/teachers/'.$teacher->getKey(), ['name' => 'Cambio indebido'])->assertForbidden();
-            $this->patchJson(self::API.'/teachers/'.$teacher->getKey().'/deactivate')->assertForbidden();
         }
     }
 
-    public function test_teacher_with_tutoring_in_another_career_cannot_be_modified_or_deactivated(): void
+    public function test_teacher_with_tutoring_in_another_career_cannot_be_modified(): void
     {
         $teacher = Usuario::factory()->withRole('docente')->create();
         $teacher->teachingCareers()->attach($this->career);
@@ -326,7 +321,6 @@ class SubjectAndTeacherTest extends TutoringTestCase
         Sanctum::actingAs($this->coordinator, ['*']);
         $this->getJson(self::API.'/teachers')->assertOk()->assertJsonPath('data.0.can_manage', false);
         $this->patchJson(self::API.'/teachers/'.$teacher->getKey(), ['name' => 'Cambio indebido'])->assertForbidden();
-        $this->patchJson(self::API.'/teachers/'.$teacher->getKey().'/deactivate')->assertForbidden();
         $this->assertTrue($teacher->refresh()->estado);
     }
 
