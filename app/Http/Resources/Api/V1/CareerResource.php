@@ -19,6 +19,7 @@ class CareerResource extends JsonResource
             'modality_id' => $this->fk_modalidad,
             'modality_name' => $this->whenLoaded('modalidad', fn (): ?string => $this->modalidad?->nombre),
             'name' => $this->nombre,
+            'code' => $this->codigo,
             'status' => $this->estado,
             'cycles_count' => (int) ($this->ciclos_count ?? 0),
             'active_cycles_count' => (int) ($this->active_cycles_count ?? 0),

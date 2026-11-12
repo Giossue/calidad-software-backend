@@ -30,7 +30,7 @@ Las columnas entre corchetes son opcionales.
 | type | Columnas |
 |---|---|
 | `faculties` | nombre |
-| `careers` | facultad, nombre, [ciclos], [modalidad] |
+| `careers` | facultad, nombre, [ciclos], [modalidad], [codigo] |
 | `cycles` | carrera, numero, nombre |
 | `academic-periods` | nombre, fecha_inicio, fecha_fin (AAAA-MM-DD) |
 | `subjects` | carrera, nombre, [codigo], [ciclo], [modalidad] |
@@ -66,6 +66,9 @@ Ver [secuencia de asignaturas](../subject-sequence/specification.md).
   registro individual (`App\Imports\FormRequestValidator`).
 - Facultad, carrera, modalidad y paralelo se indican por nombre, sin distinguir
   mayúsculas, tildes ni espacios repetidos; el ciclo, por número dentro de la carrera.
+- El `codigo` de carrera es opcional en la importación (en el alta individual es
+  obligatorio) y único. Otra malla de una carrera se registra con el mismo nombre
+  y un código distinto; misma combinación de nombre y código se omite.
 - Cada fila se registra en su propia transacción. Una fila repetida dentro del
   archivo falla por unicidad porque la anterior ya quedó registrada.
 - Separador `,` o `;`, codificación UTF-8 (con o sin BOM) o Windows-1252

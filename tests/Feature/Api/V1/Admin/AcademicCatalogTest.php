@@ -8,6 +8,7 @@ use App\Models\Facultad;
 use App\Models\Modalidad;
 use App\Models\Usuario;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -26,10 +27,12 @@ class AcademicCatalogTest extends TestCase
         $response = $this->postJson('/api/v1/admin/careers', [
             'faculty_id' => $faculty->getKey(),
             'name' => 'Ingeniería de Software',
+            'code' => 'SW-2020',
         ]);
 
         $careerId = $response->assertCreated()
             ->assertJsonPath('data.name', 'Ingeniería de Software')
+            ->assertJsonPath('data.code', 'SW-2020')
             ->assertJsonPath('data.status', true)
             ->json('data.id');
 
@@ -60,6 +63,7 @@ class AcademicCatalogTest extends TestCase
         $careerId = $this->postJson('/api/v1/admin/careers', [
             'faculty_id' => $faculty->getKey(),
             'name' => 'Ingeniería de Software',
+            'code' => 'SW-2020',
         ])->assertCreated()->json('data.id');
 
         $cycles = Ciclo::query()->where('fk_carrera', $careerId)->orderBy('numero')->get();
@@ -79,6 +83,7 @@ class AcademicCatalogTest extends TestCase
         $careerId = $this->postJson('/api/v1/admin/careers', [
             'faculty_id' => $faculty->getKey(),
             'name' => 'Tecnología Superior',
+            'code' => 'TS-01',
             'cycles_count' => 4,
         ])->assertCreated()->json('data.id');
 
@@ -87,6 +92,7 @@ class AcademicCatalogTest extends TestCase
         $this->postJson('/api/v1/admin/careers', [
             'faculty_id' => $faculty->getKey(),
             'name' => 'Sin ciclos',
+            'code' => 'SC-01',
             'cycles_count' => 13,
         ])->assertUnprocessable()->assertJsonValidationErrors('cycles_count');
     }
@@ -95,7 +101,7 @@ class AcademicCatalogTest extends TestCase
     {
         $this->actingAsAdministrator();
         $faculty = Facultad::query()->create(['nombre' => 'Facultad de Ingeniería', 'estado' => true]);
-        $careerId = $this->postJson('/api/v1/admin/careers', ['faculty_id' => $faculty->getKey(), 'name' => 'Software', 'cycles_count' => 4])
+        $careerId = $this->postJson('/api/v1/admin/careers', ['faculty_id' => $faculty->getKey(), 'name' => 'Software', 'code' => 'SW-01', 'cycles_count' => 4])
             ->assertCreated()->json('data.id');
 
         $this->getJson('/api/v1/admin/careers')->assertOk()->assertJsonPath('data.0.cycle_levels', 4);
@@ -114,23 +120,144 @@ class AcademicCatalogTest extends TestCase
         $this->assertSame(6, Ciclo::query()->where('fk_carrera', $careerId)->count());
     }
 
-    public function test_career_name_is_unique_inside_a_faculty(): void
+    public function test_career_code_is_required_on_create_and_cannot_be_emptied_on_update(): void
     {
         $this->actingAsAdministrator();
-        $faculty = Facultad::query()->create([
-            'nombre' => 'Facultad de Ciencias',
-            'estado' => true,
-        ]);
-        Carrera::query()->create([
-            'fk_facultad' => $faculty->getKey(),
-            'nombre' => 'Matemática',
-            'estado' => true,
-        ]);
+        $faculty = Facultad::query()->create(['nombre' => 'Facultad de Ciencias', 'estado' => true]);
 
         $this->postJson('/api/v1/admin/careers', [
             'faculty_id' => $faculty->getKey(),
             'name' => 'Matemática',
-        ])->assertUnprocessable()->assertJsonValidationErrors('name');
+        ])->assertUnprocessable()->assertJsonValidationErrors(['code' => 'El campo código de carrera es obligatorio.']);
+        $this->postJson('/api/v1/admin/careers', [
+            'faculty_id' => $faculty->getKey(),
+            'name' => 'Matemática',
+            'code' => str_repeat('M', 31),
+        ])->assertUnprocessable()->assertJsonValidationErrors('code');
+        $this->assertDatabaseCount('carrera', 0);
+
+        $careerId = $this->postJson('/api/v1/admin/careers', [
+            'faculty_id' => $faculty->getKey(),
+            'name' => 'Matemática',
+            'code' => '  mat-2019  ',
+        ])->assertCreated()->assertJsonPath('data.code', 'MAT-2019')->json('data.id');
+
+        $this->patchJson('/api/v1/admin/careers/'.$careerId, ['code' => ''])
+            ->assertUnprocessable()->assertJsonValidationErrors('code');
+        $this->patchJson('/api/v1/admin/careers/'.$careerId, ['code' => 'MAT-2024'])
+            ->assertOk()->assertJsonPath('data.code', 'MAT-2024');
+        $this->assertDatabaseHas('carrera', ['id_carrera' => $careerId, 'codigo' => 'MAT-2024']);
+
+        // Un cambio que no incluye el código conserva el actual.
+        $this->patchJson('/api/v1/admin/careers/'.$careerId, ['name' => 'Matemática Aplicada'])
+            ->assertOk()->assertJsonPath('data.code', 'MAT-2024');
+    }
+
+    public function test_career_code_is_unique_across_all_careers(): void
+    {
+        $this->actingAsAdministrator();
+        $faculty = Facultad::query()->create(['nombre' => 'Facultad de Ciencias', 'estado' => true]);
+        $other = Facultad::query()->create(['nombre' => 'Facultad de Salud', 'estado' => true]);
+        $career = Carrera::query()->create(['fk_facultad' => $faculty->getKey(), 'nombre' => 'Física', 'codigo' => 'FIS-01', 'estado' => true]);
+        $second = Carrera::query()->create(['fk_facultad' => $faculty->getKey(), 'nombre' => 'Química', 'codigo' => 'QUI-01', 'estado' => true]);
+
+        $this->postJson('/api/v1/admin/careers', [
+            'faculty_id' => $other->getKey(),
+            'name' => 'Enfermería',
+            'code' => 'FIS-01',
+        ])->assertUnprocessable()->assertJsonValidationErrors(['code' => 'Ya existe una carrera con este código. El código de carrera es único institucionalmente.']);
+
+        // El código se guarda en mayúsculas: escrito en minúsculas también choca.
+        $this->postJson('/api/v1/admin/careers', [
+            'faculty_id' => $other->getKey(),
+            'name' => 'Enfermería',
+            'code' => ' fis-01 ',
+        ])->assertUnprocessable()->assertJsonValidationErrors('code');
+        $this->postJson('/api/v1/admin/careers', [
+            'faculty_id' => $other->getKey(),
+            'name' => 'Enfermería',
+            'code' => 'enf-01',
+        ])->assertCreated()->assertJsonPath('data.code', 'ENF-01');
+
+        $this->patchJson('/api/v1/admin/careers/'.$second->getKey(), ['code' => 'FIS-01'])
+            ->assertUnprocessable()->assertJsonValidationErrors('code');
+        // Guardar la carrera con su propio código no choca consigo misma.
+        $this->patchJson('/api/v1/admin/careers/'.$career->getKey(), ['name' => 'Física', 'code' => 'FIS-01'])
+            ->assertOk();
+        $this->assertSame(1, Carrera::query()->where('codigo', 'FIS-01')->count());
+    }
+
+    public function test_a_career_may_repeat_its_name_only_with_a_different_code(): void
+    {
+        $this->actingAsAdministrator();
+        $faculty = Facultad::query()->create(['nombre' => 'Facultad de Ciencias', 'estado' => true]);
+        $legacy = Carrera::query()->create(['fk_facultad' => $faculty->getKey(), 'nombre' => 'Matemática', 'estado' => true]);
+        Carrera::query()->create(['fk_facultad' => $faculty->getKey(), 'nombre' => 'Física', 'codigo' => 'FIS-01', 'estado' => true]);
+
+        // Otra malla de la misma carrera: mismo nombre, código distinto.
+        $this->postJson('/api/v1/admin/careers', [
+            'faculty_id' => $faculty->getKey(),
+            'name' => 'Matemática',
+            'code' => 'MAT-2024',
+        ])->assertCreated()->assertJsonPath('data.name', 'Matemática')->assertJsonPath('data.code', 'MAT-2024');
+        $this->postJson('/api/v1/admin/careers', [
+            'faculty_id' => $faculty->getKey(),
+            'name' => 'Física',
+            'code' => 'FIS-02',
+        ])->assertCreated();
+
+        // Mismo nombre y mismo código: rechazado.
+        $this->postJson('/api/v1/admin/careers', [
+            'faculty_id' => $faculty->getKey(),
+            'name' => 'Física',
+            'code' => 'FIS-01',
+        ])->assertUnprocessable()->assertJsonValidationErrors([
+            'name' => 'Ya existe una carrera con este nombre y este código. Para registrar otra malla de la carrera, usa un código distinto.',
+            'code',
+        ]);
+
+        // Una carrera existente sin código puede recibirlo al editarla.
+        $this->patchJson('/api/v1/admin/careers/'.$legacy->getKey(), ['name' => 'Matemática', 'code' => 'MAT-2019'])
+            ->assertOk()->assertJsonPath('data.code', 'MAT-2019');
+
+        $this->assertSame(2, Carrera::query()->where('nombre', 'Matemática')->count());
+        $this->assertSame(2, Carrera::query()->where('nombre', 'Física')->count());
+    }
+
+    public function test_career_lists_expose_the_code(): void
+    {
+        $this->actingAsAdministrator();
+        $faculty = Facultad::query()->create(['nombre' => 'Facultad de Ciencias', 'estado' => true]);
+        Carrera::query()->create(['fk_facultad' => $faculty->getKey(), 'nombre' => 'Física', 'codigo' => 'FIS-01', 'estado' => true]);
+        Carrera::query()->create(['fk_facultad' => $faculty->getKey(), 'nombre' => 'Química', 'estado' => true]);
+
+        $this->getJson('/api/v1/admin/careers')->assertOk()
+            ->assertJsonPath('data.0.name', 'Física')
+            ->assertJsonPath('data.0.code', 'FIS-01')
+            ->assertJsonPath('data.1.code', null);
+        $this->getJson('/api/v1/admin/careers?all=1')->assertOk()
+            ->assertJsonPath('data.0.code', 'FIS-01');
+        $this->getJson('/api/v1/admin/careers?search=fis-0')->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.code', 'FIS-01');
+    }
+
+    public function test_career_import_accepts_an_optional_code_column(): void
+    {
+        $this->actingAsAdministrator();
+        $faculty = Facultad::query()->create(['nombre' => 'Facultad de Ciencias', 'estado' => true]);
+        Carrera::query()->create(['fk_facultad' => $faculty->getKey(), 'nombre' => 'Física', 'codigo' => 'FIS-01', 'estado' => true]);
+
+        $id = $this->post('/api/v1/imports/careers', [
+            'file' => UploadedFile::fake()->createWithContent('carreras.csv', "facultad,nombre,codigo\nFacultad de Ciencias,Física,FIS-02\nFacultad de Ciencias,Física,FIS-01\nFacultad de Ciencias,Química,\n"),
+        ], ['Accept' => 'application/json'])->assertSuccessful()->json('data.id');
+
+        $this->getJson('/api/v1/imports/'.$id)
+            ->assertJsonPath('data.created_count', 2)
+            ->assertJsonPath('data.skipped_count', 1)
+            ->assertJsonPath('data.warnings.0.row', 3);
+        $this->assertSame(['FIS-01', 'FIS-02'], Carrera::query()->where('nombre', 'Física')->orderBy('codigo')->pluck('codigo')->all());
+        $this->assertNull(Carrera::query()->where('nombre', 'Química')->value('codigo'));
     }
 
     public function test_only_administrators_can_create_a_career(): void
@@ -329,6 +456,7 @@ class AcademicCatalogTest extends TestCase
         $response = $this->postJson('/api/v1/admin/careers', [
             'faculty_id' => $faculty->getKey(),
             'name' => 'Ingeniería en Sistemas',
+            'code' => 'IS-01',
             'modality_id' => $modality->getKey(),
         ]);
 
@@ -355,6 +483,7 @@ class AcademicCatalogTest extends TestCase
         $response = $this->postJson('/api/v1/admin/careers', [
             'faculty_id' => $faculty->getKey(),
             'name' => 'Matemática Pura',
+            'code' => 'MP-01',
         ]);
 
         $careerId = $response->assertCreated()

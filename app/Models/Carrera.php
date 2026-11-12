@@ -17,7 +17,7 @@ class Carrera extends Model
 
     protected $primaryKey = 'id_carrera';
 
-    protected $fillable = ['fk_facultad', 'fk_modalidad', 'nombre', 'estado'];
+    protected $fillable = ['fk_facultad', 'fk_modalidad', 'nombre', 'codigo', 'estado'];
 
     protected function casts(): array
     {

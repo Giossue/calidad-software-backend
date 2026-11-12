@@ -25,6 +25,7 @@ class TeacherResource extends JsonResource
                 ? $this->teachingCareers->map(fn ($career) => [
                     'id' => $career->getKey(),
                     'name' => $career->nombre,
+                    'code' => $career->codigo,
                     'faculty_id' => $career->facultad?->getKey(),
                     'faculty_name' => $career->facultad?->nombre,
                 ])->values()->all()

@@ -3,7 +3,6 @@
 namespace App\Imports\Importers;
 
 use App\Actions\Academic\CreateCareer;
-use App\Http\Requests\Api\V1\Admin\StoreCareerRequest;
 use App\Imports\CatalogLookup;
 use App\Imports\FormRequestValidator;
 use App\Imports\Importer;
@@ -20,12 +19,12 @@ class CareersImporter implements Importer
 
     public function columns(): array
     {
-        return ['facultad' => true, 'nombre' => true, 'ciclos' => false, 'modalidad' => false];
+        return ['facultad' => true, 'nombre' => true, 'ciclos' => false, 'modalidad' => false, 'codigo' => false];
     }
 
     public function example(): array
     {
-        return ['facultad' => 'Facultad de Ciencias Administrativas', 'nombre' => 'Software', 'ciclos' => '8', 'modalidad' => 'Presencial'];
+        return ['facultad' => 'Facultad de Ciencias Administrativas', 'nombre' => 'Software', 'ciclos' => '8', 'modalidad' => 'Presencial', 'codigo' => 'SW-2024'];
     }
 
     public function authorize(Usuario $user): bool
@@ -35,9 +34,10 @@ class CareersImporter implements Importer
 
     public function import(array $row, Usuario $user): ?string
     {
-        $data = $this->validator->validate(StoreCareerRequest::class, array_filter([
+        $data = $this->validator->validate(CareerRowRequest::class, array_filter([
             'faculty_id' => $this->lookup->facultyId($row['facultad']),
             'name' => $row['nombre'],
+            'code' => $row['codigo'],
             'cycles_count' => $row['ciclos'],
             'modality_id' => $this->lookup->modalityId($row['modalidad']),
         ], fn (mixed $value): bool => $value !== null), $user);

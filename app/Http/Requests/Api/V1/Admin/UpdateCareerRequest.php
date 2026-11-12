@@ -19,6 +19,13 @@ class UpdateCareerRequest extends FormRequest
             && ($this->user()?->can('update', $career) ?? false);
     }
 
+    protected function prepareForValidation(): void
+    {
+        if (is_string($this->input('code'))) {
+            $this->merge(['code' => mb_strtoupper(trim($this->input('code')))]);
+        }
+    }
+
     /** @return array<string, array<int, mixed>> */
     public function rules(): array
     {
@@ -40,7 +47,17 @@ class UpdateCareerRequest extends FormRequest
                 'sometimes',
                 'string',
                 'max:150',
+                // Otra malla de la misma carrera se registra con el mismo nombre y otro código.
                 Rule::unique('carrera', 'nombre')
+                    ->where('codigo', $this->has('code') ? $this->input('code') : $career?->codigo)
+                    ->ignore($career?->getKey(), $career?->getKeyName()),
+            ],
+            'code' => [
+                'sometimes',
+                'required',
+                'string',
+                'max:30',
+                Rule::unique('carrera', 'codigo')
                     ->ignore($career?->getKey(), $career?->getKeyName()),
             ],
             'modality_id' => [
@@ -57,7 +74,7 @@ class UpdateCareerRequest extends FormRequest
     public function withValidator(Validator $validator): void
     {
         $validator->after(function (Validator $validator): void {
-            if (! $this->hasAny(['faculty_id', 'name', 'modality_id', 'cycles_count'])) {
+            if (! $this->hasAny(['faculty_id', 'name', 'code', 'modality_id', 'cycles_count'])) {
                 $validator->errors()->add('career', 'Debes enviar al menos un campo para actualizar.');
             }
         });
@@ -69,6 +86,7 @@ class UpdateCareerRequest extends FormRequest
         return [
             'faculty_id' => 'facultad',
             'name' => 'nombre de la carrera',
+            'code' => 'código de carrera',
             'modality_id' => 'modalidad',
             'cycles_count' => 'cantidad de ciclos',
         ];
@@ -79,7 +97,8 @@ class UpdateCareerRequest extends FormRequest
     {
         return [
             'cycles_count.min' => 'No se pueden quitar ciclos desde aquí: la carrera ya tiene :min. Si no usas alguno, desactívalo.',
-            'name.unique' => 'Ya existe una carrera con este nombre en el sistema. El nombre de la carrera es único institucionalmente.',
+            'name.unique' => 'Ya existe una carrera con este nombre y este código. Para registrar otra malla de la carrera, usa un código distinto.',
+            'code.unique' => 'Ya existe una carrera con este código. El código de carrera es único institucionalmente.',
         ];
     }
 }

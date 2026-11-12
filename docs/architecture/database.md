@@ -51,6 +51,11 @@ en PostgreSQL.
 - Restrict es el borrado por defecto de historia académica. Cascade requiere que
   el hijo no tenga valor ni auditoría independiente.
 - Operaciones con varias escrituras relacionadas usan `DB::transaction()`.
+- `carrera.codigo` (nullable, único) identifica la carrera y su malla: dos
+  carreras pueden compartir `nombre` si su código difiere, por eso `nombre` ya no
+  es único. Las carreras previas conservan código `NULL` hasta que el
+  administrador lo registre; revertir la migración se rechaza si hay nombres
+  repetidos.
 
 ## Índices y consultas
 

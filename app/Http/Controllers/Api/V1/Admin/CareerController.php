@@ -32,6 +32,7 @@ class CareerController extends Controller
         if ($search = trim((string) $request->string('search'))) {
             $query->where(function (Builder $inner) use ($search) {
                 $inner->whereLike('nombre', "%{$search}%")
+                    ->orWhereLike('codigo', "%{$search}%")
                     ->orWhereHas('facultad', fn (Builder $q) => $q->whereLike('nombre', "%{$search}%"));
             });
         }
@@ -59,7 +60,8 @@ class CareerController extends Controller
 
     public function store(StoreCareerRequest $request, CreateCareer $createCareer): JsonResponse
     {
-        $career = $createCareer->handle($request->validated());
+        $data = $request->validated();
+        $career = $createCareer->handle($data);
 
         return CareerResource::make($career)
             ->response()
@@ -68,7 +70,9 @@ class CareerController extends Controller
 
     public function update(UpdateCareerRequest $request, Carrera $career, UpdateCareer $updateCareer): CareerResource
     {
-        return CareerResource::make($updateCareer->handle($career, $request->validated()));
+        $data = $request->validated();
+
+        return CareerResource::make($updateCareer->handle($career, $data));
     }
 
     public function deactivate(Carrera $career, DeactivateCareer $deactivateCareer): CareerResource

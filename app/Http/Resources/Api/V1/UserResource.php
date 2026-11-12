@@ -27,6 +27,7 @@ class UserResource extends JsonResource
             'coordinated_career_ids' => $this->whenLoaded('coordinatedCareers', fn () => $this->coordinatedCareers->pluck('id_carrera')->all()),
             'career_id' => $this->fk_carrera ?? $career?->id_carrera,
             'career_name' => $career?->nombre,
+            'career_code' => $career?->codigo,
             'faculty_id' => $career?->fk_facultad,
             'faculty_name' => $career?->facultad?->nombre,
             ...($this->hasRole('estudiante') ? app(StudentCycle::class)->describe($this->resource) : []),
