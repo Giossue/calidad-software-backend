@@ -2,6 +2,7 @@
 
 namespace App\Concerns;
 
+use App\Rules\PersonNameCount;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Validation\Rule;
 
@@ -29,6 +30,22 @@ trait ProfileValidationRules
     protected function nameRules(): array
     {
         return ['required', 'string', 'max:255'];
+    }
+
+    /**
+     * Nombres (uno o dos) y apellidos (dos por regla general; uno solo para quienes
+     * su registro civil asigna un único apellido) en campos separados.
+     *
+     * @return array<string, array<int, ValidationRule|array<mixed>|string>>
+     */
+    protected function personNameRules(): array
+    {
+        return [
+            'first_names' => ['required', 'string', 'max:70', 'regex:/^[\pL\s]+$/u',
+                new PersonNameCount(1, 2, 'Ingresa uno o dos nombres.')],
+            'last_names' => ['required', 'string', 'max:70', 'regex:/^[\pL\s]+$/u',
+                new PersonNameCount(1, 2, 'Ingresa tus dos apellidos, o uno solo si tu registro civil tiene un único apellido.')],
+        ];
     }
 
     /** @return array<int, ValidationRule|array<mixed>|string> */

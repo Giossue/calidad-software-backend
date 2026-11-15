@@ -132,12 +132,12 @@ class UserImportTest extends TutoringTestCase
             ->assertJsonPath('data.identification', null);
 
         $this->withToken($token)->putJson('/api/v1/auth/profile/complete', [
-            'identification' => '0926687856', 'name' => 'Ana Torres', 'phone' => '0991234567',
+            'identification' => '0926687856', 'first_names' => 'Ana', 'last_names' => 'Torres', 'phone' => '0991234567',
             'password' => 'password', 'password_confirmation' => 'password',
         ])->assertUnprocessable()->assertJsonValidationErrors(['password']);
 
         $profile = [
-            'identification' => 'ab1234567', 'name' => 'Ana Torres', 'phone' => '0991234567',
+            'identification' => 'ab1234567', 'first_names' => 'Ana', 'last_names' => 'Torres', 'phone' => '0991234567',
             'password' => 'Nueva-Clave-2026', 'password_confirmation' => 'Nueva-Clave-2026',
         ];
         $this->withToken($token)->putJson('/api/v1/auth/profile/complete', $profile)
@@ -153,7 +153,7 @@ class UserImportTest extends TutoringTestCase
             ->assertJsonPath('data.cycle_id', $this->cycle->getKey());
 
         $user->refresh();
-        $this->assertSame('Ana Torres', $user->nombre);
+        $this->assertSame('Torres Ana', $user->nombre);
         $this->assertSame($this->cycle->getKey(), $user->fk_ciclo);
         $this->assertTrue($user->paralelos()->whereKey($this->cycle->fk_paralelo)->exists());
         $this->assertTrue(password_verify('Nueva-Clave-2026', $user->password_hash));
@@ -179,7 +179,7 @@ class UserImportTest extends TutoringTestCase
             ->assertJsonPath('data.must_change_password', false);
 
         $this->withToken($token)->putJson('/api/v1/auth/profile/complete', [
-            'identification' => '0926687856', 'name' => 'Ana Torres', 'phone' => '0991234567',
+            'identification' => '0926687856', 'first_names' => 'Ana', 'last_names' => 'Torres', 'phone' => '0991234567',
         ])->assertOk()
             ->assertJsonPath('data.must_complete_profile', false)
             ->assertJsonPath('data.identification', '0926687856');
@@ -212,7 +212,7 @@ class UserImportTest extends TutoringTestCase
         $careers = collect($options)->flatMap(fn (array $faculty) => $faculty['careers']);
         $this->assertContains($this->cycle->getKey(), array_column($careers->firstWhere('id', $this->career->getKey())['cycles'], 'id'));
 
-        $payload = ['identification' => $user->cedula, 'name' => 'Luis Mora', 'phone' => '0987654321', 'faculty_id' => $this->career->fk_facultad];
+        $payload = ['identification' => $user->cedula, 'first_names' => 'Luis', 'last_names' => 'Mora', 'phone' => '0987654321', 'faculty_id' => $this->career->fk_facultad];
         // El ciclo debe pertenecer a la carrera elegida.
         $this->withToken($token)->putJson('/api/v1/auth/profile/complete', [
             ...$payload, 'career_id' => $this->otherCareer->getKey(), 'cycle_id' => $this->cycle->getKey(),
@@ -222,7 +222,7 @@ class UserImportTest extends TutoringTestCase
             ...$payload, 'career_id' => $this->career->getKey(), 'cycle_id' => $this->cycle->getKey(),
         ])->assertOk()
             ->assertJsonPath('data.must_complete_profile', false)
-            ->assertJsonPath('data.name', 'Luis Mora')
+            ->assertJsonPath('data.name', 'Mora Luis')
             ->assertJsonPath('data.career_id', $this->career->getKey())
             ->assertJsonPath('data.cycle_number', $this->cycle->numero)
             ->assertJsonPath('data.academic_stage', 'tutorias');
@@ -240,7 +240,7 @@ class UserImportTest extends TutoringTestCase
         $token = $teacher->createToken('web', ['*'])->plainTextToken;
 
         $this->withToken($token)->putJson('/api/v1/auth/profile/complete', [
-            'identification' => '0926687856', 'name' => 'Rosa Vera', 'phone' => '0991234567',
+            'identification' => '0926687856', 'first_names' => 'Rosa', 'last_names' => 'Vera', 'phone' => '0991234567',
         ])->assertOk()->assertJsonPath('data.must_complete_profile', false)->assertJsonMissingPath('data.cycle_id');
         $this->assertNull($teacher->refresh()->fk_ciclo);
     }

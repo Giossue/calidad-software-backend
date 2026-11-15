@@ -21,9 +21,10 @@ class RegistrationController extends Controller
             abort(Response::HTTP_FORBIDDEN, 'El registro público no está habilitado.');
         }
 
-        $user = $creator->create($request->safe()->only([
-            'identification', 'name', 'email', 'password', 'password_confirmation',
-        ]));
+        $user = $creator->create([
+            ...$request->safe()->only(['identification', 'email', 'password', 'password_confirmation']),
+            'name' => $request->fullName(),
+        ]);
 
         event(new Registered($user));
 

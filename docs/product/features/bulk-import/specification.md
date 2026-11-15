@@ -95,9 +95,20 @@ tiene modalidad, la fila es un error. No existe «Sin modalidad».
   `GET auth/profile/academic-options`. Aplica a las cuentas con contraseña
   provisional, a las que no tienen cédula y a los **estudiantes sin carrera o
   ciclo** (`fk_carrera` o `fk_ciclo` nulos), aunque ya hayan completado antes.
-- `PUT /api/v1/auth/profile/complete` exige cédula o pasaporte, nombre, teléfono
-  y, si la cuenta es provisional, una contraseña nueva distinta de la provisional;
-  apaga el indicador y revoca los demás tokens del usuario.
+- `PUT /api/v1/auth/profile/complete` exige cédula o pasaporte, `first_names`,
+  `last_names`, teléfono y, si la cuenta es provisional, una contraseña nueva
+  distinta de la provisional; apaga el indicador y revoca los demás tokens del
+  usuario. `POST /api/v1/auth/register` recibe los mismos `first_names` y
+  `last_names` en lugar de `name`.
+- Nombres: uno o dos. Apellidos: dos por regla general y uno solo como excepción
+  (hijos de padres extranjeros cuya ley asigna un apellido, ecuatorianos
+  inscritos en el exterior). Solo letras y espacios; las partículas (de, del, la,
+  los, y, san…) forman parte del nombre que acompañan y no cuentan aparte
+  ("De la Torre Vera" son dos apellidos). Se guardan en `usuario.nombre` como
+  "apellidos nombres", el mismo orden que las importaciones (`PersonName::full`).
+- Contraseñas (producción, `Password::defaults()`): mínimo 8 caracteres con al
+  menos una letra, un número y un carácter especial, y que no aparezca en
+  filtraciones conocidas.
 - A los estudiantes además les exige `faculty_id`, `career_id` y `cycle_id`
   (activos y coherentes entre sí: la carrera pertenece a la facultad y el ciclo a
   la carrera). Los valores enviados reemplazan los registrados; el ciclo se asigna

@@ -12,6 +12,7 @@ use App\Notifications\QueuedProvisionalPasswordNotification;
 use App\Rules\CedulaEcuatoriana;
 use App\Rules\CedulaOPasaporte;
 use App\Support\InstitutionalEmail;
+use App\Support\PersonName;
 use App\Support\StudentCycle;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -177,9 +178,7 @@ abstract class AccountImporter implements Importer
     /** El sistema guarda un solo campo con apellidos y nombres, en ese orden. */
     public static function fullName(?string $lastNames, ?string $firstNames): ?string
     {
-        $name = trim(preg_replace('/\s+/u', ' ', trim(($lastNames ?? '').' '.($firstNames ?? ''))) ?? '');
-
-        return $name === '' ? null : $name;
+        return PersonName::full($lastNames, $firstNames);
     }
 
     /**

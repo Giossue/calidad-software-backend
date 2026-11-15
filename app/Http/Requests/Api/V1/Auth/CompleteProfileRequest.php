@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\Api\V1\Auth;
 
+use App\Concerns\ProfileValidationRules;
 use App\Models\Usuario;
 use App\Rules\CedulaOPasaporte;
+use App\Support\PersonName;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Hash;
@@ -12,6 +14,8 @@ use Illuminate\Validation\Rules\Password;
 
 class CompleteProfileRequest extends FormRequest
 {
+    use ProfileValidationRules;
+
     public function authorize(): bool
     {
         $user = $this->user();
@@ -23,8 +27,15 @@ class CompleteProfileRequest extends FormRequest
     {
         $this->merge([
             'identification' => strtoupper(trim((string) $this->input('identification'))),
-            'name' => trim((string) $this->input('name')),
+            'first_names' => PersonName::normalize($this->input('first_names')),
+            'last_names' => PersonName::normalize($this->input('last_names')),
         ]);
+    }
+
+    /** Nombre completo tal como se guarda: apellidos seguidos de nombres. */
+    public function fullName(): ?string
+    {
+        return PersonName::full($this->validated('last_names'), $this->validated('first_names'));
     }
 
     /** @return array<string, array<int, mixed>> */
@@ -35,7 +46,7 @@ class CompleteProfileRequest extends FormRequest
 
         return [
             'identification' => ['required', 'string', new CedulaOPasaporte, Rule::unique('usuario', 'cedula')->ignore($user)],
-            'name' => ['required', 'string', 'max:150', 'regex:/^[\pL\s]+$/u'],
+            ...$this->personNameRules(),
             'phone' => ['required', 'digits:10'],
             // Los estudiantes registran obligatoriamente dónde estudian; lo que envíen reemplaza lo registrado.
             ...($user->hasRole('estudiante') ? [
@@ -58,7 +69,8 @@ class CompleteProfileRequest extends FormRequest
     {
         return [
             'identification' => 'cédula o pasaporte',
-            'name' => 'nombre',
+            'first_names' => 'nombres',
+            'last_names' => 'apellidos',
             'phone' => 'teléfono',
             'faculty_id' => 'facultad',
             'career_id' => 'carrera',
@@ -72,7 +84,8 @@ class CompleteProfileRequest extends FormRequest
     {
         return [
             'phone.digits' => 'El teléfono debe tener exactamente 10 dígitos numéricos.',
-            'name.regex' => 'El nombre solo puede contener letras y espacios.',
+            'first_names.regex' => 'Los nombres solo pueden contener letras y espacios.',
+            'last_names.regex' => 'Los apellidos solo pueden contener letras y espacios.',
             'career_id.exists' => 'Selecciona una carrera activa de la facultad elegida.',
             'cycle_id.exists' => 'Selecciona un ciclo activo de la carrera elegida.',
         ];

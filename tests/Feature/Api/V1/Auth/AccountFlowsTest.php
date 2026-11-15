@@ -23,7 +23,8 @@ class AccountFlowsTest extends TestCase
 
         $response = $this->postJson('/api/v1/auth/register', [
             'identification' => '0201234567',
-            'name' => 'Ana Torres',
+            'first_names' => 'Ana',
+            'last_names' => 'Torres',
             'email' => 'ana@ueb.edu.ec',
             'password' => 'Password1!',
             'password_confirmation' => 'Password1!',
@@ -42,7 +43,8 @@ class AccountFlowsTest extends TestCase
     {
         $response = $this->postJson('/api/v1/auth/register', [
             'identification' => '0201234567',
-            'name' => 'Ana Torres',
+            'first_names' => 'Ana',
+            'last_names' => 'Torres',
             'email' => 'ana@ueb.edu.ec',
             'password' => 'Password1!',
             'password_confirmation' => 'Password1!',
@@ -58,7 +60,8 @@ class AccountFlowsTest extends TestCase
 
         $response = $this->postJson('/api/v1/auth/register', [
             'identification' => '0201234567',
-            'name' => 'Ana Torres',
+            'first_names' => 'Ana',
+            'last_names' => 'Torres',
             'email' => 'victim@gmail.com',
             'password' => 'Password1!',
             'password_confirmation' => 'Password1!',
