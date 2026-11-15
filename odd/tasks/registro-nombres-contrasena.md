@@ -13,9 +13,9 @@ Objective: relax the password policy and capture first names and last names as t
 
 | ID | Specs | Scope | Route | Status | Commit |
 |---|---|---|---|---|---|
-| T1 | S1 | Backend + frontend password policy | inline | pending | |
-| T2 | S2,S3,S4 | Backend: `first_names`/`last_names` in profile completion and register, word-count rule | inline | pending | |
-| T3 | S2,S3,S4 | Frontend: two fields in the profile-completion modal, prefill split | inline | pending | |
+| T1 | S1 | Backend + frontend password policy | inline | done | backend 9e5a567, frontend 9ece076 |
+| T2 | S2,S3,S4 | Backend: `first_names`/`last_names` in profile completion and register, word-count rule | inline | done | backend 571f38a |
+| T3 | S2,S3,S4 | Frontend: two fields in the profile-completion modal, prefill split | inline | done | frontend 4275ef9 |
 
 Risk: item 2 (password policy relaxed, requested) and item 3 (profile-completion/register API payload changes `name` → `first_names` + `last_names`; only consumer is this frontend).
 
@@ -23,3 +23,5 @@ Risk: item 2 (password policy relaxed, requested) and item 3 (profile-completion
 
 - **L1 (2026-11-15, user):** "Quiero que menores la cantidad de digitos para la contraseña a 8, y que no sea tan rígido porque es muy complicado, puedes poner 1 letra minimo, 1 caracter especial minimo y minumo un numero / El orden de registro debería ser: Nombres y Apellidos, actualmente creo que es un solo campo, la idea es tener dos campos de entrada: Nombres (mínimo 1, máximo 2) Apellidos (regla general de 2): El artículo 37 determina que toda inscripción de nacimiento ordinaria en el país lleva dos apellidos: … Excepciones para tener 1 solo apellido: Hijos de padres extranjeros … Ecuatorianos nacidos en el exterior …"
 - **L2:** Exploration: production policy was min 12 + mixed case + letters + numbers + symbols + uncompromised (non-production: Laravel default min 8). The only UI where users type their name is `CompleteProfileModal` ("Nombre completo", placeholder "Apellidos y nombres"); public register is disabled by default but shares the payload.
+- **L3:** RED/GREEN: `PasswordPolicyTest` (production policy) and `PersonNamesTest` (6 cases) red before, green after; frontend `person-name.test.ts` and modal tests red before, green after. Backend suite 483 tests: only failure `AdministrativeCatalogsTest::test_only_one_academic_period_can_be_active_at_the_same_time`, which also fails at base 17a7369 (`CatalogImportTest::test_degree_coordinator_imports_sections_into_current_period` fails at base when run alone). Frontend suite 432 passed. Prefill: the stored name is split only when it has 3+ parts (first two = last names); with 2 parts both fields start empty because the order is unknown (email-derived provisional names are "Nombre Apellido"). RDD off globally (assess: high, item 2) → no native review; independent verifier run for items 2-3.
+- **L4:** Independent verifier: S1–S4 met, no blockers. Fixed advisories in frontend (length counted in characters, symbol = \p{P}\p{S} like Laravel) — frontend 24cd864. Open advisories: prefill split is a guess for 1-surname names ("Smith Ana María"); names allow only letters and spaces (pre-existing); `uncompromised` can reject a password the checklist shows valid (pre-existing).
