@@ -52,7 +52,8 @@ class UserManagementTest extends TestCase
 
         $response = $this->postJson('/api/v1/users', [
             'identification' => '0926687856',
-            'name' => 'Luis Pérez',
+            'first_names' => ' Ana  María ',
+            'last_names' => 'Torres Vera',
             'email' => 'luis@example.com',
             'phone' => '0991234567',
             'role' => 'estudiante',
@@ -60,6 +61,7 @@ class UserManagementTest extends TestCase
 
         $response->assertCreated()
             ->assertJsonPath('data.identification', '0926687856')
+            ->assertJsonPath('data.name', 'Torres Vera Ana María')
             ->assertJsonPath('data.email', 'luis@example.com')
             ->assertJsonPath('data.role', 'estudiante')
             ->assertJsonPath('data.is_active', true)
@@ -67,6 +69,7 @@ class UserManagementTest extends TestCase
 
         $this->assertDatabaseHas('usuario', [
             'cedula' => '0926687856',
+            'nombre' => 'Torres Vera Ana María',
             'correo' => 'luis@example.com',
             'telefono' => '0991234567',
             'estado' => true,
@@ -87,7 +90,8 @@ class UserManagementTest extends TestCase
 
         $response = $this->postJson('/api/v1/users', [
             'identification' => '0926687856',
-            'name' => 'Luis Pérez',
+            'first_names' => 'Luis',
+            'last_names' => 'Pérez',
             'email' => 'existente@example.com',
             'phone' => '0991234567',
             'role' => 'estudiante',
@@ -101,7 +105,8 @@ class UserManagementTest extends TestCase
     {
         $this->postJson('/api/v1/users', [
             'identification' => '0926687856',
-            'name' => 'Luis Pérez',
+            'first_names' => 'Luis',
+            'last_names' => 'Pérez',
             'email' => 'luis@example.com',
             'phone' => '0991234567',
             'role' => 'lider',
@@ -113,7 +118,8 @@ class UserManagementTest extends TestCase
     {
         $this->postJson('/api/v1/users', [
             'identification' => '0102030405',
-            'name' => 'Luis Pérez',
+            'first_names' => 'Luis',
+            'last_names' => 'Pérez',
             'email' => 'luis@example.com',
             'phone' => '0991234567',
             'role' => 'estudiante',
@@ -127,7 +133,8 @@ class UserManagementTest extends TestCase
 
         $this->postJson('/api/v1/users', [
             'identification' => 'AB1234567',
-            'name' => 'John Smith',
+            'first_names' => 'John',
+            'last_names' => 'Smith',
             'email' => 'john@example.com',
             'phone' => '0991234567',
             'role' => 'estudiante',
@@ -154,7 +161,8 @@ class UserManagementTest extends TestCase
     {
         $this->postJson('/api/v1/users', [
             'identification' => $identification,
-            'name' => 'John Smith',
+            'first_names' => 'John',
+            'last_names' => 'Smith',
             'email' => 'john@example.com',
             'phone' => '0991234567',
             'role' => 'estudiante',
@@ -166,7 +174,8 @@ class UserManagementTest extends TestCase
     {
         $this->postJson('/api/v1/users', [
             'identification' => '0926687856',
-            'name' => 'Luis Pérez',
+            'first_names' => 'Luis',
+            'last_names' => 'Pérez',
             'email' => 'luis@example.com',
             'phone' => '099123',
             'role' => 'estudiante',
@@ -175,7 +184,8 @@ class UserManagementTest extends TestCase
 
         $this->postJson('/api/v1/users', [
             'identification' => '0926687856',
-            'name' => 'Luis Pérez',
+            'first_names' => 'Luis',
+            'last_names' => 'Pérez',
             'email' => 'luis@example.com',
             'role' => 'estudiante',
         ])->assertUnprocessable()
@@ -186,12 +196,45 @@ class UserManagementTest extends TestCase
     {
         $this->postJson('/api/v1/users', [
             'identification' => '0926687856',
-            'name' => 'Luis P3rez!',
+            'first_names' => 'Luis',
+            'last_names' => 'P3rez!',
             'email' => 'luis@example.com',
             'phone' => '0991234567',
             'role' => 'estudiante',
         ])->assertUnprocessable()
-            ->assertJsonValidationErrors(['name']);
+            ->assertJsonValidationErrors(['last_names']);
+    }
+
+    public function test_registering_a_user_accepts_at_most_two_first_names_and_two_last_names(): void
+    {
+        $payload = [
+            'identification' => '0926687856',
+            'email' => 'luis@example.com',
+            'phone' => '0991234567',
+            'role' => 'estudiante',
+        ];
+
+        $this->postJson('/api/v1/users', [...$payload, 'first_names' => 'Ana María José', 'last_names' => 'Torres Vera'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['first_names' => 'Ingresa uno o dos nombres.']);
+
+        $this->postJson('/api/v1/users', [...$payload, 'first_names' => 'Ana', 'last_names' => 'Torres Vera Ruiz'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['last_names']);
+
+        $this->assertDatabaseMissing('usuario', ['correo' => 'luis@example.com']);
+    }
+
+    public function test_registering_a_user_requires_first_names_and_last_names(): void
+    {
+        $this->postJson('/api/v1/users', [
+            'identification' => '0926687856',
+            'name' => 'Luis Pérez',
+            'email' => 'luis@example.com',
+            'phone' => '0991234567',
+            'role' => 'estudiante',
+        ])->assertUnprocessable()
+            ->assertJsonValidationErrors(['first_names', 'last_names']);
     }
 
     public function test_admin_can_update_a_user(): void
@@ -199,32 +242,63 @@ class UserManagementTest extends TestCase
         $user = Usuario::factory()->create();
 
         $response = $this->patchJson("/api/v1/users/{$user->getKey()}", [
-            'name' => 'Nombre Actualizado',
+            'first_names' => 'Pedro',
+            'last_names' => 'Gómez Ruiz',
             'email' => 'nuevo@example.com',
             'role' => 'docente',
             'phone' => '0987654321',
         ]);
 
         $response->assertOk()
-            ->assertJsonPath('data.name', 'Nombre Actualizado')
+            ->assertJsonPath('data.name', 'Gómez Ruiz Pedro')
             ->assertJsonPath('data.email', 'nuevo@example.com')
             ->assertJsonPath('data.role', 'docente')
             ->assertJsonPath('data.phone', '0987654321');
 
         $this->assertDatabaseHas('usuario', [
             'id_usuario' => $user->getKey(),
-            'nombre' => 'Nombre Actualizado',
+            'nombre' => 'Gómez Ruiz Pedro',
             'correo' => 'nuevo@example.com',
             'telefono' => '0987654321',
         ]);
         $this->assertTrue($user->fresh()->hasRole('docente'));
     }
 
+    public function test_update_without_names_keeps_the_stored_name(): void
+    {
+        $user = Usuario::factory()->create(['nombre' => 'Torres Vera Ana María']);
+
+        $this->patchJson("/api/v1/users/{$user->getKey()}", ['email' => 'otro@example.com', 'phone' => '0987654321'])
+            ->assertOk()
+            ->assertJsonPath('data.name', 'Torres Vera Ana María')
+            ->assertJsonPath('data.email', 'otro@example.com');
+
+        $this->assertDatabaseHas('usuario', [
+            'id_usuario' => $user->getKey(),
+            'nombre' => 'Torres Vera Ana María',
+            'correo' => 'otro@example.com',
+        ]);
+    }
+
+    public function test_update_requires_first_names_and_last_names_together(): void
+    {
+        $user = Usuario::factory()->create(['nombre' => 'Torres Vera Ana María']);
+
+        $this->patchJson("/api/v1/users/{$user->getKey()}", ['first_names' => 'Pedro'])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['last_names']);
+
+        $this->patchJson("/api/v1/users/{$user->getKey()}", ['name' => 'Nombre Antiguo'])
+            ->assertOk();
+
+        $this->assertSame('Torres Vera Ana María', $user->fresh()->nombre);
+    }
+
     public function test_update_without_password_keeps_the_existing_hash(): void
     {
         $user = Usuario::factory()->create();
 
-        $this->patchJson("/api/v1/users/{$user->getKey()}", ['name' => 'Sin Clave'])
+        $this->patchJson("/api/v1/users/{$user->getKey()}", ['first_names' => 'Sin', 'last_names' => 'Clave'])
             ->assertOk();
 
         $this->assertSame(
@@ -394,7 +468,8 @@ class UserManagementTest extends TestCase
 
         $response = $this->postJson('/api/v1/users', [
             'identification' => '0926687856',
-            'name' => 'Docente Carrera',
+            'first_names' => 'Docente',
+            'last_names' => 'Carrera',
             'email' => 'docente_carrera@example.com',
             'phone' => '0991234567',
             'role' => 'docente',
@@ -425,7 +500,8 @@ class UserManagementTest extends TestCase
 
         $response = $this->postJson('/api/v1/users', [
             'identification' => '0926687856',
-            'name' => 'Admin Sistema',
+            'first_names' => 'Admin',
+            'last_names' => 'Sistema',
             'email' => 'nuevo_admin@example.com',
             'phone' => '0991234567',
             'role' => 'administrador',

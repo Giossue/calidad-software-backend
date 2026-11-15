@@ -2,18 +2,18 @@
 
 namespace App\Http\Requests\Api\V1\Admin;
 
+use App\Http\Requests\Concerns\CombinesPersonNames;
 use App\Models\Role;
 use App\Models\Usuario;
 use App\Rules\CedulaOPasaporte;
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\In;
 use Illuminate\Validation\Rules\Password;
-use Illuminate\Validation\Rules\Unique;
 
 class UpdateUserRequest extends FormRequest
 {
+    use CombinesPersonNames;
+
     public function authorize(): bool
     {
         $user = $this->route('user');
@@ -22,7 +22,12 @@ class UpdateUserRequest extends FormRequest
             && ($this->user()?->can('update', $user) ?? false);
     }
 
-    /** @return array<string, array<int, string|In|Password|Unique|ValidationRule>> */
+    protected function prepareForValidation(): void
+    {
+        $this->preparePersonNames();
+    }
+
+    /** @return array<string, array<int, mixed>> */
     public function rules(): array
     {
         return [
@@ -30,7 +35,7 @@ class UpdateUserRequest extends FormRequest
                 'sometimes', 'string', new CedulaOPasaporte,
                 Rule::unique('usuario', 'cedula')->ignore($this->route('user')),
             ],
-            'name' => ['sometimes', 'string', 'max:150', 'regex:/^[\pL\s]+$/u'],
+            ...$this->personNameRules(false),
             'email' => [
                 'sometimes', 'string', 'email:rfc', 'max:150',
                 Rule::unique('usuario', 'correo')->ignore($this->route('user')),
@@ -48,7 +53,7 @@ class UpdateUserRequest extends FormRequest
     {
         return [
             'identification' => 'cédula o pasaporte',
-            'name' => 'nombre',
+            ...$this->personNameAttributes(),
             'email' => 'correo electrónico',
             'phone' => 'teléfono',
             'role' => 'rol',
@@ -63,7 +68,7 @@ class UpdateUserRequest extends FormRequest
     {
         return [
             'phone.digits' => 'El teléfono debe tener exactamente 10 dígitos numéricos.',
-            'name.regex' => 'El nombre solo puede contener letras y espacios.',
+            ...$this->personNameMessages(),
         ];
     }
 }

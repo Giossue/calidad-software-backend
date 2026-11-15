@@ -107,10 +107,12 @@ class UserController extends Controller
             'password' => 'password_hash',
         ];
 
+        // `name` solo existe en los datos validados: llega como `first_names` y `last_names`.
+        $validated = $request->validated();
         $attributes = [];
         foreach ($columns as $field => $column) {
-            if ($request->exists($field)) {
-                $attributes[$column] = $request->validated($field);
+            if (array_key_exists($field, $validated)) {
+                $attributes[$column] = $validated[$field];
             }
         }
 

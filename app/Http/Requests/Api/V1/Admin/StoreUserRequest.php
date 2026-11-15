@@ -2,28 +2,33 @@
 
 namespace App\Http\Requests\Api\V1\Admin;
 
+use App\Http\Requests\Concerns\CombinesPersonNames;
 use App\Models\Role;
 use App\Models\Usuario;
 use App\Rules\CedulaOPasaporte;
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
-use Illuminate\Validation\Rules\In;
-use Illuminate\Validation\Rules\Unique;
 
 class StoreUserRequest extends FormRequest
 {
+    use CombinesPersonNames;
+
     public function authorize(): bool
     {
         return $this->user()?->can('create', Usuario::class) ?? false;
     }
 
-    /** @return array<string, array<int, string|In|Unique|ValidationRule>> */
+    protected function prepareForValidation(): void
+    {
+        $this->preparePersonNames();
+    }
+
+    /** @return array<string, array<int, mixed>> */
     public function rules(): array
     {
         return [
             'identification' => ['required', 'string', new CedulaOPasaporte, Rule::unique('usuario', 'cedula')],
-            'name' => ['required', 'string', 'max:150', 'regex:/^[\pL\s]+$/u'],
+            ...$this->personNameRules(),
             'email' => ['required', 'string', 'email:rfc', 'max:150', Rule::unique('usuario', 'correo')],
             'phone' => ['required', 'digits:10'],
             'role' => ['required', Rule::in(Role::query()->pluck('slug'))],
@@ -37,7 +42,7 @@ class StoreUserRequest extends FormRequest
     {
         return [
             'identification' => 'cédula o pasaporte',
-            'name' => 'nombre',
+            ...$this->personNameAttributes(),
             'email' => 'correo electrónico',
             'phone' => 'teléfono',
             'role' => 'rol',
@@ -51,7 +56,7 @@ class StoreUserRequest extends FormRequest
     {
         return [
             'phone.digits' => 'El teléfono debe tener exactamente 10 dígitos numéricos.',
-            'name.regex' => 'El nombre solo puede contener letras y espacios.',
+            ...$this->personNameMessages(),
         ];
     }
 }
