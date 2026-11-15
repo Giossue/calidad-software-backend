@@ -80,7 +80,11 @@ de coordinación.
    ni resultado final y no avanza a la asignatura siguiente. **Quitar abandono**
    lo revierte. Solo se marca en una inscripción activa y en el período vigente.
 5. En **Estudiantes y Calificaciones** → **Calificaciones**, registrar diagnóstico o parcial, consultar el grupo
-   calculado por el servidor y abrir el historial de notas.
+   calculado por el servidor y abrir el historial de notas. La columna
+   **Evolución (P1 → P2)** compara solo el Parcial 1 con el Parcial 2: la nota
+   diagnóstica no entra en ese cálculo ni en el resultado final.
+   Los listados de estudiantes (inscritos, asistencia, notas e informes) van
+   ordenados y rotulados por **Apellidos y nombres**.
    Las pestañas de la tutoría van en este orden: **Asistencia** (se abre por
    defecto), **Contenido**, **Horarios** y **Estudiantes y Calificaciones**, que
    reúne la lista de estudiantes y sus notas (`?tab=grades` abre las notas).

@@ -13,6 +13,7 @@ use App\Models\AsignaturaTutoria;
 use App\Models\Asistencia;
 use App\Models\Tema;
 use App\Models\TutoringSession;
+use App\Models\Usuario;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,7 +30,7 @@ class SessionController extends Controller
             $query->whereDate('fecha', $request->input('date'));
         }
 
-        return TutoringAttendanceResource::collection($query->orderByDesc('fecha')->orderBy('id_asistencia')->paginate($request->integer('per_page', 15)));
+        return TutoringAttendanceResource::collection($query->orderByDesc('fecha')->orderBy(Usuario::query()->select('nombre')->whereColumn('usuario.id_usuario', 'asistencia.fk_id_usuario'))->orderBy('id_asistencia')->paginate($request->integer('per_page', 15)));
     }
 
     /** Avisos de inasistencia de los estudiantes para una fecha (se muestran al tomar lista). */

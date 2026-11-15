@@ -27,7 +27,7 @@ class SupervisionController extends Controller
 
         return TutoringAttendanceResource::collection(Asistencia::query()
             ->whereHas('inscripcion', fn (Builder $q) => $q->where('fk_asig_tutoria', $tutoring->getKey()))
-            ->with('estudiante', 'session')->orderByDesc('fecha')->paginate(min(max($request->integer('per_page', 20), 1), 100)));
+            ->with('estudiante', 'session')->orderByDesc('fecha')->orderBy(Usuario::query()->select('nombre')->whereColumn('usuario.id_usuario', 'asistencia.fk_id_usuario'))->paginate(min(max($request->integer('per_page', 20), 1), 100)));
     }
 
     /** Sesiones de la tutoría, de la más reciente a la primera, cada una con su lista. */

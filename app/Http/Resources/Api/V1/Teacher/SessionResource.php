@@ -66,7 +66,8 @@ class SessionResource extends JsonResource
                 'duration' => $act->duracion,
                 'methodologies' => $act->metodologias ? $act->metodologias->where('estado', true)->pluck('descripcion')->values() : [],
             ]),
-            'attendance' => $this->attendance->map(fn ($record) => [
+            // Por apellidos y nombres (el nombre se guarda como "apellidos nombres").
+            'attendance' => $this->attendance->sortBy(fn ($record) => mb_strtoupper($record->estudiante->nombre ?? ''))->values()->map(fn ($record) => [
                 'id' => $record->getKey(),
                 'enrollment_id' => $record->fk_inscripcion,
                 'student_id' => $record->fk_id_usuario,

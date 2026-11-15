@@ -34,6 +34,24 @@ class SessionReportAndDegreeTest extends TeacherTestCase
         $this->getJson(self::API.'/tutorings/'.$this->tutoring->getKey().'/attendance')->assertOk()->assertJsonPath('data.0.present', false)->assertJsonPath('data.0.topics_covered', false);
     }
 
+    public function test_attendance_lists_students_by_last_names_then_names(): void
+    {
+        $this->classNow();
+        $zapata = $this->enrollment(student: Usuario::factory()->student()->create(['nombre' => 'ZAPATA RUIZ ANA']));
+        $alvarez = $this->enrollment(student: Usuario::factory()->student()->create(['nombre' => 'ALVAREZ MORA LUIS']));
+        $mora = $this->enrollment(student: Usuario::factory()->student()->create(['nombre' => 'MORA PÉREZ JUAN']));
+        $this->putJson($this->path('/sessions'), ['date' => today()->toDateString(), 'topics_covered' => false, 'attendance' => [
+            ['enrollment_id' => $zapata->getKey(), 'present' => true],
+            ['enrollment_id' => $mora->getKey(), 'present' => true],
+            ['enrollment_id' => $alvarez->getKey(), 'present' => true],
+        ]])->assertOk()->assertJsonPath('data.attendance.*.student_name', ['ALVAREZ MORA LUIS', 'MORA PÉREZ JUAN', 'ZAPATA RUIZ ANA']);
+
+        $expected = ['ALVAREZ MORA LUIS', 'MORA PÉREZ JUAN', 'ZAPATA RUIZ ANA'];
+        $this->assertSame($expected, collect($this->getJson($this->path('/attendance'))->assertOk()->json('data'))->pluck('student_name')->all());
+        Sanctum::actingAs($this->coordinator, ['access-api']);
+        $this->assertSame($expected, collect($this->getJson(self::API.'/tutorings/'.$this->tutoring->getKey().'/attendance')->assertOk()->json('data'))->pluck('student_name')->all());
+    }
+
     public function test_sessions_from_previous_dates_are_read_only(): void
     {
         $enrollment = $this->enrollment();
