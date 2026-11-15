@@ -105,6 +105,10 @@ carrera elegida.
    La pestaña **Notas** muestra, por estudiante inscrito, una fila por etapa
    (Diagnóstico, Parcial 1, Parcial 2) con su nota y el resultado final que
    registró el docente. Es solo consulta, también en períodos pasados.
+   Coordinación también puede **Registrar abandono** de un estudiante desde su
+   modal en la pestaña **Estudiantes** (`PUT /tutorings/{tutoring}/students/{enrollment}/abandonment`,
+   mismo cuerpo y reglas que el del docente; ver `../teacher/README.md`, DOC-06B).
+   Un estudiante que abandonó se marca en las listas y en **Notas** muestra el motivo.
 7. Usar **Desactivar** para retirar asignaturas, tutorías u horarios; un docente se quita de la carrera con **Quitar de la carrera**.
    La operación conserva sus registros históricos. Una tutoría deshabilitada
    permite seguir consultando asistencia e informes.

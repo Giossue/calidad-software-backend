@@ -19,6 +19,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property CarbonInterface $fecha_inscripcion
  * @property string|null $final_result `approved` o `failed`, registrado por el docente al cerrar el ciclo.
  * @property CarbonInterface|null $final_result_at
+ * @property CarbonInterface|null $abandoned_at Cuándo se registró que el estudiante abandonó la tutoría; null si no la abandonó.
+ * @property string|null $abandonment_reason Motivo del abandono, en texto libre.
  * @property-read AsignaturaTutoria|null $asignaturaTutoria
  */
 #[ObservedBy([TutoringEnrollmentObserver::class])]
@@ -35,6 +37,7 @@ class InscripcionTutoria extends Model
     protected $fillable = [
         'fk_asig_tutoria', 'fk_id_usuario',
         'fecha_inscripcion', 'estado', 'final_result', 'final_result_at',
+        'abandoned_at', 'abandonment_reason',
     ];
 
     /**
@@ -58,7 +61,13 @@ class InscripcionTutoria extends Model
             'estado' => 'boolean',
             'fecha_inscripcion' => 'date',
             'final_result_at' => 'datetime',
+            'abandoned_at' => 'datetime',
         ];
+    }
+
+    public function isAbandoned(): bool
+    {
+        return $this->abandoned_at !== null;
     }
 
     /**

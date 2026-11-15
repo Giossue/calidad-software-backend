@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Teacher;
 
 use App\Actions\Teacher\ManageEnrollment;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Teacher\AbandonmentRequest;
 use App\Http\Requests\Api\V1\Teacher\EnrollmentRequest;
 use App\Http\Requests\Api\V1\Teacher\FinalResultRequest;
 use App\Http\Requests\Api\V1\Teacher\TeacherListRequest;
@@ -67,6 +68,11 @@ class EnrollmentController extends Controller
     public function deactivate(TeacherMutationRequest $request, AsignaturaTutoria $tutoring, InscripcionTutoria $enrollment, ManageEnrollment $action): EnrollmentResource
     {
         return EnrollmentResource::make($action->deactivate($request->user(), $tutoring, $enrollment));
+    }
+
+    public function abandonment(AbandonmentRequest $request, AsignaturaTutoria $tutoring, InscripcionTutoria $enrollment, ManageEnrollment $action): EnrollmentResource
+    {
+        return EnrollmentResource::make($action->recordAbandonment($request->user(), $tutoring, $enrollment, $request->boolean('abandoned'), $request->validated('reason')));
     }
 
     public function finalResult(FinalResultRequest $request, AsignaturaTutoria $tutoring, InscripcionTutoria $enrollment, ManageEnrollment $action): EnrollmentResource

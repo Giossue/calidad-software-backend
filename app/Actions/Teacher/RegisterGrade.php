@@ -23,6 +23,9 @@ class RegisterGrade
             if (! $locked->estado || ! $locked->estudiante->estado || ! $locked->estudiante->hasRole('estudiante')) {
                 throw ValidationException::withMessages(['value' => 'Solo puedes registrar notas de estudiantes con inscripción y cuenta activas.']);
             }
+            if ($locked->isAbandoned()) {
+                throw ValidationException::withMessages(['value' => 'El estudiante abandonó la tutoría; no se pueden registrar sus notas.']);
+            }
             // Una sola nota por etapa: al corregirla se actualiza el valor, no se acumula un historial.
             $current = $locked->notas()->where('tipo', $type)->orderByDesc('id_nota')->first();
             if (! $current) {

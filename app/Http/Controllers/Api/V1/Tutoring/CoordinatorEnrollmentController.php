@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Tutoring;
 
 use App\Actions\Teacher\ManageEnrollment;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\V1\Teacher\AbandonmentRequest;
 use App\Http\Resources\Api\V1\Teacher\AvailableStudentResource;
 use App\Http\Resources\Api\V1\Teacher\EnrollmentResource;
 use App\Models\AsignaturaTutoria;
@@ -150,6 +151,16 @@ class CoordinatorEnrollmentController extends Controller
         $enrollment->update(['estado' => false]);
 
         return EnrollmentResource::make($enrollment->refresh()->load(ManageEnrollment::RELATIONS));
+    }
+
+    public function abandonment(Request $request, AsignaturaTutoria $tutoring, InscripcionTutoria $enrollment, ManageEnrollment $action): EnrollmentResource
+    {
+        Gate::authorize('view', $tutoring);
+        abort_unless($enrollment->fk_asig_tutoria === $tutoring->getKey(), 404);
+        $data = $request->validate(AbandonmentRequest::fieldRules(), [], AbandonmentRequest::fieldAttributes());
+        TutoringPeriod::assertCurrent($tutoring);
+
+        return EnrollmentResource::make($action->setAbandonment($enrollment, (bool) $data['abandoned'], $data['reason'] ?? null));
     }
 
     public function reenroll(Request $request, AsignaturaTutoria $tutoring, InscripcionTutoria $enrollment): EnrollmentResource

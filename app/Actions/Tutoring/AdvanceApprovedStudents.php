@@ -27,7 +27,8 @@ class AdvanceApprovedStudents
     public function afterApproval(InscripcionTutoria $enrollment): void
     {
         $tutoring = $enrollment->asignaturaTutoria()->with(['subject.nextSubjects', 'periodo'])->first();
-        if ($tutoring?->subject === null || $tutoring->periodo === null) {
+        // Quien abandonó la tutoría no avanza a la siguiente asignatura.
+        if ($enrollment->isAbandoned() || $tutoring?->subject === null || $tutoring->periodo === null) {
             return;
         }
         $student = $enrollment->estudiante;
@@ -59,6 +60,7 @@ class AdvanceApprovedStudents
 
         $candidateIds = InscripcionTutoria::query()
             ->where('final_result', InscripcionTutoria::APPROVED)
+            ->whereNull('abandoned_at')
             ->whereHas('asignaturaTutoria', fn (Builder $query) => $query
                 ->whereIn('subject_id', $previousIds)
                 ->where('fk_paralelo', $tutoring->fk_paralelo)
@@ -89,7 +91,8 @@ class AdvanceApprovedStudents
         return AsignaturaTutoria::query()
             ->whereHas('inscripciones', fn (Builder $query) => $query
                 ->where('fk_id_usuario', $student->getKey())
-                ->where('final_result', InscripcionTutoria::APPROVED))
+                ->where('final_result', InscripcionTutoria::APPROVED)
+                ->whereNull('abandoned_at'))
             ->whereNotNull('subject_id')
             ->pluck('subject_id')
             ->unique()

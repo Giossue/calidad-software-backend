@@ -89,6 +89,36 @@ class ManageEnrollment
         });
     }
 
+    /** El docente marca o quita el abandono de la tutoría de un estudiante. */
+    public function recordAbandonment(Usuario $teacher, AsignaturaTutoria $tutoring, InscripcionTutoria $enrollment, bool $abandoned, ?string $reason): InscripcionTutoria
+    {
+        return $this->workspace->write($teacher, $tutoring, function () use ($tutoring, $enrollment, $abandoned, $reason): InscripcionTutoria {
+            $this->workspace->enrollment($tutoring, $enrollment);
+            TutoringPeriod::assertCurrent($tutoring);
+
+            return $this->setAbandonment($enrollment, $abandoned, $reason);
+        });
+    }
+
+    /**
+     * Marca el abandono con su motivo (conserva la fecha si ya estaba marcado) o lo quita.
+     * Solo se marca en una inscripción activa. Lo usan docente y coordinación.
+     */
+    public function setAbandonment(InscripcionTutoria $enrollment, bool $abandoned, ?string $reason): InscripcionTutoria
+    {
+        return DB::transaction(function () use ($enrollment, $abandoned, $reason): InscripcionTutoria {
+            $locked = InscripcionTutoria::query()->whereKey($enrollment->getKey())->lockForUpdate()->firstOrFail();
+            if ($abandoned && ! $locked->estado) {
+                throw ValidationException::withMessages(['abandoned' => 'La inscripción está deshabilitada; reinscribe al estudiante para registrar su abandono.']);
+            }
+            $locked->update($abandoned
+                ? ['abandoned_at' => $locked->abandoned_at ?? now(), 'abandonment_reason' => $reason]
+                : ['abandoned_at' => null, 'abandonment_reason' => null]);
+
+            return $locked->refresh()->load(self::RELATIONS);
+        });
+    }
+
     /**
      * Resultado final del ciclo (`approved`, `failed` o null para quitarlo). Un aprobado
      * avanza a la tutoría de la asignatura que continúa, si ya existe.
@@ -99,6 +129,9 @@ class ManageEnrollment
             $this->workspace->enrollment($tutoring, $enrollment);
             if (! $enrollment->estado) {
                 throw ValidationException::withMessages(['result' => 'La inscripción está deshabilitada; reinscribe al estudiante para registrar su resultado.']);
+            }
+            if ($enrollment->isAbandoned()) {
+                throw ValidationException::withMessages(['result' => 'El estudiante abandonó la tutoría; no se puede registrar su resultado final.']);
             }
             $enrollment->update(['final_result' => $result, 'final_result_at' => $result === null ? null : now()]);
             if ($result === InscripcionTutoria::APPROVED) {

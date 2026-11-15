@@ -30,7 +30,7 @@ class SessionRequest extends TeacherMutationRequest
             'topic_ids' => ['exclude_unless:topics_covered,true', 'array', 'max:100'],
             'topic_ids.*' => ['integer', 'distinct', Rule::exists('tema', 'id_tema')->where('fk_asig_tutoria', $tutoring->getKey())],
             'attendance' => ['required', 'array', 'min:1', 'max:500'],
-            'attendance.*.enrollment_id' => ['required', 'integer', 'distinct', Rule::exists('inscripcion_tutoria', 'id_inscripcion')->where('fk_asig_tutoria', $tutoring->getKey())->where('estado', true)],
+            'attendance.*.enrollment_id' => ['required', 'integer', 'distinct', Rule::exists('inscripcion_tutoria', 'id_inscripcion')->where('fk_asig_tutoria', $tutoring->getKey())->where('estado', true)->whereNull('abandoned_at')],
             'attendance.*.present' => ['required', 'boolean'],
         ];
     }

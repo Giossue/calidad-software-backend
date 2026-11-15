@@ -172,6 +172,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::post('tutorings/{tutoring}/students', [EnrollmentController::class, 'store'])->name('students.store');
             Route::patch('tutorings/{tutoring}/students/{enrollment}', [EnrollmentController::class, 'update'])->name('students.update');
             Route::patch('tutorings/{tutoring}/students/{enrollment}/deactivate', [EnrollmentController::class, 'deactivate'])->name('students.deactivate');
+            Route::put('tutorings/{tutoring}/students/{enrollment}/abandonment', [EnrollmentController::class, 'abandonment'])->name('students.abandonment');
             Route::put('tutorings/{tutoring}/students/{enrollment}/final-result', [EnrollmentController::class, 'finalResult'])->name('students.final-result');
             Route::put('tutorings/{tutoring}/students/{enrollment}/grades/{type}', [GradeController::class, 'store'])->whereIn('type', ['diagnostic', 'partial', 'partial_two'])->name('grades.store');
             Route::put('tutorings/{tutoring}/grades', [GradeController::class, 'bulk'])->name('grades.bulk');
@@ -291,6 +292,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::patch('tutorings/{tutoring}/students/{enrollment}', [CoordinatorEnrollmentController::class, 'update'])->name('tutorings.students.update');
             Route::patch('tutorings/{tutoring}/students/{enrollment}/deactivate', [CoordinatorEnrollmentController::class, 'deactivate'])->name('tutorings.students.deactivate');
             Route::patch('tutorings/{tutoring}/students/{enrollment}/reenroll', [CoordinatorEnrollmentController::class, 'reenroll'])->name('tutorings.students.reenroll');
+            Route::put('tutorings/{tutoring}/students/{enrollment}/abandonment', [CoordinatorEnrollmentController::class, 'abandonment'])->name('tutorings.students.abandonment');
 
             Route::get('students', [CoordinatorStudentController::class, 'index'])->name('students.index');
             Route::post('students', [CoordinatorStudentController::class, 'store'])->name('students.store');

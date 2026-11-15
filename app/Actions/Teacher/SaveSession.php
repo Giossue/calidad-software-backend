@@ -20,10 +20,10 @@ class SaveSession
     public function execute(Usuario $teacher, AsignaturaTutoria $tutoring, array $data): TutoringSession
     {
         return $this->workspace->write($teacher, $tutoring, function () use ($teacher, $tutoring, $data): TutoringSession {
-            $enrollments = InscripcionTutoria::query()->where('fk_asig_tutoria', $tutoring->getKey())->where('estado', true)
+            $enrollments = InscripcionTutoria::query()->where('fk_asig_tutoria', $tutoring->getKey())->where('estado', true)->whereNull('abandoned_at')
                 ->whereIn('id_inscripcion', array_column($data['attendance'], 'enrollment_id'))->lockForUpdate()->with('estudiante.roles')->get()->keyBy('id_inscripcion');
             if ($enrollments->count() !== count($data['attendance']) || $enrollments->contains(fn (InscripcionTutoria $enrollment) => ! $enrollment->estudiante->estado || ! $enrollment->estudiante->hasRole('estudiante'))) {
-                throw ValidationException::withMessages(['attendance' => 'La asistencia debe corresponder a estudiantes activos inscritos en esta tutoría.']);
+                throw ValidationException::withMessages(['attendance' => 'La asistencia debe corresponder a estudiantes activos inscritos en esta tutoría que no la hayan abandonado.']);
             }
             $session = TutoringSession::query()->where('tutoring_id', $tutoring->getKey())->whereDate('date', $data['date'])->first()
                 ?? new TutoringSession(['tutoring_id' => $tutoring->getKey(), 'date' => $data['date']]);

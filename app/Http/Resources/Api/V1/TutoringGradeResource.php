@@ -37,6 +37,8 @@ class TutoringGradeResource extends JsonResource
                 array_keys(self::STAGES), self::STAGES,
             ),
             'final_result' => $enrollment['final_result'],
+            'is_abandoned' => $enrollment['is_abandoned'],
+            'abandonment_reason' => $enrollment['abandonment_reason'],
             'suggested_result' => $enrollment['suggested_result'],
         ];
     }
