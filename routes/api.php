@@ -40,6 +40,7 @@ use App\Http\Controllers\Api\V1\Tutoring\CoordinatorDegreeEnrollmentController;
 use App\Http\Controllers\Api\V1\Tutoring\CoordinatorEnrollmentController;
 use App\Http\Controllers\Api\V1\Tutoring\CoordinatorStudentController;
 use App\Http\Controllers\Api\V1\Tutoring\CurriculumController;
+use App\Http\Controllers\Api\V1\Tutoring\MallaController;
 use App\Http\Controllers\Api\V1\Tutoring\RosterImportController;
 use App\Http\Controllers\Api\V1\Tutoring\ScheduleController as TutoringScheduleController;
 use App\Http\Controllers\Api\V1\Tutoring\SubjectController as TutoringSubjectController;
@@ -262,6 +263,10 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::post('tutorings', [TutoringController::class, 'store'])->name('tutorings.store');
             Route::post('curricula/preview', [CurriculumController::class, 'preview'])->middleware('throttle:20,1')->name('curricula.preview');
             Route::post('curricula', [CurriculumController::class, 'store'])->name('curricula.store');
+            Route::get('mallas', [MallaController::class, 'index'])->name('mallas.index');
+            Route::post('mallas', [MallaController::class, 'store'])->name('mallas.store');
+            Route::patch('mallas/{malla}', [MallaController::class, 'update'])->name('mallas.update');
+            Route::delete('mallas/{malla}', [MallaController::class, 'destroy'])->name('mallas.destroy');
             Route::post('roster-imports', RosterImportController::class)->middleware('throttle:20,1')->name('roster-imports.store');
             Route::patch('tutorings/{tutoring}', [TutoringController::class, 'update'])->name('tutorings.update');
             Route::patch('tutorings/{tutoring}/deactivate', [TutoringController::class, 'deactivate'])->name('tutorings.deactivate');
@@ -290,6 +295,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::get('students', [CoordinatorStudentController::class, 'index'])->name('students.index');
             Route::post('students', [CoordinatorStudentController::class, 'store'])->name('students.store');
             Route::patch('students/{student}/cycle', [CoordinatorStudentController::class, 'updateCycle'])->name('students.cycle.update');
+            Route::patch('students/{student}/malla', [CoordinatorStudentController::class, 'updateMalla'])->name('students.malla.update');
             Route::get('students/{student}/available-tutorings', [CoordinatorStudentController::class, 'availableTutorings'])->name('students.available-tutorings');
             Route::post('students/{student}/enroll', [CoordinatorStudentController::class, 'enroll'])->name('students.enroll');
             Route::delete('students/{student}/enrollments/{enrollment}', [CoordinatorStudentController::class, 'unenroll'])->name('students.unenroll');

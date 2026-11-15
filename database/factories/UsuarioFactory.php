@@ -8,6 +8,7 @@ use App\Models\Facultad;
 use App\Models\Role;
 use App\Models\Usuario;
 use App\Rules\CedulaEcuatoriana;
+use App\Support\Mallas;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -55,6 +56,7 @@ class UsuarioFactory extends Factory
             }
 
             $user->roles()->attach(Role::query()->where('slug', 'estudiante')->value('id'));
+            Mallas::syncStudent($user);
         });
     }
 
@@ -65,6 +67,8 @@ class UsuarioFactory extends Factory
     {
         return $this->afterCreating(function (Usuario $user) use ($slug): void {
             $user->roles()->sync(Role::query()->where('slug', $slug)->value('id'));
+            // Como en el registro real: un estudiante sigue la malla vigente de su carrera.
+            Mallas::syncStudent($user);
         });
     }
 
@@ -87,6 +91,7 @@ class UsuarioFactory extends Factory
             $cycle = Ciclo::query()->firstOrCreate(['fk_carrera' => $careerId, 'numero' => $cycleNumber], ['nombre' => "Ciclo {$cycleNumber}", 'estado' => true]);
 
             $user->forceFill(['fk_carrera' => $careerId, 'fk_ciclo' => $cycle->getKey()])->save();
+            Mallas::syncStudent($user);
         });
     }
 

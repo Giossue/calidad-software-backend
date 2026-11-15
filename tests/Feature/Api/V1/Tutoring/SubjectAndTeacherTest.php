@@ -17,7 +17,7 @@ class SubjectAndTeacherTest extends TutoringTestCase
     {
         Sanctum::actingAs($this->coordinator, ['*']);
         $response = $this->postJson(self::API.'/subjects', [
-            'career_id' => $this->career->getKey(), 'code' => 'CS-101', 'name' => 'Calidad',
+            'malla_id' => $this->currentMalla()->getKey(), 'career_id' => $this->career->getKey(), 'code' => 'CS-101', 'name' => 'Calidad',
             'modality_id' => $this->modality->getKey(),
         ])->assertCreated()->assertJsonPath('data.is_active', true)->assertJsonPath('data.cycle_ids', []);
         $subject = Subject::query()->findOrFail($response->json('data.id'));
@@ -100,7 +100,7 @@ class SubjectAndTeacherTest extends TutoringTestCase
         $this->getJson(self::API.'/subjects?search=CS-101')->assertOk()->assertJsonCount(1, 'data');
         $this->getJson(self::API.'/subjects?search=inexistente')->assertOk()->assertJsonCount(0, 'data');
         $this->postJson(self::API.'/subjects', [
-            'career_id' => $this->otherCareer->getKey(), 'code' => 'CS-102', 'name' => 'Álgebra',
+            'malla_id' => $this->currentMalla($this->otherCareer)->getKey(), 'career_id' => $this->otherCareer->getKey(), 'code' => 'CS-102', 'name' => 'Álgebra',
             'modality_id' => $this->modality->getKey(),
         ])->assertForbidden();
         $url = self::API.'/subjects/'.$foreign->getKey();
@@ -115,19 +115,19 @@ class SubjectAndTeacherTest extends TutoringTestCase
     {
         $subject = $this->createSubject();
         Sanctum::actingAs($this->coordinator, ['*']);
-        $payload = ['career_id' => $this->career->getKey(), 'code' => $subject->code, 'name' => 'Duplicada', 'modality_id' => $this->modality->getKey()];
+        $payload = ['malla_id' => $this->currentMalla()->getKey(), 'career_id' => $this->career->getKey(), 'code' => $subject->code, 'name' => 'Duplicada', 'modality_id' => $this->modality->getKey()];
         $this->postJson(self::API.'/subjects', $payload)->assertUnprocessable()->assertJsonValidationErrors('code');
         $this->patchJson(self::API.'/subjects/'.$subject->getKey(), ['code' => $subject->code])->assertOk();
         $this->patchJson(self::API.'/subjects/'.$subject->getKey(), ['career_id' => $this->otherCareer->getKey()])
             ->assertUnprocessable()->assertJsonValidationErrors('career_id');
         $this->coordinator->coordinatedCareers()->attach($this->otherCareer);
-        $this->postJson(self::API.'/subjects', array_replace($payload, ['career_id' => $this->otherCareer->getKey()]))->assertCreated();
+        $this->postJson(self::API.'/subjects', array_replace($payload, ['malla_id' => $this->currentMalla($this->otherCareer)->getKey(), 'career_id' => $this->otherCareer->getKey()]))->assertCreated();
     }
 
     public function test_subject_can_be_created_with_its_cycle_in_one_step(): void
     {
         Sanctum::actingAs($this->coordinator, ['*']);
-        $payload = ['career_id' => $this->career->getKey(), 'code' => 'SW-001', 'name' => 'Algoritmos', 'cycle_id' => $this->cycle->getKey(), 'modality_id' => $this->modality->getKey()];
+        $payload = ['malla_id' => $this->currentMalla()->getKey(), 'career_id' => $this->career->getKey(), 'code' => 'SW-001', 'name' => 'Algoritmos', 'cycle_id' => $this->cycle->getKey(), 'modality_id' => $this->modality->getKey()];
 
         // `cycle_id` se acepta por compatibilidad y aporta solo su número de ciclo.
         $this->postJson(self::API.'/subjects', $payload)->assertCreated()
@@ -397,7 +397,7 @@ class SubjectAndTeacherTest extends TutoringTestCase
         Notification::fake();
         Sanctum::actingAs($this->coordinator, ['*']);
         $requiredFields = [
-            'subjects' => ['career_id', 'name', 'modality_id'],
+            'subjects' => ['malla_id', 'name', 'modality_id'],
             'teachers' => ['career_id', 'identification', 'first_names', 'last_names', 'email', 'phone'],
             'tutorings' => ['subject_id', 'cycle_id', 'period_id', 'modality_id'],
         ];
@@ -416,7 +416,7 @@ class SubjectAndTeacherTest extends TutoringTestCase
     {
         $parallel = Paralelo::query()->create(['nombre' => 'B', 'estado' => true]);
         Sanctum::actingAs($this->coordinator, ['*']);
-        $payload = ['career_id' => $this->career->getKey(), 'code' => 'CS-PAR-1', 'name' => 'Programación I', 'cycle_number' => 1, 'modality_id' => $this->modality->getKey()];
+        $payload = ['malla_id' => $this->currentMalla()->getKey(), 'career_id' => $this->career->getKey(), 'code' => 'CS-PAR-1', 'name' => 'Programación I', 'cycle_number' => 1, 'modality_id' => $this->modality->getKey()];
 
         foreach ([
             'parallel_id' => $parallel->getKey(),
@@ -485,6 +485,7 @@ class SubjectAndTeacherTest extends TutoringTestCase
         Sanctum::actingAs($this->coordinator, ['*']);
 
         $response = $this->postJson(self::API.'/subjects', [
+            'malla_id' => $this->currentMalla()->getKey(),
             'career_id' => $this->career->getKey(),
             'name' => 'Materia Sin Código',
             'cycle_number' => $this->cycle->numero,

@@ -29,7 +29,8 @@ si no existe, le asigna el docente y registra e inscribe a los estudiantes.
 - La carga va a la carrera elegida por el coordinador (debe coordinarla). Si el
   PDF dice otra carrera (salvo «GRUPO COMUN»), se avisa y se carga igual.
 - Asignatura: por nombre, sin mayúsculas ni tildes, entre las activas de la
-  carrera; debe tener un ciclo. Paralelo: por nombre. Período: el activo.
+  malla elegida (`malla_id`) o, sin malla, de la carrera buscando primero en su
+  malla vigente; debe tener un ciclo. Paralelo: por nombre. Período: el activo.
 - Tutoría: la de esa asignatura, paralelo y período. Si no existe se crea con
   `ManageTutoring::create` (modalidad de la asignatura o de la carrera); si
   está deshabilitada, la carga se detiene.
@@ -38,18 +39,20 @@ si no existe, le asigna el docente y registra e inscribe a los estudiantes.
   docente; si no se encuentra, se avisa.
 - Estudiantes (`status`):
   - `new`: se crea la cuenta (sin cédula, contraseña provisional por correo),
-    en la carrera y en el ciclo de la tutoría, y se inscribe.
+    en la carrera, en el ciclo y en la malla de la tutoría, y se inscribe.
   - `enroll`: ya registrado; se inscribe (y se ubica en el ciclo si no tenía).
   - `enrolled`: ya inscrito; no cambia nada.
   - `blocked`: correo no institucional, cuenta no estudiantil o deshabilitada,
-    de otra carrera, en titulación, o arrastra una previa de la asignatura.
+    de otra carrera, sigue otra malla («El estudiante sigue otra malla.»), en
+    titulación, o arrastra una previa de la asignatura.
   - `error`: la fila falló al aplicar; las demás siguen.
 - Volver a subir el mismo listado no duplica tutorías ni inscripciones.
 
 ## API
 
 `POST /api/v1/tutoring-coordination/roster-imports` (multipart): `file` (PDF,
-máx. 5 MB), `career_id`, `confirm`. Responde `data` con `applied`, los datos del
+máx. 5 MB), `career_id`, `malla_id` opcional (de la carrera; si no, 422 «La
+malla no pertenece a la carrera.») y `confirm`. Responde `data` con `applied`, los datos del
 PDF (`career_name`, `subject_name`, `section_name`, `teacher_name`), lo
 encontrado (`subject`, `cycle_number`, `period_name`, `teacher`, `tutoring`),
 `errors` (impiden aplicar), `notes` y `students`.

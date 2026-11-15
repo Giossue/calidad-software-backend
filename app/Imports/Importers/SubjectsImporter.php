@@ -10,6 +10,7 @@ use App\Imports\Importer;
 use App\Models\Carrera;
 use App\Models\Subject;
 use App\Models\Usuario;
+use App\Support\Mallas;
 
 class SubjectsImporter implements Importer
 {
@@ -37,7 +38,10 @@ class SubjectsImporter implements Importer
     public function import(array $row, Usuario $user): ?string
     {
         $careerId = $this->lookup->careerId($row['carrera']);
+        // La carga masiva agrega las asignaturas a la malla vigente de la carrera.
+        $mallaId = Mallas::current($careerId)->getKey();
         $data = $this->validator->validate(SubjectRequest::class, array_filter([
+            'malla_id' => $mallaId,
             'career_id' => $careerId,
             'name' => $row['nombre'],
             'code' => $row['codigo'],
@@ -47,7 +51,7 @@ class SubjectsImporter implements Importer
         ], fn (mixed $value): bool => $value !== null), $user);
 
         $this->subjects->create($user, [
-            'career_id' => $careerId,
+            'malla_id' => $mallaId,
             'code' => $data['code'] ?? null,
             'name' => $data['name'],
             'cycle_id' => $data['cycle_id'] ?? null,

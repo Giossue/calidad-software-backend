@@ -10,6 +10,7 @@ use App\Http\Resources\Api\V1\UserResource;
 use App\Models\Role;
 use App\Models\Usuario;
 use App\Notifications\ProvisionalPasswordNotification;
+use App\Support\Mallas;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -129,6 +130,8 @@ class UserController extends Controller
         if ($request->exists('role')) {
             $user->roles()->sync(Role::query()->where('slug', $roleSlug)->value('id'));
         }
+        // Al cambiar de carrera o de rol, el estudiante sigue la malla vigente de su carrera.
+        Mallas::syncStudent($user);
 
         $careerId = $user->fk_carrera;
         if ($careerId) {

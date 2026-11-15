@@ -17,7 +17,8 @@ estudiantes que aprobaron la asignatura previa.
 
 - `subject_sequences`: `next_subject_id` continúa a `subject_id`. Una asignatura
   puede tener varias previas y continuar en varias. Ambas son de la misma
-  carrera; no se permiten ciclos (A → B → A). Ver
+  malla («La asignatura que continúa debe pertenecer a la misma malla.»); no se
+  permiten ciclos (A → B → A). Ver
   [malla curricular](../curriculum/specification.md).
 - Para avanzar a una asignatura hay que **aprobar todas sus previas**. Una
   asignatura sin secuencia termina la cadena.
@@ -29,8 +30,9 @@ estudiantes que aprobaron la asignatura previa.
   **posterior** y del **mismo paralelo** en que aprobó:
   - al crear o habilitar esa tutoría, con quienes ya aprobaron las previas;
   - al registrar el aprobado, si esa tutoría ya existe.
-- No se inscribe a estudiantes inactivos, sin rol estudiantil o en titulación,
-  ni se duplica una inscripción existente. La inscripción usa el aviso habitual
+- No se inscribe a estudiantes inactivos, sin rol estudiantil, en titulación o
+  que siguen otra malla (las mallas son independientes), ni se duplica una
+  inscripción existente. La inscripción usa el aviso habitual
   al estudiante y al docente.
 - Cambiar un aprobado a reprobado no retira la inscripción ya creada.
 

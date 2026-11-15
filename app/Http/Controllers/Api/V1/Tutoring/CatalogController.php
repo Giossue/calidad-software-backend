@@ -27,7 +27,7 @@ class CatalogController extends Controller
     {
         Gate::authorize('viewAny', Subject::class);
 
-        return CareerResource::collection($access->scopeCareer(Carrera::query()->where('estado', true), $request->user(), 'id_carrera')
+        return CareerResource::collection($access->scopeCareer(Carrera::query()->where('estado', true)->with('mallas'), $request->user(), 'id_carrera')
             ->orderBy('nombre')->get());
     }
 

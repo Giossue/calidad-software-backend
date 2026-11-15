@@ -41,9 +41,21 @@ alfanuméricos en mayúsculas (regla `CedulaOPasaporte`).
 - Se calcula de sus inscripciones activas en tutorías del período: el número de
   ciclo más alto. `usuario.fk_ciclo` sigue el registro del período vigente.
 
+### Malla (`malla`)
+
+- Malla curricular de una carrera. Una carrera tiene una o más mallas con nombre
+  único en la carrera y exactamente una vigente (una carrera nueva nace con
+  «Malla inicial»). Las mallas son independientes: lo aprobado en una no cuenta
+  en otra.
+- Cada estudiante sigue una malla de su carrera (`usuario.malla_id`): la vigente
+  al registrarse o la de la tutoría por la que se le registra. Solo se inscribe
+  en tutorías de su malla.
+
 ### Subject
 
-- Pertenece a la malla de una carrera: código, nombre, número de ciclo y previas.
+- Pertenece a una malla de una carrera (`malla_id`; `career_id` es la carrera de
+  esa malla): código y nombre únicos en la malla, número de ciclo y previas de la
+  misma malla.
 - No lleva paralelos: paralelo, modalidad, docente y horario se eligen en cada
   tutoría del período.
 

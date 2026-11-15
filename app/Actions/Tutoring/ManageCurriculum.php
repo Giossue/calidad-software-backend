@@ -13,8 +13,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Importa la malla curricular de una carrera: la malla es la carrera, así que
- * subirla crea sus asignaturas, sus ciclos y sus previas en un solo paso.
+ * Importa una malla curricular de una carrera: subirla crea en esa malla sus
+ * asignaturas, sus ciclos y sus previas en un solo paso. Cada malla es
+ * independiente: códigos, nombres y previas se resuelven dentro de ella.
  */
 class ManageCurriculum
 {
@@ -24,15 +25,15 @@ class ManageCurriculum
 
     /**
      * Normaliza y valida las asignaturas leídas del archivo o editadas en la
-     * vista previa. Un código o un nombre que ya existe en la carrera es un error;
-     * una previa puede ser otra fila o una asignatura que la carrera ya tiene.
+     * vista previa. Un código o un nombre que ya existe en la malla es un error;
+     * una previa puede ser otra fila o una asignatura que la malla ya tiene.
      *
      * @param  list<array{code?: string|null, name?: string|null, cycle?: int|string|null, previous?: list<string>|string|null}>  $rows
      * @return list<array{code: string|null, name: string, cycle: int|null, previous: list<string>, errors: list<string>}>
      */
-    public function check(int $careerId, array $rows): array
+    public function check(int $mallaId, array $rows): array
     {
-        $existing = $this->existingSubjects($careerId);
+        $existing = $this->existingSubjects($mallaId);
         $existingCodes = $existing->pluck('code')->filter()->map(fn (string $code): string => mb_strtoupper($code))->values()->all();
         $existingNames = $existing->map(fn (Subject $subject): string => CatalogLookup::normalize($subject->name))->values()->all();
 
@@ -62,14 +63,14 @@ class ManageCurriculum
             } elseif ($names[CatalogLookup::normalize($row['name'])] > 1) {
                 $row['errors'][] = 'El nombre está repetido en la malla.';
             } elseif (in_array(CatalogLookup::normalize($row['name']), $existingNames, true)) {
-                $row['errors'][] = 'La asignatura ya existe en la carrera.';
+                $row['errors'][] = 'La asignatura ya existe en la malla.';
             }
             if ($row['code'] !== null && mb_strlen($row['code']) > 30) {
                 $row['errors'][] = 'El código no puede superar 30 caracteres.';
             } elseif ($row['code'] !== null && $codes[$row['code']] > 1) {
                 $row['errors'][] = 'El código está repetido en la malla.';
             } elseif ($row['code'] !== null && in_array($row['code'], $existingCodes, true)) {
-                $row['errors'][] = 'El código ya existe en la carrera.';
+                $row['errors'][] = 'El código ya existe en la malla.';
             }
             if ($row['cycle'] === null || $row['cycle'] < 1 || $row['cycle'] > self::MAX_CYCLE) {
                 $row['errors'][] = 'Indica el ciclo (1 a '.self::MAX_CYCLE.').';
@@ -90,15 +91,15 @@ class ManageCurriculum
     }
 
     /**
-     * Crea en la carrera las asignaturas de la malla, con sus ciclos y previas.
+     * Crea en la malla sus asignaturas, con sus ciclos y previas.
      *
-     * @param  array{career_id: int, subjects: list<array<string, mixed>>}  $data
+     * @param  array{career_id: int, malla_id: int, subjects: list<array<string, mixed>>}  $data
      * @return int asignaturas creadas
      */
     public function import(Usuario $user, array $data): int
     {
         $this->access->authorizeCareer($user, $data['career_id']);
-        $rows = $this->check($data['career_id'], $data['subjects']);
+        $rows = $this->check($data['malla_id'], $data['subjects']);
         $invalid = array_filter($rows, fn (array $row): bool => $row['errors'] !== []);
         if ($invalid !== []) {
             throw ValidationException::withMessages(['subjects' => count($invalid) === 1 ? 'Hay 1 asignatura con errores; corrígela antes de importar la malla.' : 'Hay '.count($invalid).' asignaturas con errores; corrígelas antes de importar la malla.']);
@@ -108,12 +109,13 @@ class ManageCurriculum
         $modalityId = ManageSubject::careerModality($data['career_id']);
 
         return DB::transaction(function () use ($data, $rows, $modalityId): int {
-            $existing = $this->existingSubjects($data['career_id']);
+            $existing = $this->existingSubjects($data['malla_id']);
 
             $created = [];
             foreach ($rows as $row) {
                 $subject = Subject::query()->create([
                     'career_id' => $data['career_id'],
+                    'malla_id' => $data['malla_id'],
                     'code' => $row['code'],
                     'name' => $row['name'],
                     'cycle_number' => (int) $row['cycle'],
@@ -144,9 +146,9 @@ class ManageCurriculum
     }
 
     /** @return EloquentCollection<int, Subject> */
-    private function existingSubjects(int $careerId): EloquentCollection
+    private function existingSubjects(int $mallaId): EloquentCollection
     {
-        return Subject::query()->where('career_id', $careerId)->with('cycles:ciclo.id_ciclo,ciclo.numero')->orderBy('id')->get(['id', 'code', 'name', 'cycle_number']);
+        return Subject::query()->where('malla_id', $mallaId)->with('cycles:ciclo.id_ciclo,ciclo.numero')->orderBy('id')->get(['id', 'code', 'name', 'cycle_number']);
     }
 
     private function matches(?string $code, string $name, string $reference): bool
@@ -171,7 +173,7 @@ class ManageCurriculum
     }
 
     /**
-     * Ciclo de una asignatura que la carrera ya tiene: `false` si no existe y
+     * Ciclo de una asignatura que la malla ya tiene: `false` si no existe y
      * `null` si no está en ningún ciclo.
      *
      * @param  EloquentCollection<int, Subject>  $existing

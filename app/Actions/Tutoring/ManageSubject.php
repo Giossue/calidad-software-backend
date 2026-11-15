@@ -6,6 +6,7 @@ use App\Http\Requests\Api\V1\Tutoring\SubjectRequest;
 use App\Models\AsignaturaTutoria;
 use App\Models\Carrera;
 use App\Models\Ciclo;
+use App\Models\Malla;
 use App\Models\Paralelo;
 use App\Models\Subject;
 use App\Models\Usuario;
@@ -23,11 +24,14 @@ class ManageSubject
      * `cycle_id` se acepta por compatibilidad y aporta solo su número de ciclo.
      *
      * Toda asignatura tiene modalidad: sin una elegida, toma la de su carrera.
+     * La asignatura se crea en una malla y lleva la carrera de esa malla.
      *
-     * @param  array{career_id: int, code?: string|null, name: string, cycle_number?: int|null, cycle_id?: int|null, modality_id?: int|null, next_subject_ids?: array<int, int>|null}  $data
+     * @param  array{malla_id: int, code?: string|null, name: string, cycle_number?: int|null, cycle_id?: int|null, modality_id?: int|null, next_subject_ids?: array<int, int>|null}  $data
      */
     public function create(Usuario $user, array $data): Subject
     {
+        $malla = Malla::query()->findOrFail($data['malla_id']);
+        $data['career_id'] = $malla->career_id;
         $this->access->authorizeCareer($user, $data['career_id']);
 
         return DB::transaction(function () use ($data): Subject {
@@ -36,6 +40,7 @@ class ManageSubject
 
             $subject = Subject::query()->create([
                 'career_id' => $data['career_id'],
+                'malla_id' => $data['malla_id'],
                 'code' => ! empty($data['code']) ? trim($data['code']) : null,
                 'name' => SubjectRequest::normalizeName($data['name']),
                 'cycle_number' => $cycleNumber ?: null,

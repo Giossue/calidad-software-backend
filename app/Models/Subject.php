@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Mallas;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -9,22 +10,37 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
- * @property int $career_id
+ * @property int $career_id carrera de la malla (se mantiene igual a la de `malla_id`)
+ * @property int $malla_id malla a la que pertenece
  * @property string|null $code
  * @property string $name
  * @property int|null $cycle_number número de ciclo de la malla; el paralelo se elige en cada tutoría del período
  * @property int $modality_id toda asignatura tiene modalidad
  * @property bool $is_active
  * @property-read Carrera|null $career
+ * @property-read Malla|null $malla
  */
 class Subject extends Model
 {
-    protected $fillable = ['career_id', 'code', 'name', 'cycle_number', 'modality_id', 'is_active'];
+    protected $fillable = ['career_id', 'malla_id', 'code', 'name', 'cycle_number', 'modality_id', 'is_active'];
 
     /** @return array<string, string> */
     protected function casts(): array
     {
-        return ['is_active' => 'boolean', 'cycle_number' => 'integer'];
+        return ['is_active' => 'boolean', 'cycle_number' => 'integer', 'malla_id' => 'integer'];
+    }
+
+    protected static function booted(): void
+    {
+        // La asignatura es de una malla y lleva la carrera de esa malla. Sin malla
+        // indicada, va a la vigente de su carrera.
+        static::saving(function (Subject $subject): void {
+            if ($subject->malla_id === null && $subject->career_id !== null) {
+                $subject->malla_id = Mallas::current((int) $subject->career_id)->getKey();
+            } elseif ($subject->isDirty('malla_id')) {
+                $subject->career_id = (int) Malla::query()->whereKey($subject->malla_id)->value('career_id');
+            }
+        });
     }
 
     /**
@@ -45,6 +61,12 @@ class Subject extends Model
     public function career(): BelongsTo
     {
         return $this->belongsTo(Carrera::class, 'career_id');
+    }
+
+    /** @return BelongsTo<Malla, $this> */
+    public function malla(): BelongsTo
+    {
+        return $this->belongsTo(Malla::class, 'malla_id');
     }
 
     /** @return BelongsTo<Modalidad, $this> */

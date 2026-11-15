@@ -17,9 +17,9 @@ class SubjectModalityTest extends TutoringTestCase
 
     public function test_a_subject_cannot_be_created_without_a_modality(): void
     {
-        $this->postJson(self::API.'/subjects', ['career_id' => $this->career->getKey(), 'name' => 'Calidad'])
+        $this->postJson(self::API.'/subjects', ['malla_id' => $this->currentMalla()->getKey(), 'career_id' => $this->career->getKey(), 'name' => 'Calidad'])
             ->assertUnprocessable()->assertJsonValidationErrors('modality_id');
-        $this->postJson(self::API.'/subjects', ['career_id' => $this->career->getKey(), 'name' => 'Calidad', 'modality_id' => null])
+        $this->postJson(self::API.'/subjects', ['malla_id' => $this->currentMalla()->getKey(), 'career_id' => $this->career->getKey(), 'name' => 'Calidad', 'modality_id' => null])
             ->assertUnprocessable()->assertJsonValidationErrors('modality_id');
 
         $this->assertSame(0, Subject::query()->count());
@@ -29,7 +29,7 @@ class SubjectModalityTest extends TutoringTestCase
     {
         $virtual = Modalidad::query()->create(['nombre' => 'Virtual', 'estado' => true]);
 
-        $this->postJson(self::API.'/subjects', ['career_id' => $this->career->getKey(), 'name' => 'Calidad', 'modality_id' => $virtual->getKey()])
+        $this->postJson(self::API.'/subjects', ['malla_id' => $this->currentMalla()->getKey(), 'career_id' => $this->career->getKey(), 'name' => 'Calidad', 'modality_id' => $virtual->getKey()])
             ->assertCreated()->assertJsonPath('data.modality_id', $virtual->getKey())->assertJsonPath('data.modality_name', 'Virtual');
     }
 
@@ -49,7 +49,7 @@ class SubjectModalityTest extends TutoringTestCase
     {
         $this->career->forceFill(['fk_modalidad' => null])->save();
 
-        $this->postJson(self::API.'/curricula', ['career_id' => $this->career->getKey(), 'subjects' => [['code' => 'A-1', 'name' => 'Algoritmos', 'cycle' => 1, 'previous' => []]]])
+        $this->postJson(self::API.'/curricula', ['malla_id' => $this->currentMalla()->getKey(), 'career_id' => $this->career->getKey(), 'subjects' => [['code' => 'A-1', 'name' => 'Algoritmos', 'cycle' => 1, 'previous' => []]]])
             ->assertUnprocessable()->assertJsonValidationErrors(['career_id' => 'La carrera no tiene modalidad; pide al administrador que la registre.']);
 
         $this->assertSame(0, Subject::query()->count());

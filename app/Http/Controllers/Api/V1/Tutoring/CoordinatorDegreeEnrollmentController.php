@@ -102,6 +102,11 @@ class CoordinatorDegreeEnrollmentController extends Controller
             $query->whereHas('ciclo', fn (Builder $q) => $q->whereIn('fk_carrera', $careerIds)->where('numero', $cycleNumber));
         }
 
+        // La malla que sigue el estudiante.
+        if ($mallaId = $request->integer('malla_id')) {
+            $query->where('malla_id', $mallaId);
+        }
+
         if ($search = trim((string) $request->string('search'))) {
             $like = "%{$search}%";
             $query->where(fn (Builder $q) => $q->whereLike('nombre', $like)->orWhereLike('cedula', $like)->orWhereLike('correo', $like));

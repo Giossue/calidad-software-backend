@@ -99,14 +99,14 @@ class AcademicPeriodWorkTest extends TutoringTestCase
         $this->baseCycles(3);
         $this->actingAs($this->coordinator);
 
-        $created = $this->postJson(self::API.'/subjects', ['career_id' => $this->career->getKey(), 'name' => 'Redes', 'cycle_number' => 2, 'modality_id' => $this->modality->getKey()])
+        $created = $this->postJson(self::API.'/subjects', ['malla_id' => $this->currentMalla()->getKey(), 'career_id' => $this->career->getKey(), 'name' => 'Redes', 'cycle_number' => 2, 'modality_id' => $this->modality->getKey()])
             ->assertCreated()->assertJsonPath('data.cycle_number', 2);
         $id = $created->json('data.id');
         $this->assertDatabaseMissing('subject_cycle', ['subject_id' => $id]);
 
         $this->patchJson(self::API."/subjects/{$id}", ['cycle_number' => 3])->assertOk()->assertJsonPath('data.cycle_number', 3);
         $this->patchJson(self::API."/subjects/{$id}", ['cycle_number' => 4])->assertUnprocessable()->assertJsonValidationErrors('cycle_number');
-        $this->postJson(self::API.'/subjects', ['career_id' => $this->career->getKey(), 'name' => 'Bases', 'cycle_number' => 2, 'parallel_ids' => [$this->cycle->fk_paralelo], 'modality_id' => $this->modality->getKey()])
+        $this->postJson(self::API.'/subjects', ['malla_id' => $this->currentMalla()->getKey(), 'career_id' => $this->career->getKey(), 'name' => 'Bases', 'cycle_number' => 2, 'parallel_ids' => [$this->cycle->fk_paralelo], 'modality_id' => $this->modality->getKey()])
             ->assertUnprocessable()->assertJsonValidationErrors('parallel_ids');
 
         $this->getJson(self::API.'/subjects?cycle_number=3')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $id);

@@ -6,6 +6,7 @@ use App\Models\AsignaturaTutoria;
 use App\Models\Ciclo;
 use App\Models\EstudiantePeriodo;
 use App\Models\InscripcionTutoria;
+use App\Models\Malla;
 use App\Models\MatriculaTitulacion;
 use App\Models\PeriodoAcademico;
 use App\Models\Usuario;
@@ -95,12 +96,15 @@ class StudentCycle
 
     /**
      * Ubica al estudiante en el ciclo y en su paralelo, que es lo que usan las
-     * inscripciones en tutorías para ofrecer estudiantes disponibles.
+     * inscripciones en tutorías para ofrecer estudiantes disponibles. Su malla
+     * queda acorde a la carrera del ciclo: si no tiene una de esa carrera, toma
+     * `$malla` (p. ej. la de la tutoría por la que se le registra) o la vigente.
      */
-    public function assign(Usuario $student, Ciclo $cycle): void
+    public function assign(Usuario $student, Ciclo $cycle, ?Malla $malla = null): void
     {
         $student->update(['fk_ciclo' => $cycle->getKey(), 'fk_carrera' => $cycle->fk_carrera]);
         $student->setRelation('ciclo', $cycle);
+        Mallas::syncStudent($student, $malla);
 
         if ($cycle->fk_paralelo !== null) {
             $student->paralelos()->syncWithoutDetaching([$cycle->fk_paralelo => ['fecha_asignacion' => today(), 'estado' => true]]);

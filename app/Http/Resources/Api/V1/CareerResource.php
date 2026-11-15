@@ -21,6 +21,10 @@ class CareerResource extends JsonResource
             'name' => $this->nombre,
             'code' => $this->codigo,
             'status' => $this->estado,
+            // Mallas de la carrera: la vigente primero y luego por nombre.
+            'mallas' => $this->whenLoaded('mallas', fn () => $this->mallas->map(fn ($malla): array => [
+                'id' => $malla->getKey(), 'name' => $malla->name, 'is_current' => $malla->is_current,
+            ])->values()->all()),
             'cycles_count' => (int) ($this->ciclos_count ?? 0),
             'active_cycles_count' => (int) ($this->active_cycles_count ?? 0),
             // Cantidad de ciclos (niveles) de la carrera: el número de ciclo más alto.

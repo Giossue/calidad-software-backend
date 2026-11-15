@@ -8,6 +8,7 @@ use App\Models\AsignaturaTutoria;
 use App\Models\Carrera;
 use App\Models\Ciclo;
 use App\Models\InscripcionTutoria;
+use App\Models\Malla;
 use App\Models\Modalidad;
 use App\Models\Paralelo;
 use App\Models\PeriodoAcademico;
@@ -15,6 +16,7 @@ use App\Models\Subject;
 use App\Models\Usuario;
 use App\Notifications\QueuedProvisionalPasswordNotification;
 use App\Support\InstitutionalEmail;
+use App\Support\Mallas;
 use App\Support\PendingSubjects;
 use App\Support\StudentCycle;
 use App\Support\TutoringCoordinatorAccess;
@@ -46,7 +48,7 @@ class ImportRoster
      * @param  array{career: string|null, teacher: string|null, subject: string, section: string, students: list<array{number: int, name: string, email: string, phone: string|null}>}  $roster
      * @return array<string, mixed>
      */
-    public function handle(Usuario $user, int $careerId, array $roster, bool $apply): array
+    public function handle(Usuario $user, int $careerId, array $roster, bool $apply, ?int $mallaId = null): array
     {
         $this->access->authorizeCareer($user, $careerId);
         $career = Carrera::query()->findOrFail($careerId);
@@ -67,7 +69,8 @@ class ImportRoster
             'students' => [],
         ];
 
-        $subject = $this->findSubject($careerId, $roster['subject']);
+        $subject = $this->findSubject($careerId, $roster['subject'], $mallaId);
+        $malla = $subject?->malla;
         $period = PeriodoAcademico::query()->where('estado', true)->orderByDesc('fecha_inicio')->first();
         $section = $this->findByName(Paralelo::query()->where('estado', true)->get(), 'nombre', $roster['section']);
         $cycleNumber = $subject?->cycleNumber();
@@ -117,14 +120,14 @@ class ImportRoster
 
         $ancestors = $subject ? PendingSubjects::ancestorIds($subject->id) : collect();
         foreach ($roster['students'] as $row) {
-            $report['students'][] = [...$row, ...$this->plan($row, $careerId, $tutoring, $ancestors)];
+            $report['students'][] = [...$row, ...$this->plan($row, $careerId, $tutoring, $ancestors, $malla)];
         }
 
         if (! $apply || $report['errors'] !== []) {
             return $report;
         }
 
-        return DB::transaction(function () use ($report, $user, $subject, $baseCycle, $period, $section, $career, $tutoring, $teacher, $current): array {
+        return DB::transaction(function () use ($report, $user, $subject, $baseCycle, $period, $section, $career, $tutoring, $teacher, $current, $malla): array {
             if ($tutoring === null) {
                 $tutoring = $this->tutorings->create($user, [
                     'subject_id' => $subject->id,
@@ -150,7 +153,7 @@ class ImportRoster
                     continue;
                 }
                 try {
-                    DB::transaction(fn () => $this->register($row, $career, $tutoring));
+                    DB::transaction(fn () => $this->register($row, $career, $tutoring, $malla));
                 } catch (Throwable $exception) {
                     if (! $exception instanceof ValidationException) {
                         report($exception);
@@ -172,7 +175,7 @@ class ImportRoster
      * @param  Collection<int, int>  $ancestors
      * @return array{status: string, message: string|null}
      */
-    private function plan(array $row, int $careerId, ?AsignaturaTutoria $tutoring, Collection $ancestors): array
+    private function plan(array $row, int $careerId, ?AsignaturaTutoria $tutoring, Collection $ancestors, ?Malla $malla): array
     {
         if (! InstitutionalEmail::isInstitutional($row['email'])) {
             return ['status' => 'blocked', 'message' => InstitutionalEmail::message()];
@@ -193,6 +196,9 @@ class ImportRoster
         if ($this->cycles->isDegreeStudent($student)) {
             return ['status' => 'blocked', 'message' => 'El estudiante está en titulación y no se inscribe en tutorías.'];
         }
+        if ($malla !== null && $student->malla_id !== null && $student->malla_id !== $malla->getKey()) {
+            return ['status' => 'blocked', 'message' => Mallas::OTHER_MALLA];
+        }
         if ($ancestors->isNotEmpty()) {
             $pending = $student->pendingSubjects()->whereIn('subjects.id', $ancestors)->pluck('subjects.name');
             if ($pending->isNotEmpty()) {
@@ -207,7 +213,7 @@ class ImportRoster
     }
 
     /** @param  array{name: string, email: string, phone: string|null, status: string}  $row */
-    private function register(array $row, Carrera $career, AsignaturaTutoria $tutoring): void
+    private function register(array $row, Carrera $career, AsignaturaTutoria $tutoring, ?Malla $malla): void
     {
         if ($row['status'] === 'new') {
             [$student, $password] = $this->accounts->handle([
@@ -217,13 +223,16 @@ class ImportRoster
                 'phone' => $row['phone'],
                 'role' => 'estudiante',
                 'career_id' => $career->getKey(),
+                // Registrado por la tutoría, sigue la malla de la tutoría.
+                'malla' => $malla,
             ]);
-            $this->cycles->assign($student, $tutoring->ciclo);
+            $this->cycles->assign($student, $tutoring->ciclo, $malla);
             DB::afterCommit(fn () => $student->notify(new QueuedProvisionalPasswordNotification($password)));
         } else {
             $student = Usuario::query()->where('correo', $row['email'])->lockForUpdate()->firstOrFail();
+            Mallas::assertFollows($student, $tutoring, 'email');
             if ($student->fk_ciclo === null) {
-                $this->cycles->assign($student, $tutoring->ciclo);
+                $this->cycles->assign($student, $tutoring->ciclo, $malla);
             }
         }
 
@@ -237,10 +246,16 @@ class ImportRoster
         }
     }
 
-    private function findSubject(int $careerId, string $name): ?Subject
+    /** Asignatura de la malla indicada o, sin malla, de la carrera buscando primero en la malla vigente. */
+    private function findSubject(int $careerId, string $name, ?int $mallaId): ?Subject
     {
+        $subjects = Subject::query()->where('career_id', $careerId)->where('is_active', true)
+            ->when($mallaId !== null, fn (Builder $query) => $query->where('malla_id', $mallaId))
+            ->with('malla')->orderBy('id')->get()
+            ->sortByDesc(fn (Subject $subject): bool => (bool) $subject->malla?->is_current)->values();
+
         /** @var Subject|null */
-        return $this->findByName(Subject::query()->where('career_id', $careerId)->where('is_active', true)->get(), 'name', $name);
+        return $this->findByName($subjects, 'name', $name);
     }
 
     /** Docente por nombre, sin importar el orden de las palabras ni las tildes; primero los de la carrera. */

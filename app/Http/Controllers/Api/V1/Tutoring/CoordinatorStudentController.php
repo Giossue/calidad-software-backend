@@ -8,6 +8,7 @@ use App\Http\Resources\Api\V1\TutoringResource;
 use App\Models\AsignaturaTutoria;
 use App\Models\Ciclo;
 use App\Models\InscripcionTutoria;
+use App\Models\Malla;
 use App\Models\Role;
 use App\Models\Subject;
 use App\Models\Usuario;
@@ -15,6 +16,7 @@ use App\Notifications\ProvisionalPasswordNotification;
 use App\Rules\CedulaOPasaporte;
 use App\Rules\PersonNameCount;
 use App\Support\InstitutionalEmail;
+use App\Support\Mallas;
 use App\Support\PendingSubjects;
 use App\Support\PersonName;
 use App\Support\ProvisionalPassword;
@@ -34,7 +36,7 @@ class CoordinatorStudentController extends Controller
 {
     private const ENROLLMENT_RELATIONS = ['estudiante.roles', 'notas', 'knowledgeMetric'];
 
-    private const TUTORING_RELATIONS = ['ciclo', 'periodo', 'modalidad', 'paralelo', 'docente', 'horarios', 'subject'];
+    private const TUTORING_RELATIONS = ['ciclo', 'periodo', 'modalidad', 'paralelo', 'docente', 'horarios', 'subject.malla'];
 
     public function index(Request $request, TutoringCoordinatorAccess $access): JsonResponse
     {
@@ -60,11 +62,16 @@ class CoordinatorStudentController extends Controller
                     )
                     ->orWhereHas('ciclo', fn (Builder $q2) => $q2->whereIn('fk_carrera', $careerIds));
             })
-            ->with(['ciclo.paralelo', 'periodRecords.periodo', 'periodRecords.ciclo', 'pendingSubjects:subjects.id,subjects.code,subjects.name', 'inscripciones' => fn ($q) => $q
+            ->with(['malla', 'ciclo.paralelo', 'periodRecords.periodo', 'periodRecords.ciclo', 'pendingSubjects:subjects.id,subjects.code,subjects.name', 'inscripciones' => fn ($q) => $q
                 ->where('estado', true)
                 ->whereHas('asignaturaTutoria.ciclo', fn (Builder $q2) => $q2->whereIn('fk_carrera', $careerIds))
                 ->with(['asignaturaTutoria' => fn ($q2) => $q2->with(self::TUTORING_RELATIONS)]),
             ]);
+
+        // El coordinador trabaja con una malla a la vez: la que sigue cada estudiante.
+        if ($mallaId = $request->integer('malla_id')) {
+            $query->where('malla_id', $mallaId);
+        }
 
         if ($search = trim((string) $request->string('search'))) {
             $like = "%{$search}%";
@@ -126,7 +133,8 @@ class CoordinatorStudentController extends Controller
             'phone' => ['nullable', 'digits:10'],
             'cycle_id' => ['required', 'integer', Rule::exists('ciclo', 'id_ciclo')->where('estado', true)],
             'tutoring_id' => ['nullable', 'integer', Rule::exists('asignatura_tutoria', 'id_asig_tutoria')],
-        ], PersonNameCount::messages(), ['first_names' => 'nombres', 'last_names' => 'apellidos', 'cycle_id' => 'ciclo', 'tutoring_id' => 'tutoría']));
+            'malla_id' => ['nullable', 'integer', Rule::exists('malla', 'id')],
+        ], PersonNameCount::messages(), ['first_names' => 'nombres', 'last_names' => 'apellidos', 'cycle_id' => 'ciclo', 'tutoring_id' => 'tutoría', 'malla_id' => 'malla']));
 
         $cycle = Ciclo::query()->findOrFail((int) $data['cycle_id']);
         $access->authorizeCareer($request->user(), $cycle->fk_carrera);
@@ -137,9 +145,18 @@ class CoordinatorStudentController extends Controller
             }
             TutoringPeriod::assertCurrent(AsignaturaTutoria::query()->findOrFail((int) $data['tutoring_id']), 'tutoring_id');
         }
+        // La malla indicada debe ser de la carrera del ciclo. Registrado por una
+        // tutoría, sigue la malla de la tutoría; si no, la indicada o la vigente.
+        $requested = ! empty($data['malla_id']) ? Malla::query()->findOrFail((int) $data['malla_id']) : null;
+        if ($requested !== null && $requested->career_id !== $cycle->fk_carrera) {
+            throw ValidationException::withMessages(['malla_id' => 'La malla no pertenece a la carrera.']);
+        }
+        $malla = ! empty($data['tutoring_id'])
+            ? Mallas::ofTutoring(AsignaturaTutoria::query()->findOrFail((int) $data['tutoring_id']))
+            : $requested;
 
         $password = ProvisionalPassword::generate();
-        $student = DB::transaction(function () use ($data, $password, $cycle, $cycles): Usuario {
+        $student = DB::transaction(function () use ($data, $password, $cycle, $cycles, $malla): Usuario {
             $student = Usuario::query()->create([
                 'cedula' => $data['identification'],
                 'nombre' => $data['name'],
@@ -152,7 +169,7 @@ class CoordinatorStudentController extends Controller
                 'must_complete_profile' => true,
             ]);
             $student->roles()->attach(Role::query()->where('slug', 'estudiante')->valueOrFail('id'));
-            $cycles->assign($student, $cycle);
+            $cycles->assign($student, $cycle, $malla);
 
             if (! empty($data['tutoring_id'])) {
                 $tutoring = AsignaturaTutoria::query()->findOrFail((int) $data['tutoring_id']);
@@ -172,7 +189,7 @@ class CoordinatorStudentController extends Controller
             return $student;
         });
 
-        $student->load(['ciclo.paralelo', 'periodRecords.periodo', 'periodRecords.ciclo', 'pendingSubjects:subjects.id,subjects.code,subjects.name', 'inscripciones' => fn ($q) => $q
+        $student->load(['malla', 'ciclo.paralelo', 'periodRecords.periodo', 'periodRecords.ciclo', 'pendingSubjects:subjects.id,subjects.code,subjects.name', 'inscripciones' => fn ($q) => $q
             ->where('estado', true)
             ->whereHas('asignaturaTutoria.ciclo', fn (Builder $q2) => $q2->whereIn('fk_carrera', $careerIds))
             ->with(['asignaturaTutoria' => fn ($q2) => $q2->with(self::TUTORING_RELATIONS)]),
@@ -197,6 +214,10 @@ class CoordinatorStudentController extends Controller
             ->where('estado', true)
             ->whereHas('ciclo', fn (Builder $q) => $q->whereIn('fk_carrera', $careerIds))
             ->whereNotIn('id_asig_tutoria', $enrolledTutoringIds);
+        // Solo las de la malla que sigue el estudiante.
+        if ($student->malla_id !== null) {
+            $query->where(fn (Builder $q) => $q->whereNull('subject_id')->orWhereHas('subject', fn (Builder $s) => $s->where('malla_id', $student->malla_id)));
+        }
         // Las que continúan a una asignatura que arrastra no se ofrecen hasta que la apruebe.
         $blocked = PendingSubjects::blockedSubjectIds($student);
         if ($blocked->isNotEmpty()) {
@@ -223,6 +244,7 @@ class CoordinatorStudentController extends Controller
         $tutoring = AsignaturaTutoria::query()->with(self::TUTORING_RELATIONS)->findOrFail((int) $data['tutoring_id']);
         Gate::authorize('view', $tutoring);
         TutoringPeriod::assertCurrent($tutoring);
+        Mallas::assertFollows($student, $tutoring, 'tutoring_id');
         PendingSubjects::assertCanTake($student, $tutoring, 'tutoring_id');
         app(StudentCycle::class)->assertSingleSectionPerSubject($student, $tutoring, 'tutoring_id');
 
@@ -235,7 +257,7 @@ class CoordinatorStudentController extends Controller
             }
             // Un estudiante sin ciclo registrado pasa a cursar el ciclo de su primera tutoría.
             if ($student->fk_ciclo === null && $locked->ciclo !== null) {
-                app(StudentCycle::class)->assign($student, $locked->ciclo);
+                app(StudentCycle::class)->assign($student, $locked->ciclo, Mallas::ofTutoring($locked));
             }
 
             $enrollment = InscripcionTutoria::query()->firstOrNew(['fk_asig_tutoria' => $locked->getKey(), 'fk_id_usuario' => $student->getKey()]);
@@ -283,9 +305,46 @@ class CoordinatorStudentController extends Controller
         }
 
         $cycles->assign($student, $cycle);
-        $student->load(['ciclo.paralelo', 'periodRecords.periodo', 'periodRecords.ciclo', 'pendingSubjects:subjects.id,subjects.code,subjects.name', 'inscripciones' => fn ($q) => $q
+        $student->load(['malla', 'ciclo.paralelo', 'periodRecords.periodo', 'periodRecords.ciclo', 'pendingSubjects:subjects.id,subjects.code,subjects.name', 'inscripciones' => fn ($q) => $q
             ->where('estado', true)
             ->whereHas('asignaturaTutoria.ciclo', fn (Builder $q2) => $q2->where('fk_carrera', $cycle->fk_carrera))
+            ->with(['asignaturaTutoria' => fn ($q2) => $q2->with(self::TUTORING_RELATIONS)]),
+        ]);
+
+        return response()->json(['data' => $this->formatStudent($student)]);
+    }
+
+    /**
+     * Mueve al estudiante a otra malla de su carrera. Antes debe retirarse de sus
+     * tutorías activas de otra malla en el período vigente: las mallas son
+     * independientes y lo aprobado en una no cuenta en la otra.
+     */
+    public function updateMalla(Request $request, Usuario $student, TutoringCoordinatorAccess $access): JsonResponse
+    {
+        Gate::authorize('viewAny', AsignaturaTutoria::class);
+        abort_unless($student->hasRole('estudiante') && $student->fk_carrera !== null, 403);
+        $access->authorizeCareer($request->user(), $student->fk_carrera);
+
+        $data = $request->validate([
+            'malla_id' => ['required', 'integer', Rule::exists('malla', 'id')],
+        ], [], ['malla_id' => 'malla']);
+        $malla = Malla::query()->findOrFail((int) $data['malla_id']);
+        if ($malla->career_id !== $student->fk_carrera) {
+            throw ValidationException::withMessages(['malla_id' => 'La malla debe ser de la carrera del estudiante.']);
+        }
+        $activeElsewhere = $student->inscripciones()->where('estado', true)
+            ->whereHas('asignaturaTutoria', fn (Builder $q) => $q
+                ->whereHas('periodo', fn (Builder $period) => $period->where('estado', true))
+                ->whereHas('subject', fn (Builder $subject) => $subject->where('malla_id', '!=', $malla->getKey())))
+            ->exists();
+        if ($activeElsewhere) {
+            throw ValidationException::withMessages(['malla_id' => 'Retira primero sus tutorías activas de la otra malla.']);
+        }
+
+        Mallas::assign($student, $malla);
+        $student->load(['malla', 'ciclo.paralelo', 'periodRecords.periodo', 'periodRecords.ciclo', 'pendingSubjects:subjects.id,subjects.code,subjects.name', 'inscripciones' => fn ($q) => $q
+            ->where('estado', true)
+            ->whereHas('asignaturaTutoria.ciclo', fn (Builder $q2) => $q2->where('fk_carrera', $student->fk_carrera))
             ->with(['asignaturaTutoria' => fn ($q2) => $q2->with(self::TUTORING_RELATIONS)]),
         ]);
 
@@ -304,6 +363,8 @@ class CoordinatorStudentController extends Controller
             'email' => $student->correo,
             'phone' => $student->telefono,
             'is_active' => $student->estado,
+            'malla_id' => $student->malla_id,
+            'malla_name' => $student->malla?->name,
             ...app(StudentCycle::class)->describe($student),
             'cycle_history' => app(StudentCycle::class)->history($student),
             'pending_subjects' => $student->relationLoaded('pendingSubjects')

@@ -69,8 +69,15 @@ tiene modalidad, la fila es un error. No existe «Sin modalidad».
 - Facultad, carrera, modalidad y paralelo se indican por nombre, sin distinguir
   mayúsculas, tildes ni espacios repetidos; el ciclo, por número dentro de la carrera.
 - El `codigo` de carrera es opcional en la importación (en el alta individual es
-  obligatorio) y único. Otra malla de una carrera se registra con el mismo nombre
-  y un código distinto; misma combinación de nombre y código se omite.
+  obligatorio) y único; misma combinación de nombre y código se omite. Una
+  carrera puede tener varias mallas sin registrarse otra vez: cada carrera
+  importada nace con su malla vigente «Malla inicial» y las demás mallas se crean
+  en «Malla curricular».
+- Las asignaturas importadas (`subjects`) van a la malla vigente de su carrera;
+  el código y el nombre son únicos en esa malla. Para otra malla se sube su
+  archivo en «Malla curricular».
+- Los estudiantes importados siguen la malla vigente de su carrera, y sus
+  `asignaturas_pendientes` se buscan en esa malla.
 - Cada fila se registra en su propia transacción. Una fila repetida dentro del
   archivo falla por unicidad porque la anterior ya quedó registrada.
 - Separador `,` o `;`, codificación UTF-8 (con o sin BOM) o Windows-1252

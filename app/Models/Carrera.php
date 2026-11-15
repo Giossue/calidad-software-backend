@@ -6,6 +6,7 @@
 
 namespace App\Models;
 
+use App\Support\Mallas;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -18,6 +19,12 @@ class Carrera extends Model
     protected $primaryKey = 'id_carrera';
 
     protected $fillable = ['fk_facultad', 'fk_modalidad', 'nombre', 'codigo', 'estado'];
+
+    protected static function booted(): void
+    {
+        // Toda carrera nueva nace con su malla vigente «Malla inicial».
+        static::created(fn (Carrera $career) => Mallas::ensureInitial((int) $career->getKey()));
+    }
 
     protected function casts(): array
     {
@@ -46,6 +53,16 @@ class Carrera extends Model
     public function ciclos(): HasMany
     {
         return $this->hasMany(Ciclo::class, 'fk_carrera');
+    }
+
+    /**
+     * Mallas de la carrera: la vigente primero y luego por nombre.
+     *
+     * @return HasMany<Malla, $this>
+     */
+    public function mallas(): HasMany
+    {
+        return $this->hasMany(Malla::class, 'career_id')->orderByDesc('is_current')->orderBy('name');
     }
 
     /**

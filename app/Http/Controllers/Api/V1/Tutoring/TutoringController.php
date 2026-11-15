@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Gate;
 
 class TutoringController extends Controller
 {
-    private const RELATIONS = ['ciclo', 'periodo', 'modalidad', 'paralelo', 'docente', 'horarios', 'subject'];
+    private const RELATIONS = ['ciclo', 'periodo', 'modalidad', 'paralelo', 'docente', 'horarios', 'subject.malla'];
 
     public function index(Request $request, TutoringCoordinatorAccess $access): AnonymousResourceCollection
     {
@@ -45,6 +45,10 @@ class TutoringController extends Controller
         }
         if ($cycleId = $request->integer('cycle_id')) {
             $query->where('fk_ciclo', $cycleId);
+        }
+        // La malla de la tutoría es la de su asignatura.
+        if ($mallaId = $request->integer('malla_id')) {
+            $query->whereHas('subject', fn (Builder $q) => $q->where('malla_id', $mallaId));
         }
         if ($cycleNumber = $request->integer('cycle_number')) {
             $query->whereHas('ciclo', fn (Builder $q) => $q->where('numero', $cycleNumber));

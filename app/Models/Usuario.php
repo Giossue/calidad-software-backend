@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Mallas;
 use Database\Factories\UsuarioFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -26,6 +27,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property bool $must_complete_profile
  * @property int|null $fk_carrera
  * @property int|null $fk_ciclo
+ * @property int|null $malla_id malla que sigue el estudiante (ver App\Support\Mallas)
  * @property Carbon|null $email_verified_at
  * @property string $password_hash
  * @property string|null $two_factor_secret
@@ -46,6 +48,12 @@ class Usuario extends Authenticatable implements MustVerifyEmail
     protected $table = 'usuario';
 
     protected $primaryKey = 'id_usuario';
+
+    protected static function booted(): void
+    {
+        // Al cambiar de carrera, la malla sigue a la nueva carrera.
+        static::saving(fn (Usuario $user) => Mallas::keepConsistent($user));
+    }
 
     public function getAuthPasswordName(): string
     {
@@ -80,6 +88,16 @@ class Usuario extends Authenticatable implements MustVerifyEmail
     public function carrera(): BelongsTo
     {
         return $this->belongsTo(Carrera::class, 'fk_carrera', 'id_carrera');
+    }
+
+    /**
+     * Malla que sigue el estudiante, de su carrera.
+     *
+     * @return BelongsTo<Malla, $this>
+     */
+    public function malla(): BelongsTo
+    {
+        return $this->belongsTo(Malla::class, 'malla_id');
     }
 
     /**
@@ -238,6 +256,7 @@ class Usuario extends Authenticatable implements MustVerifyEmail
             'must_complete_profile' => 'boolean',
             'two_factor_confirmed_at' => 'datetime',
             'completed_tours' => 'array',
+            'malla_id' => 'integer',
         ];
     }
 }

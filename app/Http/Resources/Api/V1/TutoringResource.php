@@ -16,6 +16,9 @@ class TutoringResource extends JsonResource
             'id' => $this->getKey(),
             'subject_id' => $this->subject_id,
             'subject_name' => $this->nombre,
+            // La malla de la tutoría es la de su asignatura.
+            'malla_id' => $this->whenLoaded('subject', fn () => $this->subject?->malla_id),
+            'malla_name' => $this->whenLoaded('subject', fn () => $this->subject?->malla?->name),
             'cycle_id' => $this->fk_ciclo,
             'cycle_name' => $this->whenLoaded('ciclo', fn () => $this->ciclo?->nombre),
             'career_id' => $this->whenLoaded('ciclo', fn () => $this->ciclo?->fk_carrera),

@@ -2,8 +2,10 @@
 
 namespace App\Actions\Users;
 
+use App\Models\Malla;
 use App\Models\Role;
 use App\Models\Usuario;
+use App\Support\Mallas;
 use App\Support\ProvisionalPassword;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -13,9 +15,10 @@ class CreateAccount
     /**
      * Crea la cuenta con su rol y carrera. Devuelve el usuario y la contraseña
      * provisional, que el llamador envía por correo. La cuenta queda obligada a
-     * cambiarla al primer ingreso.
+     * cambiarla al primer ingreso. Un estudiante sigue `malla` si se indica (p. ej.
+     * la de la tutoría por la que se le registra) o, si no, la vigente de su carrera.
      *
-     * @param  array{identification: string|null, name: string, email: string, phone: string|null, role: string, career_id: int|null}  $data
+     * @param  array{identification: string|null, name: string, email: string, phone: string|null, role: string, career_id: int|null, malla?: Malla|null}  $data
      * @return array{0: Usuario, 1: string}
      */
     public function handle(array $data): array
@@ -36,6 +39,7 @@ class CreateAccount
         ])->refresh();
 
         $user->roles()->sync(Role::query()->where('slug', $data['role'])->valueOrFail('id'));
+        Mallas::syncStudent($user, $data['malla'] ?? null);
 
         if ($careerId) {
             if ($data['role'] === 'coordinador_carrera') {

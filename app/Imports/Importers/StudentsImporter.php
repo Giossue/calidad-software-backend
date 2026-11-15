@@ -7,6 +7,7 @@ use App\Models\AsignaturaTutoria;
 use App\Models\Subject;
 use App\Models\Usuario;
 use App\Support\InstitutionalEmail;
+use App\Support\Mallas;
 use App\Support\TutoringCoordinatorAccess;
 use Illuminate\Validation\ValidationException;
 
@@ -61,7 +62,7 @@ class StudentsImporter extends AccountImporter
 
     protected function afterCreate(Usuario $account, array $row): void
     {
-        $account->pendingSubjects()->sync($this->pendingSubjectIds($row[self::PENDING_COLUMN] ?? null, (int) $account->fk_carrera, $account->ciclo?->numero));
+        $account->pendingSubjects()->sync($this->pendingSubjectIds($row[self::PENDING_COLUMN] ?? null, $account));
     }
 
     protected function updateExisting(Usuario $account, array $row, ?int $careerId): ?string
@@ -73,26 +74,29 @@ class StudentsImporter extends AccountImporter
             throw ValidationException::withMessages(['correo' => "El estudiante {$account->correo} ya está registrado en otra carrera."]);
         }
 
-        $ids = $this->pendingSubjectIds($row[self::PENDING_COLUMN], $careerId, $account->ciclo?->numero);
+        $ids = $this->pendingSubjectIds($row[self::PENDING_COLUMN], $account);
         $account->pendingSubjects()->sync($ids);
 
         return sprintf('El estudiante %s ya estaba registrado: se actualizaron sus asignaturas pendientes (%d).', $account->correo, count($ids));
     }
 
     /**
-     * Resuelve la lista de la columna a asignaturas de la carrera, que deben ser
-     * de un ciclo anterior al del estudiante.
+     * Resuelve la lista de la columna a asignaturas de la malla del estudiante
+     * (la vigente de su carrera si aún no sigue una), que deben ser de un ciclo
+     * anterior al del estudiante.
      *
      * @return list<int>
      */
-    private function pendingSubjectIds(?string $value, int $careerId, ?int $studentCycle): array
+    private function pendingSubjectIds(?string $value, Usuario $account): array
     {
+        $studentCycle = $account->ciclo?->numero;
         $names = collect(preg_split('/\s*[|;]\s*/u', trim((string) $value)) ?: [])->filter(fn (string $name): bool => $name !== '')->unique();
         if ($names->isEmpty()) {
             return [];
         }
 
-        $subjects = Subject::query()->where('career_id', $careerId)->with('cycles:id_ciclo,numero')->get(['id', 'code', 'name', 'cycle_number']);
+        $mallaId = $account->malla_id ?? Mallas::current((int) $account->fk_carrera)->getKey();
+        $subjects = Subject::query()->where('malla_id', $mallaId)->with('cycles:id_ciclo,numero')->get(['id', 'code', 'name', 'cycle_number']);
 
         return array_values($names->map(function (string $name) use ($subjects, $studentCycle): int {
             $needle = CatalogLookup::normalize($name);

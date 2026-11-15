@@ -8,6 +8,7 @@ use App\Models\Carrera;
 use App\Models\Ciclo;
 use App\Models\Facultad;
 use App\Models\Modalidad;
+use App\Support\Mallas;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -1978,6 +1979,8 @@ class UebCatalogSeeder extends Seeder
                 );
 
                 $cycles->handle($career, $data['cycles']);
+                // Las asignaturas sembradas van a la malla vigente de la carrera.
+                $mallaId = Mallas::current((int) $career->id_carrera)->getKey();
 
                 foreach ($data['subjects'] as $cycleNumber => $subjects) {
                     $cycleIds = Ciclo::query()
@@ -1989,20 +1992,21 @@ class UebCatalogSeeder extends Seeder
                         $name = SubjectRequest::normalizeName($subject['name']);
                         $code = $subject['code'];
 
-                        // La única restricción real en BD es (career_id, code)
-                        // (subjects_career_id_code_unique); no existe un unique
+                        // La única restricción real en BD es (malla_id, code)
+                        // (subjects_malla_id_code_unique); no existe un unique
                         // de BD sobre name. Con código, dedupe por código: así
                         // reutiliza filas ya sembradas por entornos previos
                         // (p. ej. la vieja migración de asignaturas de Software)
                         // aunque su `name` no sea idéntico carácter a carácter.
                         // Sin código, dedupe por nombre (único mecanismo posible).
                         $subjectId = $code !== null
-                            ? DB::table('subjects')->where('career_id', $career->id_carrera)->where('code', $code)->value('id')
-                            : DB::table('subjects')->where('career_id', $career->id_carrera)->where('name', $name)->value('id');
+                            ? DB::table('subjects')->where('malla_id', $mallaId)->where('code', $code)->value('id')
+                            : DB::table('subjects')->where('malla_id', $mallaId)->where('name', $name)->value('id');
 
                         if ($subjectId === null) {
                             $subjectId = DB::table('subjects')->insertGetId([
                                 'career_id' => $career->id_carrera,
+                                'malla_id' => $mallaId,
                                 'code' => $code,
                                 'name' => $name,
                                 // La asignatura siempre tiene modalidad: la de su carrera.

@@ -6,6 +6,7 @@ use App\Models\AsignaturaTutoria;
 use App\Models\InscripcionTutoria;
 use App\Models\Subject;
 use App\Models\Usuario;
+use App\Support\Mallas;
 use App\Support\PendingSubjects;
 use App\Support\StudentCycle;
 use Illuminate\Database\Eloquent\Builder;
@@ -97,7 +98,8 @@ class AdvanceApprovedStudents
 
     private function enroll(Usuario $student, AsignaturaTutoria $tutoring): void
     {
-        if (! $student->estado || ! $student->hasRole('estudiante') || $this->cycles->isDegreeStudent($student)) {
+        // Las mallas son independientes: solo avanza dentro de la malla que sigue.
+        if (! $student->estado || ! $student->hasRole('estudiante') || $this->cycles->isDegreeStudent($student) || ! Mallas::follows($student, $tutoring)) {
             return;
         }
         if ($tutoring->subject_id !== null && PendingSubjects::blockedSubjectIds($student)->contains((int) $tutoring->subject_id)) {

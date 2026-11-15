@@ -95,6 +95,10 @@ class SupervisionController extends Controller
             $query->whereHas('asignaturaTutoria', fn (Builder $q) => $q->where('fk_ciclo', $cycleId));
         }
 
+        if ($mallaId = $request->integer('malla_id')) {
+            $query->whereHas('asignaturaTutoria.subject', fn (Builder $q) => $q->where('malla_id', $mallaId));
+        }
+
         if ($cycleNumber = $request->integer('cycle_number')) {
             $query->whereHas('asignaturaTutoria.ciclo', fn (Builder $q) => $q->where('numero', $cycleNumber));
         }

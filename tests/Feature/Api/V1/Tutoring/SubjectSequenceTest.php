@@ -72,7 +72,7 @@ class SubjectSequenceTest extends TutoringTestCase
         $this->patchJson(self::API."/subjects/{$second->id}", ['next_subject_ids' => [$first->id]])
             ->assertUnprocessable()->assertJsonValidationErrors(['next_subject_ids' => '«CALCULO I» ya lleva a esta asignatura en la secuencia; no puede continuarla.']);
         $this->patchJson(self::API."/subjects/{$first->id}", ['next_subject_ids' => [$foreign->id]])
-            ->assertUnprocessable()->assertJsonValidationErrors(['next_subject_ids.0' => 'La asignatura que continúa debe pertenecer a la misma carrera.']);
+            ->assertUnprocessable()->assertJsonValidationErrors(['next_subject_ids.0' => 'La asignatura que continúa debe pertenecer a la misma malla.']);
         $this->patchJson(self::API."/subjects/{$first->id}", ['next_subject_ids' => [$first->id]])
             ->assertUnprocessable()->assertJsonValidationErrors('next_subject_ids.0');
 
@@ -88,15 +88,16 @@ class SubjectSequenceTest extends TutoringTestCase
         $first->nextSubjects()->attach($second);
         $algebra->nextSubjects()->attach($second);
 
-        $ready = Usuario::factory()->student()->create();
+        // Estudiantes de la carrera: siguen su malla vigente, la de las asignaturas.
+        $ready = Usuario::factory()->student()->create(['fk_carrera' => $this->career->getKey()]);
         $this->approvedIn($first, $ready);
         $this->approvedIn($algebra, $ready);
-        $onlyOne = Usuario::factory()->student()->create();
+        $onlyOne = Usuario::factory()->student()->create(['fk_carrera' => $this->career->getKey()]);
         $this->approvedIn($first, $onlyOne);
-        $failed = Usuario::factory()->student()->create();
+        $failed = Usuario::factory()->student()->create(['fk_carrera' => $this->career->getKey()]);
         $this->approvedIn($first, $failed);
         $this->approvedIn($algebra, $failed, InscripcionTutoria::FAILED);
-        $otherSection = Usuario::factory()->student()->create();
+        $otherSection = Usuario::factory()->student()->create(['fk_carrera' => $this->career->getKey()]);
         $sectionB = Paralelo::query()->create(['nombre' => 'B', 'estado' => true]);
         $this->approvedIn($first, $otherSection, sectionId: $sectionB->getKey());
         $this->approvedIn($algebra, $otherSection, sectionId: $sectionB->getKey());

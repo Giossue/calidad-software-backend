@@ -28,6 +28,7 @@ All under `/api/v1/tutoring-coordination`, authorized like the rest of the coord
 - `GET students?malla_id=` filter; student payloads add `malla_id`, `malla_name`.
 - `PATCH students/{student}/malla` `{ malla_id }` → student. The malla must belong to the student's career; 422 "Retira primero sus tutorías activas de la otra malla." when the student has active enrollments in tutorings of another malla in the active period.
 - `GET reports?malla_id=` filter.
+- `POST students` accepts optional `malla_id` (must belong to the career, 422 "La malla no pertenece a la carrera."; default vigente). `GET degree-students?malla_id=` filter. Curriculum duplicate messages say "ya existe en la malla". (Added after T2 found these gaps.)
 - Enrollment: a student can only be enrolled in tutorings of their malla (coordinator, teacher, available-students lists, available-tutorings, automatic advancement, roster import): 422 "El estudiante sigue otra malla." where an explicit enrollment is attempted; lists simply exclude them.
 - New students created through a tutoring (teacher or coordinator panel "estudiante nuevo", roster import) get that tutoring's malla; created anywhere else they get the career's vigente malla. Changing a student's career (admin, profile completion) sets the new career's vigente malla.
 

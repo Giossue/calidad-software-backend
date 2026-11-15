@@ -8,6 +8,7 @@ use App\Models\InscripcionTutoria;
 use App\Models\Role;
 use App\Models\Usuario;
 use App\Notifications\ProvisionalPasswordNotification;
+use App\Support\Mallas;
 use App\Support\PendingSubjects;
 use App\Support\ProvisionalPassword;
 use App\Support\StudentCycle;
@@ -33,6 +34,7 @@ class ManageEnrollment
                     throw ValidationException::withMessages(['student_id' => 'Selecciona un estudiante activo del paralelo de esta tutoría.']);
                 }
                 $this->cycles->assertCanTakeTutorings($student);
+                Mallas::assertFollows($student, $locked);
                 PendingSubjects::assertCanTake($student, $locked);
                 $this->cycles->assertSingleSectionPerSubject($student, $locked);
             } else {
@@ -47,9 +49,10 @@ class ManageEnrollment
                 $student->paralelos()->attach($locked->fk_paralelo, ['fecha_asignacion' => today(), 'estado' => true]);
                 DB::afterCommit(fn () => $student->notify(new ProvisionalPasswordNotification($password)));
             }
-            // Un estudiante sin ciclo registrado pasa a cursar el ciclo de la tutoría.
+            // Un estudiante sin ciclo registrado pasa a cursar el ciclo de la tutoría;
+            // uno nuevo sigue la malla de la tutoría.
             if ($student->fk_ciclo === null && $locked->ciclo !== null) {
-                $this->cycles->assign($student, $locked->ciclo);
+                $this->cycles->assign($student, $locked->ciclo, Mallas::ofTutoring($locked));
             }
             $enrollment = InscripcionTutoria::query()->firstOrNew(['fk_asig_tutoria' => $locked->getKey(), 'fk_id_usuario' => $student->getKey()]);
             if ($enrollment->exists && $enrollment->estado) {

@@ -14,6 +14,7 @@ use App\Notifications\ProvisionalPasswordNotification;
 use App\Rules\CedulaOPasaporte;
 use App\Rules\PersonNameCount;
 use App\Support\InstitutionalEmail;
+use App\Support\Mallas;
 use App\Support\PendingSubjects;
 use App\Support\PersonName;
 use App\Support\ProvisionalPassword;
@@ -59,6 +60,7 @@ class CoordinatorEnrollmentController extends Controller
             ->whereDoesntHave('inscripciones', fn (Builder $query) => $query->where('fk_asig_tutoria', $tutoring->getKey())->where('estado', true));
         StudentCycle::scopeTutoringStage($query);
         PendingSubjects::scopeCanTake($query, $tutoring);
+        Mallas::scopeFollowing($query, $tutoring);
         if ($request->filled('search')) {
             $search = '%'.$request->string('search').'%';
             $query->where(fn (Builder $query) => $query->whereLike('nombre', $search)->orWhereLike('cedula', $search)->orWhereLike('correo', $search));
@@ -84,6 +86,7 @@ class CoordinatorEnrollmentController extends Controller
                     throw ValidationException::withMessages(['student_id' => 'Selecciona un estudiante activo del paralelo de esta tutoría.']);
                 }
                 app(StudentCycle::class)->assertCanTakeTutorings($student);
+                Mallas::assertFollows($student, $locked);
                 PendingSubjects::assertCanTake($student, $locked);
                 app(StudentCycle::class)->assertSingleSectionPerSubject($student, $locked);
             } else {
@@ -98,9 +101,10 @@ class CoordinatorEnrollmentController extends Controller
                 $student->paralelos()->attach($locked->fk_paralelo, ['fecha_asignacion' => today(), 'estado' => true]);
                 DB::afterCommit(fn () => $student->notify(new ProvisionalPasswordNotification($password)));
             }
-            // Un estudiante sin ciclo registrado pasa a cursar el ciclo de la tutoría.
+            // Un estudiante sin ciclo registrado pasa a cursar el ciclo de la tutoría;
+            // uno nuevo sigue la malla de la tutoría.
             if ($student->fk_ciclo === null && $locked->ciclo !== null) {
-                app(StudentCycle::class)->assign($student, $locked->ciclo);
+                app(StudentCycle::class)->assign($student, $locked->ciclo, Mallas::ofTutoring($locked));
             }
 
             $enrollment = InscripcionTutoria::query()->firstOrNew(['fk_asig_tutoria' => $locked->getKey(), 'fk_id_usuario' => $student->getKey()]);
@@ -156,6 +160,7 @@ class CoordinatorEnrollmentController extends Controller
         $student = $enrollment->estudiante;
         abort_unless($student->estado, 422);
         TutoringPeriod::assertCurrent($tutoring);
+        Mallas::assertFollows($student, $tutoring);
         app(StudentCycle::class)->assertSingleSectionPerSubject($student, $tutoring);
 
         $enrollment->update(['estado' => true]);

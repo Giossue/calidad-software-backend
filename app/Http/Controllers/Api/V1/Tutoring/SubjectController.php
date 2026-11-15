@@ -22,9 +22,12 @@ class SubjectController extends Controller
     public function index(Request $request, TutoringCoordinatorAccess $access): AnonymousResourceCollection
     {
         Gate::authorize('viewAny', Subject::class);
-        $query = $access->scopeCareer(Subject::query()->with('career', 'cycles.periodos', 'modality', 'nextSubjects', 'previousSubjects'), $request->user(), 'career_id');
+        $query = $access->scopeCareer(Subject::query()->with('career', 'malla', 'cycles.periodos', 'modality', 'nextSubjects', 'previousSubjects'), $request->user(), 'career_id');
         if ($careerId = $request->integer('career_id')) {
             $query->where('career_id', $careerId);
+        }
+        if ($mallaId = $request->integer('malla_id')) {
+            $query->where('malla_id', $mallaId);
         }
         if ($cycleId = $request->integer('cycle_id')) {
             $query->whereHas('cycles', fn (Builder $q) => $q->where('ciclo.id_ciclo', $cycleId));
@@ -46,20 +49,20 @@ class SubjectController extends Controller
     public function store(SubjectRequest $request, ManageSubject $action): JsonResponse
     {
         return TutoringSubjectResource::make($action->create($request->user(), [
-            'career_id' => $request->integer('career_id'),
+            'malla_id' => $request->integer('malla_id'),
             'code' => $request->filled('code') ? $request->string('code')->toString() : null,
             'name' => $request->string('name')->toString(),
             'cycle_number' => $request->integer('cycle_number') ?: null,
             'cycle_id' => $request->integer('cycle_id') ?: null,
             'modality_id' => $request->integer('modality_id') ?: null,
             ...($request->has('next_subject_ids') ? ['next_subject_ids' => $request->validated('next_subject_ids') ?? []] : []),
-        ])->load('career', 'cycles.periodos', 'modality', 'nextSubjects', 'previousSubjects'))
+        ])->load('career', 'malla', 'cycles.periodos', 'modality', 'nextSubjects', 'previousSubjects'))
             ->response()->setStatusCode(Response::HTTP_CREATED);
     }
 
     public function update(SubjectRequest $request, Subject $subject, ManageSubject $action): TutoringSubjectResource
     {
-        return TutoringSubjectResource::make($action->update($subject, $request->validated())->load('career', 'cycles.periodos', 'modality', 'nextSubjects', 'previousSubjects'));
+        return TutoringSubjectResource::make($action->update($subject, $request->validated())->load('career', 'malla', 'cycles.periodos', 'modality', 'nextSubjects', 'previousSubjects'));
     }
 
     public function deactivate(Subject $subject): TutoringSubjectResource
@@ -67,21 +70,21 @@ class SubjectController extends Controller
         Gate::authorize('update', $subject);
         $subject->update(['is_active' => false]);
 
-        return TutoringSubjectResource::make($subject->refresh()->load('career', 'cycles.periodos', 'modality', 'nextSubjects', 'previousSubjects'));
+        return TutoringSubjectResource::make($subject->refresh()->load('career', 'malla', 'cycles.periodos', 'modality', 'nextSubjects', 'previousSubjects'));
     }
 
     public function assignCycle(Subject $subject, Ciclo $cycle, ManageSubject $action): TutoringSubjectResource
     {
         Gate::authorize('update', $subject);
 
-        return TutoringSubjectResource::make($action->assignCycle($subject, $cycle)->load('career', 'cycles.periodos', 'modality', 'nextSubjects', 'previousSubjects'));
+        return TutoringSubjectResource::make($action->assignCycle($subject, $cycle)->load('career', 'malla', 'cycles.periodos', 'modality', 'nextSubjects', 'previousSubjects'));
     }
 
     public function unassignCycle(Subject $subject, Ciclo $cycle, ManageSubject $action): TutoringSubjectResource
     {
         Gate::authorize('update', $subject);
 
-        return TutoringSubjectResource::make($action->unassignCycle($subject, $cycle)->load('career', 'cycles.periodos', 'modality', 'nextSubjects', 'previousSubjects'));
+        return TutoringSubjectResource::make($action->unassignCycle($subject, $cycle)->load('career', 'malla', 'cycles.periodos', 'modality', 'nextSubjects', 'previousSubjects'));
     }
 
     public function assignParallel(Request $request, Subject $subject, ManageSubject $action): TutoringSubjectResource
@@ -97,13 +100,13 @@ class SubjectController extends Controller
             'parallel_id' => $request->integer('parallel_id') ?: null,
             'new_parallel_name' => $request->string('new_parallel_name')->toString() ?: null,
             'cycle_id' => $request->integer('cycle_id') ?: null,
-        ])->load('career', 'cycles.periodos', 'modality', 'nextSubjects', 'previousSubjects'));
+        ])->load('career', 'malla', 'cycles.periodos', 'modality', 'nextSubjects', 'previousSubjects'));
     }
 
     public function unassignParallel(Subject $subject, Paralelo $parallel, ManageSubject $action): TutoringSubjectResource
     {
         Gate::authorize('update', $subject);
 
-        return TutoringSubjectResource::make($action->unassignParallel($subject, $parallel)->load('career', 'cycles.periodos', 'modality', 'nextSubjects', 'previousSubjects'));
+        return TutoringSubjectResource::make($action->unassignParallel($subject, $parallel)->load('career', 'malla', 'cycles.periodos', 'modality', 'nextSubjects', 'previousSubjects'));
     }
 }

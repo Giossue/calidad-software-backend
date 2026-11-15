@@ -6,6 +6,7 @@ use App\Models\AsignaturaTutoria;
 use App\Models\Carrera;
 use App\Models\Ciclo;
 use App\Models\Facultad;
+use App\Models\Malla;
 use App\Models\Modalidad;
 use App\Models\Paralelo;
 use App\Models\PeriodoAcademico;
@@ -67,6 +68,12 @@ abstract class TutoringTestCase extends TestCase
             'fk_carrera' => $career->getKey(), 'fk_paralelo' => $section->getKey(),
             'nombre' => "Ciclo {$number}", 'numero' => $number, 'estado' => true,
         ]);
+    }
+
+    /** Malla vigente de la carrera (por defecto, la del coordinador). */
+    protected function currentMalla(?Carrera $career = null): Malla
+    {
+        return Malla::query()->where('career_id', ($career ?? $this->career)->getKey())->where('is_current', true)->firstOrFail();
     }
 
     protected function createSubject(?Ciclo $cycle = null, string $code = 'CS-101', string $name = 'Calidad de software'): Subject

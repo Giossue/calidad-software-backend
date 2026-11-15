@@ -19,7 +19,7 @@ ScrumBan como historias con criterios de aceptación antes de implementarse.
 | Estudiante                | Proponer su tema y consultar tutorías, horarios, estado y observaciones.                                           |
 | Docente                   | Consultar estudiantes asignados y registrar tutorías, actividades, asistencia y calificaciones cuando corresponda. |
 | Coordinador de titulación | Revisar temas, registrar observaciones, asignar tutor/par, programar horarios y redactar informes.                 |
-| Coordinador de carrera    | Proveer malla/materias y organizar asignaturas, docentes, ciclos y horarios para tutorías.                         |
+| Coordinador de carrera    | Proveer las mallas de su carrera (varias, una vigente) y organizar asignaturas, docentes, ciclos y horarios.        |
 | Administrador             | Gestionar usuarios, roles, períodos académicos y catálogos autorizados.                                            |
 
 Una persona puede tener más de un rol. Los roles no crean cuentas duplicadas.

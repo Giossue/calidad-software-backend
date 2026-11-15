@@ -10,7 +10,7 @@ React del repositorio `calidad-software-frontend`.
 
 | Historia | Operación | Resultado esperado |
 | --- | --- | --- |
-| COOR-01 | Registrar asignatura | Carrera autorizada, código y nombre obligatorios; código único por carrera. |
+| COOR-01 | Registrar asignatura | Malla de una carrera autorizada, código y nombre obligatorios; código único por malla. |
 | COOR-02 | Actualizar asignatura | Permite corregir código y nombre de una asignatura seleccionada. |
 | COOR-03 | Deshabilitar asignatura | Baja lógica; conserva vínculos con ciclos y tutorías anteriores. |
 | COOR-04 | Asignar asignatura a ciclo | La asignatura guarda su número de ciclo de la malla (`cycle_number`, de 1 al mayor ciclo activo de la carrera); no lleva paralelos. |

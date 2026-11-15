@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\Sanctum;
 use ZipArchive;
 
-/** La malla es la carrera: subirla crea sus asignaturas, ciclos y previas. */
+/** Subir una malla crea en ella sus asignaturas, ciclos y previas. */
 class CurriculumTest extends TutoringTestCase
 {
     private const CSV = "codigo;nombre;ciclo;previas\n"
@@ -34,7 +34,7 @@ class CurriculumTest extends TutoringTestCase
     private function preview(string $csv): array
     {
         return $this->post(self::API.'/curricula/preview', [
-            'file' => UploadedFile::fake()->createWithContent('malla.csv', $csv), 'career_id' => $this->career->getKey(),
+            'file' => UploadedFile::fake()->createWithContent('malla.csv', $csv), 'career_id' => $this->career->getKey(), 'malla_id' => $this->currentMalla()->getKey(),
         ], ['Accept' => 'application/json'])->assertOk()->json('data.subjects');
     }
 
@@ -51,9 +51,9 @@ class CurriculumTest extends TutoringTestCase
 
         $this->assertSame(['code' => 'N-B2-002', 'name' => 'PROGRAMACION I', 'cycle' => 2, 'previous' => ['N-B1-001'], 'errors' => []], $rows[1]);
         $this->assertSame('PROGRAMACION II', $rows[2]['name']);
-        // Lo que ya existe en la carrera no se vuelve a crear; «II» es el ciclo 2.
-        $this->assertSame(['code' => 'OLD-1', 'name' => 'ESTADISTICA', 'cycle' => 2, 'previous' => [], 'errors' => ['El código ya existe en la carrera.']], $rows[4]);
-        $this->assertSame(['La asignatura ya existe en la carrera.'], $rows[5]['errors']);
+        // Lo que ya existe en la malla no se vuelve a crear; «II» es el ciclo 2.
+        $this->assertSame(['code' => 'OLD-1', 'name' => 'ESTADISTICA', 'cycle' => 2, 'previous' => [], 'errors' => ['El código ya existe en la malla.']], $rows[4]);
+        $this->assertSame(['La asignatura ya existe en la malla.'], $rows[5]['errors']);
         $this->assertSame(['La previa «Química» no está en la malla.'], $rows[6]['errors']);
     }
 
@@ -79,7 +79,7 @@ class CurriculumTest extends TutoringTestCase
             .'</sheetData></worksheet>');
         $zip->close();
 
-        $rows = $this->post(self::API.'/curricula/preview', ['file' => new UploadedFile($path, 'malla.xlsx', null, null, true), 'career_id' => $this->career->getKey()], ['Accept' => 'application/json'])
+        $rows = $this->post(self::API.'/curricula/preview', ['file' => new UploadedFile($path, 'malla.xlsx', null, null, true), 'career_id' => $this->career->getKey(), 'malla_id' => $this->currentMalla()->getKey()], ['Accept' => 'application/json'])
             ->assertOk()->json('data.subjects');
         @unlink($path);
 
@@ -104,7 +104,7 @@ class CurriculumTest extends TutoringTestCase
         $existing = $this->createSubject($this->cycle, 'OLD-1', 'Cálculo');
         $subjects = [...$this->rows(), ['code' => null, 'name' => 'Física', 'cycle' => 4, 'previous' => ['OLD-1', 'Redes']]];
 
-        $this->postJson(self::API.'/curricula', ['career_id' => $this->career->getKey(), 'subjects' => $subjects])
+        $this->postJson(self::API.'/curricula', ['career_id' => $this->career->getKey(), 'malla_id' => $this->currentMalla()->getKey(), 'subjects' => $subjects])
             ->assertCreated()->assertExactJson(['created' => 5]);
 
         $this->assertSame(6, Subject::query()->where('career_id', $this->career->getKey())->count());
@@ -125,15 +125,15 @@ class CurriculumTest extends TutoringTestCase
         $this->assertSame(['FISICA'], $existing->nextSubjects()->pluck('name')->all());
     }
 
-    public function test_the_import_rejects_codes_or_names_that_already_exist_in_the_career(): void
+    public function test_the_import_rejects_codes_or_names_that_already_exist_in_the_malla(): void
     {
         $this->createSubject($this->cycle, 'N-B1-001', 'Otra');
         $this->createSubject($this->cycle, 'OLD-2', 'Redes');
         $this->createSubject($this->otherCycle, 'N-B2-002', 'Programación I');
 
-        $this->postJson(self::API.'/curricula', ['career_id' => $this->career->getKey(), 'subjects' => $this->rows()])
+        $this->postJson(self::API.'/curricula', ['career_id' => $this->career->getKey(), 'malla_id' => $this->currentMalla()->getKey(), 'subjects' => $this->rows()])
             ->assertUnprocessable()->assertJsonValidationErrors(['subjects' => 'Hay 2 asignaturas con errores; corrígelas antes de importar la malla.']);
-        $this->postJson(self::API.'/curricula', ['career_id' => $this->career->getKey(), 'subjects' => [['name' => 'Redes', 'cycle' => 2, 'previous' => ['Física']]]])
+        $this->postJson(self::API.'/curricula', ['career_id' => $this->career->getKey(), 'malla_id' => $this->currentMalla()->getKey(), 'subjects' => [['name' => 'Redes', 'cycle' => 2, 'previous' => ['Física']]]])
             ->assertUnprocessable()->assertJsonValidationErrors(['subjects' => 'Hay 1 asignatura con errores; corrígela antes de importar la malla.']);
 
         $this->assertSame(2, Subject::query()->where('career_id', $this->career->getKey())->count());
@@ -144,11 +144,11 @@ class CurriculumTest extends TutoringTestCase
         $subjects = $this->rows();
         Sanctum::actingAs(Usuario::factory()->withRole('coordinador_carrera')->create(), ['*']);
 
-        $this->post(self::API.'/curricula/preview', ['file' => UploadedFile::fake()->createWithContent('malla.csv', self::CSV), 'career_id' => $this->career->getKey()], ['Accept' => 'application/json'])
+        $this->post(self::API.'/curricula/preview', ['file' => UploadedFile::fake()->createWithContent('malla.csv', self::CSV), 'career_id' => $this->career->getKey(), 'malla_id' => $this->currentMalla()->getKey()], ['Accept' => 'application/json'])
             ->assertForbidden();
-        $this->postJson(self::API.'/curricula', ['career_id' => $this->career->getKey(), 'subjects' => $subjects])->assertForbidden();
+        $this->postJson(self::API.'/curricula', ['career_id' => $this->career->getKey(), 'malla_id' => $this->currentMalla()->getKey(), 'subjects' => $subjects])->assertForbidden();
         Sanctum::actingAs(Usuario::factory()->withRole('docente')->create(), ['*']);
-        $this->postJson(self::API.'/curricula', ['career_id' => $this->career->getKey(), 'subjects' => $subjects])->assertForbidden();
+        $this->postJson(self::API.'/curricula', ['career_id' => $this->career->getKey(), 'malla_id' => $this->currentMalla()->getKey(), 'subjects' => $subjects])->assertForbidden();
 
         $this->assertSame(0, Subject::query()->count());
     }
@@ -161,7 +161,7 @@ class CurriculumTest extends TutoringTestCase
         $this->assertFalse(Schema::hasColumn('subjects', 'curriculum_id'));
         $this->assertFalse(Schema::hasColumn('usuario', 'curriculum_id'));
 
-        $this->postJson(self::API.'/subjects', ['career_id' => $this->career->getKey(), 'name' => 'Redes', 'cycle_id' => $this->cycle->getKey(), 'modality_id' => $this->modality->getKey()])
+        $this->postJson(self::API.'/subjects', ['career_id' => $this->career->getKey(), 'malla_id' => $this->currentMalla()->getKey(), 'name' => 'Redes', 'cycle_id' => $this->cycle->getKey(), 'modality_id' => $this->modality->getKey()])
             ->assertCreated();
     }
 }
