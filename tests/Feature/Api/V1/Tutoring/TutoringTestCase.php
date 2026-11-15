@@ -108,7 +108,7 @@ abstract class TutoringTestCase extends TestCase
 
         return [
             'career_id' => ($career ?? $this->career)->getKey(),
-            'identification' => $user->cedula, 'name' => 'María Pérez',
+            'identification' => $user->cedula, 'first_names' => 'María', 'last_names' => 'Pérez',
             'email' => 'maria.perez@ueb.edu.ec', 'phone' => '0991234567',
         ];
     }

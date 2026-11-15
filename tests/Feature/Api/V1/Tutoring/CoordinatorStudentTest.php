@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api\V1\Tutoring;
 
+use App\Models\InscripcionTutoria;
 use App\Models\Usuario;
 use App\Notifications\ProvisionalPasswordNotification;
 use Illuminate\Support\Facades\Notification;
@@ -47,7 +48,8 @@ class CoordinatorStudentTest extends TutoringTestCase
 
         $response = $this->actingAs($this->coordinator)->postJson(self::API.'/students', [
             'identification' => '0926687856',
-            'name' => 'Carlos Estudiante Nuevo',
+            'first_names' => 'Carlos',
+            'last_names' => 'Estudiante Nuevo',
             'email' => 'carlos.nuevo@ueb.edu.ec',
             'phone' => '0981112233',
             'cycle_id' => $this->cycle->getKey(),
@@ -55,7 +57,7 @@ class CoordinatorStudentTest extends TutoringTestCase
         ]);
 
         $response->assertCreated()
-            ->assertJsonPath('data.name', 'Carlos Estudiante Nuevo')
+            ->assertJsonPath('data.name', 'Estudiante Nuevo Carlos')
             ->assertJsonPath('data.cycle_id', $this->cycle->getKey())
             ->assertJsonPath('data.cycle_number', $this->cycle->numero)
             ->assertJsonPath('data.tutoring_count', 1);
@@ -78,12 +80,66 @@ class CoordinatorStudentTest extends TutoringTestCase
         $tutoring = $this->createTutoring($this->cycle);
 
         $this->actingAs($this->coordinator)->postJson(self::API.'/tutorings/'.$tutoring->getKey().'/students', [
-            'identification' => '0926687856', 'name' => 'Carlos Nuevo', 'email' => 'carlos.nuevo@ueb.edu.ec',
+            'identification' => '0926687856', 'first_names' => 'Carlos', 'last_names' => 'Nuevo', 'email' => 'carlos.nuevo@ueb.edu.ec',
         ])->assertCreated();
 
         $student = Usuario::query()->where('cedula', '0926687856')->firstOrFail();
         Notification::assertSentTo($student, ProvisionalPasswordNotification::class);
         $this->assertTrue($student->must_complete_profile);
+    }
+
+    public function test_coordinator_registers_a_student_with_first_names_and_last_names_stored_as_last_names_first(): void
+    {
+        Notification::fake();
+        $payload = ['identification' => '0926687856', 'email' => 'ana.torres@ueb.edu.ec', 'cycle_id' => $this->cycle->getKey()];
+
+        $this->actingAs($this->coordinator)->postJson(self::API.'/students', [...$payload, 'first_names' => 'Ana María José', 'last_names' => 'Torres Vera'])
+            ->assertUnprocessable()->assertJsonValidationErrors(['first_names' => 'Ingresa uno o dos nombres.']);
+        $this->actingAs($this->coordinator)->postJson(self::API.'/students', [...$payload, 'name' => 'Torres Vera Ana María'])
+            ->assertUnprocessable()->assertJsonValidationErrors(['first_names', 'last_names']);
+        $this->assertDatabaseMissing('usuario', ['cedula' => '0926687856']);
+
+        $this->actingAs($this->coordinator)->postJson(self::API.'/students', [...$payload, 'first_names' => ' Ana   María', 'last_names' => 'Torres Vera'])
+            ->assertCreated()->assertJsonPath('data.name', 'Torres Vera Ana María');
+        $this->assertDatabaseHas('usuario', ['cedula' => '0926687856', 'nombre' => 'Torres Vera Ana María']);
+    }
+
+    public function test_coordinator_enrolls_a_new_student_with_first_names_and_last_names(): void
+    {
+        Notification::fake();
+        $url = self::API.'/tutorings/'.$this->createTutoring($this->cycle)->getKey().'/students';
+        $payload = ['identification' => '0926687856', 'email' => 'ana.torres@ueb.edu.ec'];
+
+        $this->actingAs($this->coordinator)->postJson($url, [...$payload, 'first_names' => 'Ana María José', 'last_names' => 'Torres Vera'])
+            ->assertUnprocessable()->assertJsonValidationErrors(['first_names' => 'Ingresa uno o dos nombres.']);
+        $this->actingAs($this->coordinator)->postJson($url, $payload)
+            ->assertUnprocessable()->assertJsonValidationErrors(['first_names', 'last_names']);
+        $this->assertDatabaseMissing('usuario', ['cedula' => '0926687856']);
+
+        $this->actingAs($this->coordinator)->postJson($url, [...$payload, 'first_names' => 'Ana María', 'last_names' => 'Torres Vera'])
+            ->assertCreated()->assertJsonPath('data.name', 'Torres Vera Ana María');
+        $this->assertDatabaseHas('usuario', ['cedula' => '0926687856', 'nombre' => 'Torres Vera Ana María']);
+    }
+
+    public function test_editing_an_enrolled_student_keeps_the_name_without_names_and_names_go_together(): void
+    {
+        $student = Usuario::factory()->withRole('estudiante')->create(['nombre' => 'Torres Vera Ana María', 'telefono' => '0991111111']);
+        $tutoring = $this->createTutoring($this->cycle);
+        $enrollment = InscripcionTutoria::query()->create([
+            'fk_asig_tutoria' => $tutoring->getKey(), 'fk_id_usuario' => $student->getKey(), 'fecha_inscripcion' => today(), 'estado' => true,
+        ]);
+        $url = self::API.'/tutorings/'.$tutoring->getKey().'/students/'.$enrollment->getKey();
+        $this->actingAs($this->coordinator);
+
+        $this->patchJson($url, ['phone' => '0992222222'])->assertOk();
+        $this->assertSame(['Torres Vera Ana María', '0992222222'], [$student->refresh()->nombre, $student->telefono]);
+        $this->patchJson($url, ['first_names' => 'Ana', 'phone' => '0993333333'])->assertUnprocessable()->assertJsonValidationErrors('last_names');
+        $this->patchJson($url, ['last_names' => 'Mora', 'phone' => '0993333333'])->assertUnprocessable()->assertJsonValidationErrors('first_names');
+        $this->patchJson($url, ['first_names' => 'Ana María José', 'last_names' => 'Mora'])->assertUnprocessable()->assertJsonValidationErrors('first_names');
+        $this->assertSame(['Torres Vera Ana María', '0992222222'], [$student->refresh()->nombre, $student->telefono]);
+
+        $this->patchJson($url, ['first_names' => 'Ana', 'last_names' => 'Mora', 'phone' => '0992222222'])->assertOk();
+        $this->assertSame('Mora Ana', $student->refresh()->nombre);
     }
 
     public function test_coordinator_can_enroll_and_unenroll_student_in_tutoring(): void
@@ -146,7 +202,7 @@ class CoordinatorStudentTest extends TutoringTestCase
 
     public function test_a_new_student_needs_a_cycle_of_the_coordinated_career_and_a_tutoring_of_that_cycle(): void
     {
-        $payload = ['identification' => '0926687856', 'name' => 'Carlos Nuevo', 'email' => 'carlos.nuevo@ueb.edu.ec'];
+        $payload = ['identification' => '0926687856', 'first_names' => 'Carlos', 'last_names' => 'Nuevo', 'email' => 'carlos.nuevo@ueb.edu.ec'];
         $otherCycleTutoring = $this->createTutoring($this->createCycle($this->career, null, 2));
 
         $this->actingAs($this->coordinator)->postJson(self::API.'/students', $payload)->assertUnprocessable()->assertJsonValidationErrors('cycle_id');

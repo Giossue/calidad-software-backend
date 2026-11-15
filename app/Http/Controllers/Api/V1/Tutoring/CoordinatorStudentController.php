@@ -13,8 +13,10 @@ use App\Models\Subject;
 use App\Models\Usuario;
 use App\Notifications\ProvisionalPasswordNotification;
 use App\Rules\CedulaOPasaporte;
+use App\Rules\PersonNameCount;
 use App\Support\InstitutionalEmail;
 use App\Support\PendingSubjects;
+use App\Support\PersonName;
 use App\Support\ProvisionalPassword;
 use App\Support\StudentCycle;
 use App\Support\TutoringCoordinatorAccess;
@@ -111,14 +113,20 @@ class CoordinatorStudentController extends Controller
             $careerIds = collect([$selectedCareerId]);
         }
 
-        $data = $request->validate([
+        // Nombres y apellidos llegan por separado y se guardan juntos como "apellidos nombres".
+        foreach (['first_names', 'last_names'] as $field) {
+            if (is_string($request->input($field))) {
+                $request->merge([$field => PersonName::normalize($request->input($field))]);
+            }
+        }
+        $data = PersonName::combine($request->validate([
             'identification' => ['required', 'string', new CedulaOPasaporte, Rule::unique('usuario', 'cedula')],
-            'name' => ['required', 'string', 'max:150', 'regex:/^[\pL\s]+$/u'],
+            ...PersonNameCount::rules(),
             'email' => ['required', 'email:rfc', 'max:150', InstitutionalEmail::rule(), Rule::unique('usuario', 'correo')],
             'phone' => ['nullable', 'digits:10'],
             'cycle_id' => ['required', 'integer', Rule::exists('ciclo', 'id_ciclo')->where('estado', true)],
             'tutoring_id' => ['nullable', 'integer', Rule::exists('asignatura_tutoria', 'id_asig_tutoria')],
-        ], [], ['cycle_id' => 'ciclo', 'tutoring_id' => 'tutoría']);
+        ], PersonNameCount::messages(), ['first_names' => 'nombres', 'last_names' => 'apellidos', 'cycle_id' => 'ciclo', 'tutoring_id' => 'tutoría']));
 
         $cycle = Ciclo::query()->findOrFail((int) $data['cycle_id']);
         $access->authorizeCareer($request->user(), $cycle->fk_carrera);

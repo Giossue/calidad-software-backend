@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\V1\Tutoring;
 
+use App\Http\Requests\Concerns\CombinesPersonNames;
 use App\Models\Usuario;
 use App\Rules\CedulaOPasaporte;
 use App\Support\InstitutionalEmail;
@@ -10,11 +11,14 @@ use Illuminate\Validation\Rule;
 
 class TeacherRequest extends FormRequest
 {
+    use CombinesPersonNames;
+
     protected function prepareForValidation(): void
     {
         if (is_string($this->input('email'))) {
             $this->merge(['email' => strtolower(trim($this->input('email')))]);
         }
+        $this->preparePersonNames();
     }
 
     public function authorize(): bool
@@ -37,7 +41,8 @@ class TeacherRequest extends FormRequest
             'identification' => [($creating ? 'required' : 'sometimes'), 'string',
                 ...$this->lockedOnceVerified($teacher, 'cedula', 'cédula'), new CedulaOPasaporte,
                 Rule::unique('usuario', 'cedula')->ignore($teacher)],
-            'name' => [($creating ? 'required' : 'sometimes'), 'string', 'max:150', 'regex:/^[\pL\s]+$/u'],
+            // Al editar, los nombres y apellidos son opcionales pero llegan juntos.
+            ...$this->personNameRules($creating),
             'email' => [($creating ? 'required' : 'sometimes'), ...$this->lockedOnceVerified($teacher, 'correo', 'correo'),
                 'email:rfc', 'max:150', InstitutionalEmail::rule(),
                 Rule::unique('usuario', 'correo')->ignore($teacher)],
@@ -69,7 +74,7 @@ class TeacherRequest extends FormRequest
     {
         return [
             'identification' => 'cédula o pasaporte',
-            'name' => 'nombre completo',
+            ...$this->personNameAttributes(),
             'email' => 'correo institucional',
             'phone' => 'teléfono',
             'career_id' => 'carrera',
@@ -82,7 +87,7 @@ class TeacherRequest extends FormRequest
         return [
             'phone.digits' => 'El teléfono debe tener exactamente 10 dígitos numéricos.',
             'email.ends_with' => InstitutionalEmail::message(),
-            'name.regex' => 'El nombre completo solo puede contener letras y espacios.',
+            ...$this->personNameMessages(),
         ];
     }
 }

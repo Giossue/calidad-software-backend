@@ -123,7 +123,7 @@ class TeacherController extends Controller
         return TutoringTeacherResource::make($action->create([
             'career_id' => $request->integer('career_id'),
             'identification' => $request->string('identification')->toString(),
-            'name' => $request->string('name')->toString(),
+            'name' => (string) $request->validated('name'),
             'email' => $request->string('email')->toString(),
             'phone' => $request->string('phone')->toString(),
         ]))

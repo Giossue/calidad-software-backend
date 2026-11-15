@@ -15,7 +15,7 @@ React del repositorio `calidad-software-frontend`.
 | COOR-03 | Deshabilitar asignatura | Baja lógica; conserva vínculos con ciclos y tutorías anteriores. |
 | COOR-04 | Asignar asignatura a ciclo | La asignatura guarda su número de ciclo de la malla (`cycle_number`, de 1 al mayor ciclo activo de la carrera); no lleva paralelos. |
 | COOR-05 | Asignar tutoría a ciclo | Fila de ciclo con paralelo de la carrera y del número de ciclo de la asignatura; actualiza el paralelo y registra el vínculo ciclo/período. |
-| COOR-06 | Registrar docente | Valida cédula ecuatoriana o pasaporte extranjero, nombre, correo institucional y teléfono; asigna exclusivamente rol docente y envía contraseña provisional, que debe cambiarse al primer ingreso. |
+| COOR-06 | Registrar docente | Valida cédula ecuatoriana o pasaporte extranjero, nombres (uno o dos) y apellidos (dos, o uno como excepción) en campos separados, correo institucional y teléfono; guarda el nombre como "apellidos nombres"; asigna exclusivamente rol docente y envía contraseña provisional, que debe cambiarse al primer ingreso. |
 | COOR-07 | Actualizar docente | Edita una cuenta docente dentro del alcance autorizado. Cuando el docente ya completó su perfil (`profile_completed`), su cédula y su correo no se pueden cambiar; el administrador sí puede corregirlos. |
 | COOR-08 | Quitar docente de la carrera | El coordinador solo desvincula al docente de su carrera; desactivar la cuenta es tarea del administrador. |
 | COOR-09 | Registrar tutoría | Asignatura con número de ciclo; el paralelo del período se elige con la fila de ciclo (`cycle_id`) de ese número. Período vigente y modalidad activa; puede quedar inicialmente sin docente. |
@@ -178,8 +178,8 @@ permiso `403`.
 | PUT | `/subjects/{subject}/cycles/{cycle}` | Vincular al ciclo indicado; sin cuerpo obligatorio. |
 | GET | `/teachers` | Cuentas vinculadas al alcance autorizado; filtros `search`, `career_id`, `page`, `per_page`; incluye `can_manage`. |
 | GET | `/available-teachers` | Docentes activos para seleccionar; filtro `search`, máximo 100 resultados. |
-| POST | `/teachers` | `career_id`, `identification`, `name`, `email`, `phone`. |
-| PATCH | `/teachers/{teacher}` | `identification`, `name`, `email`, `phone`; `identification` y `email` se rechazan si cambian y el docente ya completó su perfil. |
+| POST | `/teachers` | `career_id`, `identification`, `first_names` (uno o dos nombres), `last_names` (uno o dos apellidos), `email`, `phone`. Se guarda `name` = apellidos y nombres; las partículas (de, la, los…) no cuentan como un nombre aparte. |
+| PATCH | `/teachers/{teacher}` | `identification`, `first_names` + `last_names` (opcionales, pero juntos; sin ellos se conserva el nombre), `email`, `phone`; `identification` y `email` se rechazan si cambian y el docente ya completó su perfil. |
 | GET | `/tutorings` | Listado de un período: `period_id` o, por defecto, el vigente (vacío si no hay). `meta.period` = `{ id, name, is_active }` o `null`. Filtros `search`, `career_id`, `cycle_number`, `status`, `page`, `per_page`. |
 | POST | `/tutorings` | `subject_id`, `cycle_id` (fila con paralelo del número de ciclo de la asignatura), `period_id` (por defecto el vigente), `modality_id`. |
 | PATCH | `/tutorings/{tutoring}` | `period_id`, `modality_id`. |
@@ -374,6 +374,14 @@ estado de los commits y del push.
 - **Nuevo estudiante** registra al estudiante en el ciclo de la pestaña (si el ciclo
   tiene varios paralelos, se elige uno) y lo ubica en el paralelo de ese ciclo. La
   tutoría inicial opcional debe ser del mismo ciclo; los ciclos de titulación no la admiten.
+- Los formularios que registran estudiantes piden **Nombres** (uno o dos) y
+  **Apellidos** (dos, o uno como excepción) en campos separados, y el sistema guarda
+  el nombre como "apellidos nombres": `POST /students` y el estudiante nuevo de
+  `POST /tutorings/{tutoring}/students` exigen `first_names` y `last_names` (el
+  estudiante ya registrado se inscribe solo con `student_id`);
+  `PATCH /tutorings/{tutoring}/students/{enrollment}` los acepta opcionales, pero
+  juntos, y sin ellos conserva el nombre. Las partículas (de, la, los…) no cuentan
+  como un nombre aparte.
 - **Asignar ciclo** (`PATCH /students/{student}/cycle`) solo da el primer ciclo a un
   estudiante que aún no tiene uno. Con ciclo registrado responde `422` en `cycle_id`:
   «El ciclo del estudiante se actualiza solo con sus tutorías del período.» El

@@ -217,8 +217,47 @@ class SubjectAndTeacherTest extends TutoringTestCase
         Notification::assertSentTo($teacher, ProvisionalPasswordNotification::class);
         $this->assertTrue($teacher->must_complete_profile);
         $this->patchJson(self::API.'/teachers/'.$teacher->getKey(), [
-            'name' => 'María Torres', 'email' => 'maria.torres@ueb.edu.ec',
-        ])->assertOk()->assertJsonPath('data.name', 'María Torres')->assertJsonPath('data.email', 'maria.torres@ueb.edu.ec');
+            'first_names' => 'María', 'last_names' => 'Torres', 'email' => 'maria.torres@ueb.edu.ec',
+        ])->assertOk()->assertJsonPath('data.name', 'Torres María')->assertJsonPath('data.email', 'maria.torres@ueb.edu.ec');
+    }
+
+    public function test_teacher_registration_takes_first_names_and_last_names_stored_as_last_names_first(): void
+    {
+        Notification::fake();
+        Sanctum::actingAs($this->coordinator, ['*']);
+        $payload = ['first_names' => '  Ana   María ', 'last_names' => 'Torres Vera'] + $this->teacherPayload();
+
+        $response = $this->postJson(self::API.'/teachers', $payload)->assertCreated()
+            ->assertJsonPath('data.name', 'Torres Vera Ana María');
+        $this->assertSame('Torres Vera Ana María', Usuario::query()->findOrFail($response->json('data.id'))->nombre);
+    }
+
+    public function test_teacher_registration_rejects_more_than_two_first_names_or_last_names(): void
+    {
+        Notification::fake();
+        Sanctum::actingAs($this->coordinator, ['*']);
+
+        $this->postJson(self::API.'/teachers', [...$this->teacherPayload(), 'first_names' => 'Ana María José'])
+            ->assertUnprocessable()->assertJsonValidationErrors(['first_names' => 'Ingresa uno o dos nombres.']);
+        $this->postJson(self::API.'/teachers', [...$this->teacherPayload(), 'last_names' => 'Torres Vera Mora'])
+            ->assertUnprocessable()->assertJsonValidationErrors('last_names');
+        $this->assertDatabaseCount('career_teacher', 0);
+        Notification::assertNothingSent();
+    }
+
+    public function test_editing_a_teacher_without_names_keeps_the_name_and_names_go_together(): void
+    {
+        $teacher = Usuario::factory()->withRole('docente')->create(['nombre' => 'Torres Vera Ana María', 'telefono' => '0991111111']);
+        $teacher->teachingCareers()->attach($this->career);
+        Sanctum::actingAs($this->coordinator, ['*']);
+        $url = self::API.'/teachers/'.$teacher->getKey();
+
+        $this->patchJson($url, ['phone' => '0992222222'])->assertOk()
+            ->assertJsonPath('data.name', 'Torres Vera Ana María')->assertJsonPath('data.phone', '0992222222');
+        $this->patchJson($url, ['first_names' => 'Ana'])->assertUnprocessable()->assertJsonValidationErrors('last_names');
+        $this->patchJson($url, ['last_names' => 'Mora'])->assertUnprocessable()->assertJsonValidationErrors('first_names');
+        $this->assertSame('Torres Vera Ana María', $teacher->refresh()->nombre);
+        $this->patchJson($url, ['first_names' => 'Ana', 'last_names' => 'Mora'])->assertOk()->assertJsonPath('data.name', 'Mora Ana');
     }
 
     public function test_once_the_teacher_completes_the_profile_the_coordinator_cannot_change_email_or_identification(): void
@@ -241,8 +280,8 @@ class SubjectAndTeacherTest extends TutoringTestCase
         $this->patchJson($url, ['identification' => Usuario::factory()->make()->cedula])->assertUnprocessable()
             ->assertJsonValidationErrors(['identification' => 'El docente ya completó su perfil: su cédula no se puede cambiar.']);
         // Enviar los mismos valores (el formulario manda todos los campos) sí se acepta.
-        $this->patchJson($url, ['identification' => $cedula, 'email' => 'ANA.TORRES2@ueb.edu.ec', 'name' => 'Ana Torres', 'phone' => '0999999999'])
-            ->assertOk()->assertJsonPath('data.name', 'Ana Torres');
+        $this->patchJson($url, ['identification' => $cedula, 'email' => 'ANA.TORRES2@ueb.edu.ec', 'first_names' => 'Ana', 'last_names' => 'Torres', 'phone' => '0999999999'])
+            ->assertOk()->assertJsonPath('data.name', 'Torres Ana');
         $this->assertSame('ana.torres2@ueb.edu.ec', $teacher->refresh()->correo);
         $this->assertSame($cedula, $teacher->cedula);
     }
@@ -259,7 +298,7 @@ class SubjectAndTeacherTest extends TutoringTestCase
         $this->getJson(self::API.'/teachers')->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $own->getKey());
         foreach ([$foreign, $student] as $user) {
             $url = self::API.'/teachers/'.$user->getKey();
-            $this->patchJson($url, ['name' => 'Cambio indebido'])->assertForbidden();
+            $this->patchJson($url, ['first_names' => 'Cambio', 'last_names' => 'Indebido'])->assertForbidden();
             $this->assertTrue($user->refresh()->estado);
         }
         $this->postJson(self::API.'/teachers', $this->teacherPayload($this->otherCareer))->assertForbidden();
@@ -337,7 +376,7 @@ class SubjectAndTeacherTest extends TutoringTestCase
         $this->getJson(self::API.'/teachers')->assertOk()->assertJsonCount(2, 'data')
             ->assertJsonPath('data.0.can_manage', false)->assertJsonPath('data.1.can_manage', false);
         foreach ([$shared, $privileged] as $teacher) {
-            $this->patchJson(self::API.'/teachers/'.$teacher->getKey(), ['name' => 'Cambio indebido'])->assertForbidden();
+            $this->patchJson(self::API.'/teachers/'.$teacher->getKey(), ['first_names' => 'Cambio', 'last_names' => 'Indebido'])->assertForbidden();
         }
     }
 
@@ -349,7 +388,7 @@ class SubjectAndTeacherTest extends TutoringTestCase
         $foreignTutoring->update(['fk_docente' => $teacher->getKey()]);
         Sanctum::actingAs($this->coordinator, ['*']);
         $this->getJson(self::API.'/teachers')->assertOk()->assertJsonPath('data.0.can_manage', false);
-        $this->patchJson(self::API.'/teachers/'.$teacher->getKey(), ['name' => 'Cambio indebido'])->assertForbidden();
+        $this->patchJson(self::API.'/teachers/'.$teacher->getKey(), ['first_names' => 'Cambio', 'last_names' => 'Indebido'])->assertForbidden();
         $this->assertTrue($teacher->refresh()->estado);
     }
 
@@ -359,7 +398,7 @@ class SubjectAndTeacherTest extends TutoringTestCase
         Sanctum::actingAs($this->coordinator, ['*']);
         $requiredFields = [
             'subjects' => ['career_id', 'name', 'modality_id'],
-            'teachers' => ['career_id', 'identification', 'name', 'email', 'phone'],
+            'teachers' => ['career_id', 'identification', 'first_names', 'last_names', 'email', 'phone'],
             'tutorings' => ['subject_id', 'cycle_id', 'period_id', 'modality_id'],
         ];
         foreach ($requiredFields as $resource => $fields) {

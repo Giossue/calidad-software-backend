@@ -12,8 +12,10 @@ use App\Models\Role;
 use App\Models\Usuario;
 use App\Notifications\ProvisionalPasswordNotification;
 use App\Rules\CedulaOPasaporte;
+use App\Rules\PersonNameCount;
 use App\Support\InstitutionalEmail;
 use App\Support\PendingSubjects;
+use App\Support\PersonName;
 use App\Support\ProvisionalPassword;
 use App\Support\StudentCycle;
 use App\Support\TutoringPeriod;
@@ -28,6 +30,8 @@ use Illuminate\Validation\ValidationException;
 
 class CoordinatorEnrollmentController extends Controller
 {
+    private const PERSON_NAME_ATTRIBUTES = ['first_names' => 'nombres', 'last_names' => 'apellidos'];
+
     public function index(Request $request, AsignaturaTutoria $tutoring): AnonymousResourceCollection
     {
         Gate::authorize('view', $tutoring);
@@ -116,14 +120,19 @@ class CoordinatorEnrollmentController extends Controller
         Gate::authorize('view', $tutoring);
         abort_unless($enrollment->fk_asig_tutoria === $tutoring->getKey(), 404);
 
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:150', 'regex:/^[\pL\s]+$/u'],
+        // Los nombres y apellidos son opcionales pero llegan juntos; sin ellos se conserva el nombre.
+        $this->normalizePersonNames($request);
+        $data = PersonName::combine($request->validate([
+            ...PersonNameCount::rules(false),
             'phone' => ['nullable', 'digits:10'],
-        ]);
+        ], PersonNameCount::messages(), self::PERSON_NAME_ATTRIBUTES));
 
         $student = $enrollment->estudiante;
         abort_unless($student->roleSlugs()->count() === 1 && $student->hasRole('estudiante'), 403);
-        $student->update(['nombre' => $data['name'], 'telefono' => $data['phone'] ?? null]);
+        $student->update([
+            ...(array_key_exists('name', $data) ? ['nombre' => $data['name']] : []),
+            'telefono' => $data['phone'] ?? null,
+        ]);
 
         return EnrollmentResource::make($enrollment->refresh()->load(ManageEnrollment::RELATIONS));
     }
@@ -154,17 +163,34 @@ class CoordinatorEnrollmentController extends Controller
         return EnrollmentResource::make($enrollment->refresh()->load(ManageEnrollment::RELATIONS));
     }
 
-    /** @return array<string, mixed> */
+    /**
+     * Un estudiante nuevo se registra con nombres y apellidos, que se guardan juntos
+     * como "apellidos nombres"; uno ya registrado se inscribe solo con `student_id`.
+     *
+     * @return array<string, mixed>
+     */
     private function validateEnrollment(Request $request): array
     {
         $existing = Rule::prohibitedIf($request->filled('student_id'));
+        $this->normalizePersonNames($request);
+        // Las reglas compartidas de nombres, obligatorias solo para un estudiante nuevo.
+        $names = array_map(fn (array $rules): array => [$existing, 'required_without:student_id', ...array_slice($rules, 1)], PersonNameCount::rules());
 
-        return $request->validate([
+        return PersonName::combine($request->validate([
             'student_id' => ['nullable', 'integer', Rule::exists('usuario', 'id_usuario')->where('estado', true)],
             'identification' => [$existing, 'required_without:student_id', 'string', new CedulaOPasaporte, Rule::unique('usuario', 'cedula')],
-            'name' => [$existing, 'required_without:student_id', 'string', 'max:150', 'regex:/^[\pL\s]+$/u'],
+            ...$names,
             'email' => [$existing, 'required_without:student_id', 'email:rfc', 'max:150', InstitutionalEmail::rule(), Rule::unique('usuario', 'correo')],
             'phone' => [$existing, 'nullable', 'digits:10'],
-        ]);
+        ], PersonNameCount::messages(), self::PERSON_NAME_ATTRIBUTES));
+    }
+
+    private function normalizePersonNames(Request $request): void
+    {
+        foreach (['first_names', 'last_names'] as $field) {
+            if (is_string($request->input($field))) {
+                $request->merge([$field => PersonName::normalize($request->input($field))]);
+            }
+        }
     }
 }
