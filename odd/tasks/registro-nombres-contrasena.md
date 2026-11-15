@@ -1,0 +1,25 @@
+# Contraseña más simple y registro con nombres y apellidos separados
+
+Objective: relax the password policy and capture first names and last names as two fields when an account registers its data. Repos: calidad-software-backend + calidad-software-frontend, branch `main`. Delivery: work-unit commits; push on user request. Runners: `php artisan test` (SQLite, DB_* env unset), `npx vitest run`.
+
+## Specs
+
+- **S1 — Contraseña de 8 con letra, número y carácter especial.** "Quiero que menores la cantidad de digitos para la contraseña a 8, y que no sea tan rígido porque es muy complicado, puedes poner 1 letra minimo, 1 caracter especial minimo y minumo un numero". Production `Password::defaults()` becomes min 8 + at least one letter (any case) + one number + one symbol (no mixed-case requirement). The frontend checklist (`password-rules.ts`) shows the same four requirements. Assumption: the existing leaked-password check (`uncompromised`) stays, since it was not mentioned.
+- **S2 — Dos campos: Nombres y Apellidos, en ese orden.** "El orden de registro debería ser: Nombres y Apellidos, actualmente creo que es un solo campo, la idea es tener dos campos de entrada". The profile-completion modal (the registration step every account goes through) and `POST /auth/register` take `first_names` and `last_names` instead of `name`; the form shows Nombres first, then Apellidos. Storage stays one `usuario.nombre` column in the system's existing order "apellidos nombres" (same as `AccountImporter::fullName`).
+- **S3 — Nombres: mínimo 1, máximo 2.** "Nombres (mínimo 1, máximo 2)".
+- **S4 — Apellidos: regla general 2, excepción 1.** "Apellidos (regla general de 2) … Excepciones para tener 1 solo apellido: Hijos de padres extranjeros … Ecuatorianos nacidos en el exterior". Accepted: 1 or 2 last names; the field help explains that two is the rule and one is only for those exceptions. Assumption (mine): connecting particles (de, del, la, las, los, y, san, santa, van, von…) do not count as a separate name, so "De la Torre Vera" is two last names and "María de los Ángeles" is two first names.
+
+## Tasks
+
+| ID | Specs | Scope | Route | Status | Commit |
+|---|---|---|---|---|---|
+| T1 | S1 | Backend + frontend password policy | inline | pending | |
+| T2 | S2,S3,S4 | Backend: `first_names`/`last_names` in profile completion and register, word-count rule | inline | pending | |
+| T3 | S2,S3,S4 | Frontend: two fields in the profile-completion modal, prefill split | inline | pending | |
+
+Risk: item 2 (password policy relaxed, requested) and item 3 (profile-completion/register API payload changes `name` → `first_names` + `last_names`; only consumer is this frontend).
+
+## Log
+
+- **L1 (2026-11-15, user):** "Quiero que menores la cantidad de digitos para la contraseña a 8, y que no sea tan rígido porque es muy complicado, puedes poner 1 letra minimo, 1 caracter especial minimo y minumo un numero / El orden de registro debería ser: Nombres y Apellidos, actualmente creo que es un solo campo, la idea es tener dos campos de entrada: Nombres (mínimo 1, máximo 2) Apellidos (regla general de 2): El artículo 37 determina que toda inscripción de nacimiento ordinaria en el país lleva dos apellidos: … Excepciones para tener 1 solo apellido: Hijos de padres extranjeros … Ecuatorianos nacidos en el exterior …"
+- **L2:** Exploration: production policy was min 12 + mixed case + letters + numbers + symbols + uncompromised (non-production: Laravel default min 8). The only UI where users type their name is `CompleteProfileModal` ("Nombre completo", placeholder "Apellidos y nombres"); public register is disabled by default but shares the payload.
