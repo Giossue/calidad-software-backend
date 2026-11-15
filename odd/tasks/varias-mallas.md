@@ -36,8 +36,8 @@ All under `/api/v1/tutoring-coordination`, authorized like the rest of the coord
 
 | ID | Specs | Scope | Route | Status | Commit |
 |---|---|---|---|---|---|
-| T1 | S1-S6 | Backend: `malla` table + migration/backfill, models, malla API, curriculum/subjects/tutorings/students/reports per malla, enrollment rule, student malla assignment, imports, docs | delegated (parallel writer, trigger a) | pending | |
-| T2 | S1-S5 | Frontend: malla selector next to career, Malla curricular malla management, Tutorías/Estudiantes/Reportes filtered by malla, "Cambiar de malla" for a student | delegated (parallel writer, trigger a) | pending | |
+| T1 | S1-S6 | Backend: `malla` table + migration/backfill, models, malla API, curriculum/subjects/tutorings/students/reports per malla, enrollment rule, student malla assignment, imports, docs | delegated (parallel writer, trigger a) | done | backend d283673 |
+| T2 | S1-S5 | Frontend: malla selector next to career, Malla curricular malla management, Tutorías/Estudiantes/Reportes filtered by malla, "Cambiar de malla" for a student | delegated (parallel writer, trigger a) | done | frontend 210b390 |
 
 Risk: item 1 (migration adds `malla`, `subjects.malla_id`, `usuario.malla_id` and backfills existing data; changes subject uniqueness) and item 3 (coordinator API: `curricula` and `subjects` now require `malla_id`). Independent verifier after both units.
 
@@ -47,3 +47,4 @@ Risk: item 1 (migration adds `malla`, `subjects.malla_id`, `usuario.malla_id` an
 - **L2:** Analysis: today each malla is its own career (2026-11-11 decision); the coordinator already picks a career on every screen. Versions (curricula) were removed in backend 4999362.
 - **L3 (2026-11-15, user):** "lo que pasa es que quieren evitarse lo de crear una nueva carrera, porque eso sería lo mismo para registrar otra vez los usuarios como docentes, estudiantes, y así"
 - **L4 (2026-11-15, user answers):** students: "Cada uno tiene la suya (Recomendado)"; coordinator: "Elige una malla a la vez (Recomendado)"; equivalence: "No, son independientes".
+- **L5:** Independent verifier: backend S1–S6 pass; 3 frontend blockers (no `malla_id` on student registration, Titulación tab, roster import) fixed in one correction batch. PostgreSQL check on a throwaway restore of the production backup: 28 mallas (one vigente per career), 1184/1184 subjects and all students assigned, no cross-career links; down/up OK. Suites: backend 523 passed (only the 2 base failures), frontend 463 passed. Local DB migrated (backup before-mallas-202611151312.dump); browser check as coordinator: "Malla inicial · Vigente", "Nueva malla" creates and selects "Malla 2025". Not applied to production. Open: moved students keep pending subjects of the old malla; bulk subject import goes to the vigente malla.
