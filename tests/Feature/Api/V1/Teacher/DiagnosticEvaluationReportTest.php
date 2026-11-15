@@ -40,8 +40,12 @@ class DiagnosticEvaluationReportTest extends TeacherTestCase
         $this->assertEquals([50, 25, 25], [$groups['Bajo']['percentage'], $groups['Medio']['percentage'], $groups['Alto']['percentage']]);
         $this->assertSame('0% - 50%', $groups['Bajo']['range_label']);
         $this->assertSame(
-            ['Semana de adaptación de Conocimientos', 'Tutorías adicionales obligatorias', 'Estudio Autónomo'],
+            ['Semana de adaptación de Conocimientos', 'Tutorías adicionales según el criterio del docente y del coordinador', 'Estudio Autónomo'],
             $groups['Bajo']['action_plan'],
+        );
+        $this->assertSame(
+            ['Semana de adaptación de Conocimientos', 'Tutorías adicionales según el criterio del docente y del coordinador'],
+            $groups['Medio']['action_plan'],
         );
         $this->assertSame(['Semana de adaptación de Conocimientos'], $groups['Alto']['action_plan']);
 

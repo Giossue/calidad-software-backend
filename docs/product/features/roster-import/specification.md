@@ -46,6 +46,14 @@ si no existe, le asigna el docente y registra e inscribe a los estudiantes.
     de otra carrera, sigue otra malla («El estudiante sigue otra malla.»), en
     titulación, o arrastra una previa de la asignatura.
   - `error`: la fila falló al aplicar; las demás siguen.
+- Matrícula: cada fila puede traer la columna opcional `matricula` con `1`, `2`,
+  `3`, `1.ª`/`2.ª`/`3.ª` o `primera`/`segunda`/`tercera` (sin distinguir
+  mayúsculas); vacía o ausente es 1.ª. Cada fila de la vista previa devuelve
+  `enrollment_number` y la inscripción se crea con esa matrícula. Un valor no
+  reconocido deja la fila en `blocked` con «La matrícula debe ser 1.ª, 2.ª o
+  3.ª.». El PDF del sistema académico no trae esa columna: hoy el lector
+  (`RosterPdf`) no la extrae, así que las filas del PDF quedan en 1.ª y la
+  matrícula se ajusta después al editar la inscripción.
 - Volver a subir el mismo listado no duplica tutorías ni inscripciones.
 
 ## API

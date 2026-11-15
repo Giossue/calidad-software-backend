@@ -7,6 +7,7 @@
 namespace App\Models;
 
 use App\Observers\TutoringEnrollmentObserver;
+use App\Support\EnrollmentNumber;
 use App\Support\StudentCycle;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -21,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  * @property CarbonInterface|null $final_result_at
  * @property CarbonInterface|null $abandoned_at Cuándo se registró que el estudiante abandonó la tutoría; null si no la abandonó.
  * @property string|null $abandonment_reason Motivo del abandono, en texto libre.
+ * @property int $numero_matricula Matrícula del estudiante en la asignatura: 1, 2 o 3.
  * @property-read AsignaturaTutoria|null $asignaturaTutoria
  */
 #[ObservedBy([TutoringEnrollmentObserver::class])]
@@ -37,7 +39,12 @@ class InscripcionTutoria extends Model
     protected $fillable = [
         'fk_asig_tutoria', 'fk_id_usuario',
         'fecha_inscripcion', 'estado', 'final_result', 'final_result_at',
-        'abandoned_at', 'abandonment_reason',
+        'abandoned_at', 'abandonment_reason', 'numero_matricula',
+    ];
+
+    /** Una inscripción nueva empieza en 1.ª matrícula, igual que el valor por defecto de la columna. */
+    protected $attributes = [
+        'numero_matricula' => EnrollmentNumber::FIRST,
     ];
 
     /**
@@ -62,12 +69,19 @@ class InscripcionTutoria extends Model
             'fecha_inscripcion' => 'date',
             'final_result_at' => 'datetime',
             'abandoned_at' => 'datetime',
+            'numero_matricula' => 'integer',
         ];
     }
 
     public function isAbandoned(): bool
     {
         return $this->abandoned_at !== null;
+    }
+
+    /** Desde la 2.ª matrícula la asistencia a la tutoría es obligatoria. */
+    public function requiresAttendance(): bool
+    {
+        return EnrollmentNumber::requiresAttendance($this->numero_matricula);
     }
 
     /**

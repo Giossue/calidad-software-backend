@@ -15,6 +15,7 @@ de coordinación.
 | DOC-04 | Estudiantes | Inscribir una cuenta existente del paralelo o registrar una cuenta estudiantil nueva. |
 | DOC-05 | Estudiantes | Actualizar nombre y teléfono de cuentas con rol exclusivamente estudiantil. |
 | DOC-06 | Estudiantes | Deshabilitar la inscripción conservando cuenta, notas y asistencia. |
+| DOC-06C | Estudiantes | Registrar la matrícula del estudiante en la asignatura (1.ª, 2.ª o 3.ª; 1.ª por defecto) al inscribirlo y cambiarla al editar. Desde la 2.ª matrícula la asistencia es obligatoria y se muestra «Asistencia obligatoria» junto al estudiante. |
 | DOC-06B | Estudiantes | Registrar que un estudiante abandonó la tutoría, con el motivo en texto libre. Mientras figure como abandonó no se le registran notas, asistencia ni resultado final, y no avanza a la asignatura siguiente. Se puede quitar. |
 | DOC-06A | Resultado final | Registrar si el estudiante aprobó o reprobó la asignatura al cerrar el ciclo; el aprobado avanza a la asignatura siguiente de la malla (ver `../subject-sequence/specification.md`). |
 | DOC-07 | Asistencia | Guardar presentes y ausentes por fecha, junto con temas vistos. |
@@ -69,8 +70,16 @@ de coordinación.
    Una cuenta nueva recibe contraseña provisional mediante la notificación
    existente del sistema y debe cambiarla al primer ingreso. El envío requiere la
    configuración de correo operativa.
-4. Editar nombres y apellidos (juntos, con las mismas reglas) o teléfono cuando
-   la cuenta tenga únicamente rol estudiantil.
+   Al inscribir (cuenta existente o nueva) se elige la **Matrícula: 1.ª / 2.ª /
+   3.ª** del estudiante en la asignatura; por defecto es 1.ª. Solo desde la 2.ª
+   matrícula la asistencia a la tutoría es obligatoria: el estudiante lleva la
+   etiqueta **Asistencia obligatoria** junto a su matrícula («2.ª matrícula») en
+   **Estudiantes** y en **Asistencia**. La etiqueta es informativa: no cambia ni
+   bloquea la toma de asistencia. Los estudiantes que avanzan solos a la
+   asignatura siguiente empiezan en 1.ª, y las inscripciones anteriores a este
+   campo quedaron en 1.ª.
+4. Editar nombres y apellidos (juntos, con las mismas reglas), teléfono o
+   matrícula cuando la cuenta tenga únicamente rol estudiantil.
    La cédula y el correo identifican la cuenta y su cambio corresponde a
    administración. **Desactivar inscripción** conserva el historial y no bloquea
    la cuenta global; **Reinscribir** reutiliza la inscripción anterior.
@@ -160,9 +169,12 @@ acción de cada nivel:
 
 | Grupo | Formato oficial | Intervalo inclusivo (nota /10) | Plan de acción |
 | --- | --- | --- | --- |
-| Bajo | 0% – 50% | 0–5,00 | Semana de adaptación de Conocimientos; Tutorías adicionales obligatorias; Estudio Autónomo |
-| Medio | 51% – 69% | 5,01–6,99 | Semana de adaptación de Conocimientos; Tutorías adicionales obligatorias |
+| Bajo | 0% – 50% | 0–5,00 | Semana de adaptación de Conocimientos; Tutorías adicionales según el criterio del docente y del coordinador; Estudio Autónomo |
+| Medio | 51% – 69% | 5,01–6,99 | Semana de adaptación de Conocimientos; Tutorías adicionales según el criterio del docente y del coordinador |
 | Alto | 70% – 100% | 7,00–10 | Semana de adaptación de Conocimientos |
+
+El grupo diagnóstico no vuelve obligatorias las tutorías: la asistencia
+obligatoria depende solo de la matrícula (desde la 2.ª).
 
 Con dos decimales, cualquier nota superior al 50 % (5,01) se clasifica como Medio.
 Las notas admiten hasta dos decimales, con mínimo 0 y máximo 10. La interfaz
@@ -227,10 +239,10 @@ falta de permiso, `403`; elementos anidados ajenos, `404`.
 | GET | `/tutorings` | Tutorías propias; `search`, `status`, `page`, `per_page`; incluye `can_manage`, fechas del período y horarios. |
 | GET | `/grade-settings` | Mínimo, máximo y grupos diagnósticos configurados. |
 | GET | `/degree-assignments` | Asignaciones propias vigentes; `search`, `role`, `page`, `per_page`. |
-| GET | `/tutorings/{tutoring}/students` | Inscripciones y notas; `search`, `status`, `page`, `per_page`. |
+| GET | `/tutorings/{tutoring}/students` | Inscripciones y notas; `search`, `status`, `page`, `per_page`. Cada inscripción trae `enrollment_number` (1, 2 o 3) y `attendance_required` (`true` desde la 2.ª matrícula). |
 | GET | `/tutorings/{tutoring}/available-students` | Estudiantes activos del paralelo no inscritos activamente; `search`, máximo 100 resultados. |
-| POST | `/tutorings/{tutoring}/students` | `student_id` existente **o** `identification`, `first_names`, `last_names`, `email`, `phone` opcional. |
-| PATCH | `/tutorings/{tutoring}/students/{enrollment}` | `first_names` y `last_names` opcionales (ambos o ninguno; sin ellos se conserva el nombre), `phone` opcional; identidad y correo no se aceptan. |
+| POST | `/tutorings/{tutoring}/students` | `student_id` existente **o** `identification`, `first_names`, `last_names`, `email`, `phone` opcional; `enrollment_number` opcional (1 a 3, por defecto 1; si no, 422 «La matrícula debe ser 1.ª, 2.ª o 3.ª.»). |
+| PATCH | `/tutorings/{tutoring}/students/{enrollment}` | `first_names` y `last_names` opcionales (ambos o ninguno; sin ellos se conserva el nombre), `phone` opcional; `enrollment_number` opcional (1 a 3; sin él se conserva); identidad y correo no se aceptan. |
 | PATCH | `/tutorings/{tutoring}/students/{enrollment}/deactivate` | Baja de la inscripción. |
 | PUT | `/tutorings/{tutoring}/students/{enrollment}/abandonment` | `abandoned` (booleano); `reason` obligatorio al marcar (3 a 1000 caracteres). Devuelve `is_abandoned`, `abandoned_at` y `abandonment_reason`; `abandoned: false` los limpia. 422 si la inscripción está deshabilitada. |
 | PUT | `/tutorings/{tutoring}/students/{enrollment}/grades/{type}` | `value`; `type` es `diagnostic` o `partial`. |
@@ -244,7 +256,7 @@ falta de permiso, `403`; elementos anidados ajenos, `404`.
 | POST | `/tutorings/{tutoring}/topics/{topic}/activities/{activity}/methodologies` | `description`. |
 | PATCH | `/tutorings/{tutoring}/topics/{topic}/activities/{activity}/methodologies/{methodology}` | `description`. |
 | PATCH | `/tutorings/{tutoring}/topics/{topic}/activities/{activity}/methodologies/{methodology}/deactivate` | Baja lógica de la metodología. |
-| GET | `/tutorings/{tutoring}/sessions` | Sesiones con asistencia y temas; `date`, `page`, `per_page`. |
+| GET | `/tutorings/{tutoring}/sessions` | Sesiones con asistencia y temas; `date`, `page`, `per_page`. Cada fila de `attendance` trae `attendance_required`. |
 | GET | `/tutorings/{tutoring}/attendance` | Asistencia actual e histórica; `date`, `page`, `per_page`. |
 | PUT | `/tutorings/{tutoring}/sessions` | `date` (hoy, durante el horario de la tutoría), `topics_covered`, `topic_ids`, `attendance: [{enrollment_id, present}]`. |
 | GET | `/tutorings/{tutoring}/reports` | Informes conservados; `page`, `per_page`. |

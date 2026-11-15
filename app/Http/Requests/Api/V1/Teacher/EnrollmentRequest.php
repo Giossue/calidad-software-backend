@@ -4,6 +4,7 @@ namespace App\Http\Requests\Api\V1\Teacher;
 
 use App\Http\Requests\Concerns\CombinesPersonNames;
 use App\Rules\CedulaOPasaporte;
+use App\Support\EnrollmentNumber;
 use App\Support\InstitutionalEmail;
 use Illuminate\Validation\Rule;
 
@@ -29,6 +30,7 @@ class EnrollmentRequest extends TeacherMutationRequest
             return [
                 ...$this->personNameRules(false),
                 'phone' => ['nullable', 'digits:10'],
+                'enrollment_number' => EnrollmentNumber::rules(),
                 'student_id' => ['prohibited'], 'identification' => ['prohibited'], 'email' => ['prohibited'],
             ];
         }
@@ -45,13 +47,14 @@ class EnrollmentRequest extends TeacherMutationRequest
             ...$names,
             'email' => [$existing, 'required_without:student_id', 'email:rfc', 'max:150', InstitutionalEmail::rule(), Rule::unique('usuario', 'correo')],
             'phone' => [$existing, 'nullable', 'digits:10'],
+            'enrollment_number' => EnrollmentNumber::rules(),
         ];
     }
 
     /** @return array<string, string> */
     public function attributes(): array
     {
-        return ['student_id' => 'estudiante', 'identification' => 'cédula o pasaporte', ...$this->personNameAttributes(), 'email' => 'correo institucional', 'phone' => 'teléfono'];
+        return ['student_id' => 'estudiante', 'identification' => 'cédula o pasaporte', ...$this->personNameAttributes(), 'email' => 'correo institucional', 'phone' => 'teléfono', ...EnrollmentNumber::attributes()];
     }
 
     /** @return array<string, string> */
@@ -61,6 +64,7 @@ class EnrollmentRequest extends TeacherMutationRequest
             'phone.digits' => 'El teléfono debe tener exactamente 10 dígitos numéricos.',
             'email.ends_with' => InstitutionalEmail::message(),
             ...$this->personNameMessages(),
+            ...EnrollmentNumber::messages(),
         ];
     }
 }

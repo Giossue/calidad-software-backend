@@ -15,6 +15,7 @@ use App\Models\PeriodoAcademico;
 use App\Models\Subject;
 use App\Models\Usuario;
 use App\Notifications\QueuedProvisionalPasswordNotification;
+use App\Support\EnrollmentNumber;
 use App\Support\InstitutionalEmail;
 use App\Support\Mallas;
 use App\Support\PendingSubjects;
@@ -34,6 +35,10 @@ use Throwable;
  * Estados de cada estudiante: `new` (se crea la cuenta y se inscribe), `enroll`
  * (ya registrado, se inscribe), `enrolled` (ya estaba inscrito), `blocked` (no
  * puede inscribirse) y, al aplicar, `error` si la fila falló.
+ *
+ * Cada fila puede traer la columna opcional `matricula` (1, 2, 3, 1.ª…3.ª o
+ * primera…tercera; vacía es 1.ª): se devuelve como `enrollment_number` y es la
+ * matrícula de la inscripción. Un valor no reconocido bloquea la fila.
  */
 class ImportRoster
 {
@@ -45,7 +50,7 @@ class ImportRoster
     ) {}
 
     /**
-     * @param  array{career: string|null, teacher: string|null, subject: string, section: string, students: list<array{number: int, name: string, email: string, phone: string|null}>}  $roster
+     * @param  array{career: string|null, teacher: string|null, subject: string, section: string, students: list<array{number: int, name: string, email: string, phone: string|null, matricula?: string|null}>}  $roster
      * @return array<string, mixed>
      */
     public function handle(Usuario $user, int $careerId, array $roster, bool $apply, ?int $mallaId = null): array
@@ -171,11 +176,26 @@ class ImportRoster
     }
 
     /**
+     * @param  array{number: int, name: string, email: string, phone: string|null, matricula?: string|null}  $row
+     * @param  Collection<int, int>  $ancestors
+     * @return array{status: string, message: string|null, enrollment_number: int|null}
+     */
+    private function plan(array $row, int $careerId, ?AsignaturaTutoria $tutoring, Collection $ancestors, ?Malla $malla): array
+    {
+        $number = EnrollmentNumber::parse($row['matricula'] ?? null);
+        if ($number === null) {
+            return ['status' => 'blocked', 'message' => EnrollmentNumber::MESSAGE, 'enrollment_number' => null];
+        }
+
+        return [...$this->planStudent($row, $careerId, $tutoring, $ancestors, $malla), 'enrollment_number' => $number];
+    }
+
+    /**
      * @param  array{number: int, name: string, email: string, phone: string|null}  $row
      * @param  Collection<int, int>  $ancestors
      * @return array{status: string, message: string|null}
      */
-    private function plan(array $row, int $careerId, ?AsignaturaTutoria $tutoring, Collection $ancestors, ?Malla $malla): array
+    private function planStudent(array $row, int $careerId, ?AsignaturaTutoria $tutoring, Collection $ancestors, ?Malla $malla): array
     {
         if (! InstitutionalEmail::isInstitutional($row['email'])) {
             return ['status' => 'blocked', 'message' => InstitutionalEmail::message()];
@@ -212,7 +232,7 @@ class ImportRoster
         return ['status' => 'enroll', 'message' => null];
     }
 
-    /** @param  array{name: string, email: string, phone: string|null, status: string}  $row */
+    /** @param  array{name: string, email: string, phone: string|null, status: string, enrollment_number: int}  $row */
     private function register(array $row, Carrera $career, AsignaturaTutoria $tutoring, ?Malla $malla): void
     {
         if ($row['status'] === 'new') {
@@ -242,7 +262,10 @@ class ImportRoster
         $enrollment = InscripcionTutoria::query()->firstOrNew(['fk_asig_tutoria' => $tutoring->getKey(), 'fk_id_usuario' => $student->getKey()]);
         if (! $enrollment->exists || ! $enrollment->estado) {
             $this->cycles->assertSingleSectionPerSubject($student, $tutoring);
-            $enrollment->fill(['fecha_inscripcion' => $enrollment->fecha_inscripcion ?? today(), 'estado' => true])->save();
+            $enrollment->fill([
+                'fecha_inscripcion' => $enrollment->fecha_inscripcion ?? today(), 'estado' => true,
+                'numero_matricula' => $row['enrollment_number'],
+            ])->save();
         }
     }
 

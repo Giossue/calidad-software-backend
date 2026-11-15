@@ -15,11 +15,11 @@ return [
     'groups' => [
         [
             'key' => 'low', 'label' => 'Bajo', 'range_label' => '0% - 50%', 'min' => 0, 'max' => 5,
-            'action_plan' => ['Semana de adaptación de Conocimientos', 'Tutorías adicionales obligatorias', 'Estudio Autónomo'],
+            'action_plan' => ['Semana de adaptación de Conocimientos', 'Tutorías adicionales según el criterio del docente y del coordinador', 'Estudio Autónomo'],
         ],
         [
             'key' => 'medium', 'label' => 'Medio', 'range_label' => '51% - 69%', 'min' => 5.01, 'max' => 6.99,
-            'action_plan' => ['Semana de adaptación de Conocimientos', 'Tutorías adicionales obligatorias'],
+            'action_plan' => ['Semana de adaptación de Conocimientos', 'Tutorías adicionales según el criterio del docente y del coordinador'],
         ],
         [
             'key' => 'high', 'label' => 'Alto', 'range_label' => '70% - 100%', 'min' => 7, 'max' => 10,

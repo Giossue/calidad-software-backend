@@ -109,6 +109,8 @@ carrera elegida.
    modal en la pestaña **Estudiantes** (`PUT /tutorings/{tutoring}/students/{enrollment}/abandonment`,
    mismo cuerpo y reglas que el del docente; ver `../teacher/README.md`, DOC-06B).
    Un estudiante que abandonó se marca en las listas y en **Notas** muestra el motivo.
+   En **Estudiantes** cada inscrito muestra su matrícula («2.ª matrícula») y, desde
+   la 2.ª, la etiqueta **Asistencia obligatoria** (ver **Matrícula** más abajo).
 7. Usar **Desactivar** para retirar asignaturas, tutorías u horarios; un docente se quita de la carrera con **Quitar de la carrera**.
    La operación conserva sus registros históricos. Una tutoría deshabilitada
    permite seguir consultando asistencia e informes.
@@ -386,6 +388,20 @@ estado de los commits y del push.
   `PATCH /tutorings/{tutoring}/students/{enrollment}` los acepta opcionales, pero
   juntos, y sin ellos conserva el nombre. Las partículas (de, la, los…) no cuentan
   como un nombre aparte.
+- **Matrícula** (1.ª, 2.ª o 3.ª) del estudiante en la asignatura de la tutoría:
+  se elige al inscribirlo y se cambia al editar la inscripción. Solo desde la 2.ª
+  matrícula la asistencia a la tutoría es obligatoria; la etiqueta **Asistencia
+  obligatoria** es informativa y no cambia la toma de asistencia. Las rutas
+  `POST /tutorings/{tutoring}/students`, `POST /students/{student}/enroll` y
+  `POST /students` (con `tutoring_id`) aceptan `enrollment_number` opcional (1 a 3,
+  por defecto 1); `PATCH /tutorings/{tutoring}/students/{enrollment}` lo acepta
+  opcional y sin él la conserva. Otro valor responde `422` en `enrollment_number`:
+  «La matrícula debe ser 1.ª, 2.ª o 3.ª.». Las inscripciones devueltas por
+  `GET /tutorings/{tutoring}/students`, las altas y ediciones, y cada elemento de
+  `tutorings` de `GET /students` traen `enrollment_number` y `attendance_required`
+  (`true` desde la 2.ª). El avance automático y las inscripciones anteriores a
+  este campo quedan en 1.ª. La carga del listado admite la columna opcional
+  `matricula` (ver `../roster-import/specification.md`).
 - **Asignar ciclo** (`PATCH /students/{student}/cycle`) solo da el primer ciclo a un
   estudiante que aún no tiene uno. Con ciclo registrado responde `422` en `cycle_id`:
   «El ciclo del estudiante se actualiza solo con sus tutorías del período.» El

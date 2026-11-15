@@ -33,7 +33,7 @@ estudiantes que aprobaron la asignatura previa.
 - No se inscribe a estudiantes inactivos, sin rol estudiantil, en titulación o
   que siguen otra malla (las mallas son independientes), ni se duplica una
   inscripción existente. La inscripción usa el aviso habitual
-  al estudiante y al docente.
+  al estudiante y al docente, y empieza en 1.ª matrícula (`numero_matricula = 1`).
 - Cambiar un aprobado a reprobado no retira la inscripción ya creada.
 
 ## Asignaturas pendientes (arrastres)

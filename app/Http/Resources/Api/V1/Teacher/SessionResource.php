@@ -67,7 +67,7 @@ class SessionResource extends JsonResource
                 'methodologies' => $act->metodologias ? $act->metodologias->where('estado', true)->pluck('descripcion')->values() : [],
             ]),
             // Por apellidos y nombres (el nombre se guarda como "apellidos nombres").
-            'attendance' => $this->attendance->sortBy(fn ($record) => mb_strtoupper($record->estudiante->nombre ?? ''))->values()->map(fn ($record) => [
+            'attendance' => $this->attendance->loadMissing('inscripcion')->sortBy(fn ($record) => mb_strtoupper($record->estudiante->nombre ?? ''))->values()->map(fn ($record) => [
                 'id' => $record->getKey(),
                 'enrollment_id' => $record->fk_inscripcion,
                 'student_id' => $record->fk_id_usuario,
@@ -75,6 +75,7 @@ class SessionResource extends JsonResource
                 'student_identification' => $record->estudiante->cedula ?? '',
                 'student_email' => $record->estudiante->correo ?? '',
                 'present' => (bool) $record->estado_asistencia,
+                'attendance_required' => (bool) $record->inscripcion?->requiresAttendance(),
             ]),
         ];
     }

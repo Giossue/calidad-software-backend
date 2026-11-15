@@ -14,6 +14,7 @@ use App\Models\Usuario;
 use App\Notifications\ProvisionalPasswordNotification;
 use App\Rules\CedulaOPasaporte;
 use App\Rules\PersonNameCount;
+use App\Support\EnrollmentNumber;
 use App\Support\InstitutionalEmail;
 use App\Support\Mallas;
 use App\Support\PendingSubjects;
@@ -112,7 +113,10 @@ class CoordinatorEnrollmentController extends Controller
             if ($enrollment->exists && $enrollment->estado) {
                 throw ValidationException::withMessages(['student_id' => 'El estudiante ya está inscrito en esta tutoría.']);
             }
-            $enrollment->fill(['fecha_inscripcion' => $enrollment->fecha_inscripcion ?? today(), 'estado' => true])->save();
+            $enrollment->fill([
+                'fecha_inscripcion' => $enrollment->fecha_inscripcion ?? today(), 'estado' => true,
+                'numero_matricula' => $data['enrollment_number'] ?? EnrollmentNumber::FIRST,
+            ])->save();
 
             return $enrollment->load(ManageEnrollment::RELATIONS);
         });
@@ -130,14 +134,10 @@ class CoordinatorEnrollmentController extends Controller
         $data = PersonName::combine($request->validate([
             ...PersonNameCount::rules(false),
             'phone' => ['nullable', 'digits:10'],
-        ], PersonNameCount::messages(), self::PERSON_NAME_ATTRIBUTES));
+            'enrollment_number' => EnrollmentNumber::rules(),
+        ], [...PersonNameCount::messages(), ...EnrollmentNumber::messages()], [...self::PERSON_NAME_ATTRIBUTES, ...EnrollmentNumber::attributes()]));
 
-        $student = $enrollment->estudiante;
-        abort_unless($student->roleSlugs()->count() === 1 && $student->hasRole('estudiante'), 403);
-        $student->update([
-            ...(array_key_exists('name', $data) ? ['nombre' => $data['name']] : []),
-            'telefono' => $data['phone'] ?? null,
-        ]);
+        ManageEnrollment::applyEdit($enrollment, $data);
 
         return EnrollmentResource::make($enrollment->refresh()->load(ManageEnrollment::RELATIONS));
     }
@@ -198,7 +198,8 @@ class CoordinatorEnrollmentController extends Controller
             ...$names,
             'email' => [$existing, 'required_without:student_id', 'email:rfc', 'max:150', InstitutionalEmail::rule(), Rule::unique('usuario', 'correo')],
             'phone' => [$existing, 'nullable', 'digits:10'],
-        ], PersonNameCount::messages(), self::PERSON_NAME_ATTRIBUTES));
+            'enrollment_number' => EnrollmentNumber::rules(),
+        ], [...PersonNameCount::messages(), ...EnrollmentNumber::messages()], [...self::PERSON_NAME_ATTRIBUTES, ...EnrollmentNumber::attributes()]));
     }
 
     private function normalizePersonNames(Request $request): void

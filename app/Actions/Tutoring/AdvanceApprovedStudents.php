@@ -6,6 +6,7 @@ use App\Models\AsignaturaTutoria;
 use App\Models\InscripcionTutoria;
 use App\Models\Subject;
 use App\Models\Usuario;
+use App\Support\EnrollmentNumber;
 use App\Support\Mallas;
 use App\Support\PendingSubjects;
 use App\Support\StudentCycle;
@@ -119,11 +120,13 @@ class AdvanceApprovedStudents
         if ($tutoring->fk_paralelo && ! $student->paralelos()->whereKey($tutoring->fk_paralelo)->wherePivot('estado', true)->exists()) {
             $student->paralelos()->syncWithoutDetaching([$tutoring->fk_paralelo => ['fecha_asignacion' => today(), 'estado' => true]]);
         }
+        // Avanza a una asignatura nueva: empieza en 1.ª matrícula.
         InscripcionTutoria::query()->create([
             'fk_asig_tutoria' => $tutoring->getKey(),
             'fk_id_usuario' => $student->getKey(),
             'fecha_inscripcion' => today(),
             'estado' => true,
+            'numero_matricula' => EnrollmentNumber::FIRST,
         ]);
     }
 }

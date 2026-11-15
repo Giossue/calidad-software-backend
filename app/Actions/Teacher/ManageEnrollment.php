@@ -8,6 +8,7 @@ use App\Models\InscripcionTutoria;
 use App\Models\Role;
 use App\Models\Usuario;
 use App\Notifications\ProvisionalPasswordNotification;
+use App\Support\EnrollmentNumber;
 use App\Support\Mallas;
 use App\Support\PendingSubjects;
 use App\Support\ProvisionalPassword;
@@ -58,7 +59,10 @@ class ManageEnrollment
             if ($enrollment->exists && $enrollment->estado) {
                 throw ValidationException::withMessages(['student_id' => 'El estudiante ya está inscrito en esta tutoría.']);
             }
-            $enrollment->fill(['fecha_inscripcion' => $enrollment->fecha_inscripcion ?? today(), 'estado' => true])->save();
+            $enrollment->fill([
+                'fecha_inscripcion' => $enrollment->fecha_inscripcion ?? today(), 'estado' => true,
+                'numero_matricula' => $data['enrollment_number'] ?? EnrollmentNumber::FIRST,
+            ])->save();
 
             return $enrollment->load(self::RELATIONS);
         });
@@ -69,13 +73,33 @@ class ManageEnrollment
     {
         return $this->workspace->write($teacher, $tutoring, function () use ($tutoring, $enrollment, $data): InscripcionTutoria {
             $this->workspace->enrollment($tutoring, $enrollment);
-            $student = $enrollment->estudiante;
-            abort_unless($student->roleSlugs()->count() === 1 && $student->hasRole('estudiante'), 403);
-            // El nombre solo cambia cuando se envían nombres y apellidos.
-            $student->update([...(array_key_exists('name', $data) ? ['nombre' => $data['name']] : []), 'telefono' => $data['phone'] ?? null]);
+            self::applyEdit($enrollment, $data);
 
             return $enrollment->refresh()->load(self::RELATIONS);
         });
+    }
+
+    /**
+     * Edición de la inscripción (docente o coordinación): nombre y teléfono del estudiante y su matrícula.
+     * Los datos personales solo se cambian en cuentas que únicamente son de estudiante; la matrícula
+     * pertenece a la inscripción y se cambia en cualquier caso.
+     *
+     * @param  array{name?: string, phone?: ?string, enrollment_number?: int}  $data
+     */
+    public static function applyEdit(InscripcionTutoria $enrollment, array $data): void
+    {
+        $student = $enrollment->estudiante;
+        // El nombre solo cambia cuando se envían nombres y apellidos.
+        $profile = [...(array_key_exists('name', $data) ? ['nombre' => $data['name']] : []), 'telefono' => $data['phone'] ?? null];
+        $changesProfile = collect($profile)->contains(fn (mixed $value, string $column): bool => $student->getAttribute($column) !== $value);
+        abort_if($changesProfile && ! ($student->roleSlugs()->count() === 1 && $student->hasRole('estudiante')), 403);
+        if ($changesProfile) {
+            $student->update($profile);
+        }
+        // La matrícula solo cambia cuando se envía.
+        if (array_key_exists('enrollment_number', $data)) {
+            $enrollment->update(['numero_matricula' => $data['enrollment_number']]);
+        }
     }
 
     public function deactivate(Usuario $teacher, AsignaturaTutoria $tutoring, InscripcionTutoria $enrollment): InscripcionTutoria

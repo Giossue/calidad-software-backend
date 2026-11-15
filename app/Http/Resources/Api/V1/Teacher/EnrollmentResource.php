@@ -22,6 +22,8 @@ class EnrollmentResource extends JsonResource
             'identification' => $student->cedula, 'name' => $student->nombre, 'email' => $student->correo, 'phone' => $student->telefono,
             'is_active' => $this->estado, 'student_is_active' => $student->estado,
             'enrolled_at' => $this->fecha_inscripcion->toDateString(),
+            'enrollment_number' => $this->numero_matricula,
+            'attendance_required' => $this->requiresAttendance(),
             'can_edit_profile' => $student->hasRole('estudiante') && $student->roleSlugs()->count() === 1,
             'diagnostic_grade' => $grades->firstWhere('tipo', 'diagnostic')?->valor,
             'partial_grade' => $partial,

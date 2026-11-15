@@ -15,6 +15,7 @@ use App\Models\Usuario;
 use App\Notifications\ProvisionalPasswordNotification;
 use App\Rules\CedulaOPasaporte;
 use App\Rules\PersonNameCount;
+use App\Support\EnrollmentNumber;
 use App\Support\InstitutionalEmail;
 use App\Support\Mallas;
 use App\Support\PendingSubjects;
@@ -134,7 +135,9 @@ class CoordinatorStudentController extends Controller
             'cycle_id' => ['required', 'integer', Rule::exists('ciclo', 'id_ciclo')->where('estado', true)],
             'tutoring_id' => ['nullable', 'integer', Rule::exists('asignatura_tutoria', 'id_asig_tutoria')],
             'malla_id' => ['nullable', 'integer', Rule::exists('malla', 'id')],
-        ], PersonNameCount::messages(), ['first_names' => 'nombres', 'last_names' => 'apellidos', 'cycle_id' => 'ciclo', 'tutoring_id' => 'tutoría', 'malla_id' => 'malla']));
+            // Matrícula de la inscripción en la tutoría inicial, si se indica una.
+            'enrollment_number' => EnrollmentNumber::rules(),
+        ], [...PersonNameCount::messages(), ...EnrollmentNumber::messages()], ['first_names' => 'nombres', 'last_names' => 'apellidos', 'cycle_id' => 'ciclo', 'tutoring_id' => 'tutoría', 'malla_id' => 'malla', ...EnrollmentNumber::attributes()]));
 
         $cycle = Ciclo::query()->findOrFail((int) $data['cycle_id']);
         $access->authorizeCareer($request->user(), $cycle->fk_carrera);
@@ -181,6 +184,7 @@ class CoordinatorStudentController extends Controller
                     'fk_id_usuario' => $student->getKey(),
                     'fecha_inscripcion' => today(),
                     'estado' => true,
+                    'numero_matricula' => $data['enrollment_number'] ?? EnrollmentNumber::FIRST,
                 ]);
             }
 
@@ -238,7 +242,8 @@ class CoordinatorStudentController extends Controller
 
         $data = $request->validate([
             'tutoring_id' => ['required', 'integer', Rule::exists('asignatura_tutoria', 'id_asig_tutoria')],
-        ]);
+            'enrollment_number' => EnrollmentNumber::rules(),
+        ], EnrollmentNumber::messages(), EnrollmentNumber::attributes());
         app(StudentCycle::class)->assertCanTakeTutorings($student, 'tutoring_id');
 
         $tutoring = AsignaturaTutoria::query()->with(self::TUTORING_RELATIONS)->findOrFail((int) $data['tutoring_id']);
@@ -248,7 +253,7 @@ class CoordinatorStudentController extends Controller
         PendingSubjects::assertCanTake($student, $tutoring, 'tutoring_id');
         app(StudentCycle::class)->assertSingleSectionPerSubject($student, $tutoring, 'tutoring_id');
 
-        $enrollment = DB::transaction(function () use ($student, $tutoring): InscripcionTutoria {
+        $enrollment = DB::transaction(function () use ($student, $tutoring, $data): InscripcionTutoria {
             $locked = AsignaturaTutoria::query()->whereKey($tutoring->getKey())->lockForUpdate()->firstOrFail();
 
             // Assign student to the parallel if not already assigned
@@ -264,7 +269,10 @@ class CoordinatorStudentController extends Controller
             if ($enrollment->exists && $enrollment->estado) {
                 throw ValidationException::withMessages(['tutoring_id' => 'El estudiante ya está inscrito en esta tutoría.']);
             }
-            $enrollment->fill(['fecha_inscripcion' => $enrollment->fecha_inscripcion ?? today(), 'estado' => true])->save();
+            $enrollment->fill([
+                'fecha_inscripcion' => $enrollment->fecha_inscripcion ?? today(), 'estado' => true,
+                'numero_matricula' => $data['enrollment_number'] ?? EnrollmentNumber::FIRST,
+            ])->save();
 
             return $enrollment->load(self::ENROLLMENT_RELATIONS);
         });
@@ -379,6 +387,8 @@ class CoordinatorStudentController extends Controller
                 'section_name' => $enrollment->asignaturaTutoria->paralelo->nombre ?? null,
                 'period_name' => $enrollment->asignaturaTutoria->periodo->nombre ?? '—',
                 'is_active' => $enrollment->estado,
+                'enrollment_number' => $enrollment->numero_matricula,
+                'attendance_required' => $enrollment->requiresAttendance(),
             ])->values(),
         ];
     }
