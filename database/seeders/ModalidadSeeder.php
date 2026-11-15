@@ -14,7 +14,7 @@ class ModalidadSeeder extends Seeder
     {
         $modalidades = [
             'Presencial',
-            'Virtual',
+            'En línea',
             'Híbrida',
         ];
 

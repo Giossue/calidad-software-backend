@@ -271,7 +271,7 @@ class UebCatalogSeeder extends Seeder
 
         'Administración de Empresas (En línea)' => [
             'faculty' => self::FAC_ADMIN,
-            'modality' => 'Virtual',
+            'modality' => 'En línea',
             'cycles' => 8,
             'subjects' => [
                 1 => [
@@ -535,7 +535,7 @@ class UebCatalogSeeder extends Seeder
 
         'Emprendimiento e Innovación Social' => [
             'faculty' => self::FAC_ADMIN,
-            'modality' => 'Virtual',
+            'modality' => 'En línea',
             'cycles' => 8,
             'subjects' => [
                 1 => [
@@ -599,7 +599,7 @@ class UebCatalogSeeder extends Seeder
 
         'Marketing Digital' => [
             'faculty' => self::FAC_ADMIN,
-            'modality' => 'Virtual',
+            'modality' => 'En línea',
             'cycles' => 8,
             'subjects' => [
                 1 => [
@@ -1070,7 +1070,7 @@ class UebCatalogSeeder extends Seeder
 
         'Educación Intercultural Bilingüe' => [
             'faculty' => self::FAC_EDUCACION,
-            'modality' => 'Virtual',
+            'modality' => 'En línea',
             'cycles' => 8,
             'subjects' => [
                 1 => [
@@ -1276,7 +1276,7 @@ class UebCatalogSeeder extends Seeder
 
         'Pedagogía de las Ciencias Experimentales – Informática' => [
             'faculty' => self::FAC_EDUCACION,
-            'modality' => 'Virtual',
+            'modality' => 'En línea',
             'cycles' => 8,
             'subjects' => [
                 1 => [

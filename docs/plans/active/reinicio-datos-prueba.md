@@ -55,7 +55,7 @@ las otras cuatro reciben contraseñas individuales generadas para esta carga.
 El escenario académico incluye:
 
 - Una facultad de Ciencias de la Ingeniería y la carrera Software.
-- Modalidades Presencial, Virtual e Híbrida; paralelo A; ciclos primero y segundo.
+- Modalidades Presencial, En línea e Híbrida; paralelo A; ciclos primero y segundo.
 - Período PAO II 2026, del 2026-09-01 al 2027-02-28.
 - Coordinador y docente vinculados a Software; estudiante vinculado al paralelo.
 - Asignatura CS-101, Calidad de Software, vinculada a ambos ciclos.
