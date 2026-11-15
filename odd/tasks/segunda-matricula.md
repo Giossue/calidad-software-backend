@@ -23,7 +23,7 @@ Out of scope: report statistics by matrícula; computing matrícula from history
 
 | ID | Specs | Scope | Route | Status | Commit |
 |---|---|---|---|---|---|
-| T1 | S1-S3 | Backend: migration, model, requests, resources, import, advancement, config, docs, tests | delegated (parallel writer, trigger a) | done | |
+| T1 | S1-S3 | Backend: migration, model, requests, resources, import, advancement, config, docs, tests | delegated (parallel writer, trigger a) | done | backend f1920ec |
 | T2 | S1-S3 | Frontend: types, "Matrícula" select on enroll/edit forms, labels in lists, roster import note, tests | delegated (parallel writer, trigger a) | done | |
 
 Risk: item 1 (migration adds a column to `inscripcion_tutoria`). Independent verifier after both units.
@@ -35,3 +35,4 @@ Risk: item 1 (migration adds a column to `inscripcion_tutoria`). Independent ver
 - **L3:** Valoración fixed in frontend a78b4dc (grades "Evolución (P1 → P2)" uses only Parcial 1 and Parcial 2). Student lists: attendance endpoints sorted by name in backend 8c87db8; list headers renamed to "Apellidos y nombres" in frontend a78b4dc. Names stored before the two-field form may not be apellidos-first; sorting relies on stored order.
 - **L4:** T1 backend done (542 passed, only the 2 known failures). Deviation: roster import is a PDF without matrícula, so the UI states imports start in 1.ª. Note: enrollment PATCH clears `phone` when absent (pre-existing), so the frontend always sends phone. Added: `POST tutoring-coordination/students` with `tutoring_id` accepts `enrollment_number`.
 - **L5:** T2 frontend done (481 passed, tsc and lint clean). Teacher edits the matrícula in the "Calificaciones del estudiante" dialog (no other teacher edit form); re-enroll keeps the current matrícula. Parent fix: both PATCH endpoints share `ManageEnrollment::applyEdit`; a student with other roles can change matrícula, profile changes still 403 (test `test_the_matricula_of_a_student_with_other_roles_changes_but_their_profile_does_not`).
+- **L6:** Independent verifier: S1, S2, S3 and contract pass, no blockers (50 rejected requests left data unchanged; PATCH differential identical for pure students). Advisories: `true` accepted as 1; no DB CHECK 1–3. Backend 543 passed (2 known failures), frontend 481 passed. Not applied to production.
