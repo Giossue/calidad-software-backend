@@ -27,7 +27,7 @@ class PersonNameCount implements ValidationRule
      */
     public static function rules(bool $required = true): array
     {
-        $presence = fn (string $other): array => $required ? ['required'] : ['sometimes', 'required', 'required_with:'.$other];
+        $presence = fn (string $other): array => $required ? ['required'] : ['required_with:'.$other, 'filled'];
 
         return [
             'first_names' => [...$presence('last_names'), 'string', 'max:70', 'regex:/^[\pL\s]+$/u', new self(1, 2, self::FIRST_NAMES_MESSAGE)],

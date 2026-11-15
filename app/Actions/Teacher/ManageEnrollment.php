@@ -68,7 +68,8 @@ class ManageEnrollment
             $this->workspace->enrollment($tutoring, $enrollment);
             $student = $enrollment->estudiante;
             abort_unless($student->roleSlugs()->count() === 1 && $student->hasRole('estudiante'), 403);
-            $student->update(['nombre' => $data['name'], 'telefono' => $data['phone'] ?? null]);
+            // El nombre solo cambia cuando se envían nombres y apellidos.
+            $student->update([...(array_key_exists('name', $data) ? ['nombre' => $data['name']] : []), 'telefono' => $data['phone'] ?? null]);
 
             return $enrollment->refresh()->load(self::RELATIONS);
         });

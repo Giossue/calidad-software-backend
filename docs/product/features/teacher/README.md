@@ -61,12 +61,15 @@ de coordinación.
    cada fila abre sus secciones con `?tutoring=<id>` para conservar el contexto.
 3. En **Estudiantes**, seleccionar una tutoría. **Registrar estudiante** permite
    buscar una cuenta activa del mismo paralelo o registrar una nueva con cédula
-   ecuatoriana, nombre, correo `@ueb.edu.ec` o
-   `@mailes.ueb.edu.ec` y teléfono opcional.
+   ecuatoriana, **Nombres** (uno o dos) y **Apellidos** (dos por regla general,
+   uno solo como excepción) en dos campos y en ese orden, correo `@ueb.edu.ec` o
+   `@mailes.ueb.edu.ec` y teléfono opcional. El nombre se guarda como
+   «apellidos nombres»; las partículas (de, la, los…) no cuentan aparte.
    Una cuenta nueva recibe contraseña provisional mediante la notificación
    existente del sistema y debe cambiarla al primer ingreso. El envío requiere la
    configuración de correo operativa.
-4. Editar nombre o teléfono cuando la cuenta tenga únicamente rol estudiantil.
+4. Editar nombres y apellidos (juntos, con las mismas reglas) o teléfono cuando
+   la cuenta tenga únicamente rol estudiantil.
    La cédula y el correo identifican la cuenta y su cambio corresponde a
    administración. **Desactivar inscripción** conserva el historial y no bloquea
    la cuenta global; **Reinscribir** reutiliza la inscripción anterior.
@@ -216,8 +219,8 @@ falta de permiso, `403`; elementos anidados ajenos, `404`.
 | GET | `/degree-assignments` | Asignaciones propias vigentes; `search`, `role`, `page`, `per_page`. |
 | GET | `/tutorings/{tutoring}/students` | Inscripciones y notas; `search`, `status`, `page`, `per_page`. |
 | GET | `/tutorings/{tutoring}/available-students` | Estudiantes activos del paralelo no inscritos activamente; `search`, máximo 100 resultados. |
-| POST | `/tutorings/{tutoring}/students` | `student_id` existente **o** `identification`, `name`, `email`, `phone` opcional. |
-| PATCH | `/tutorings/{tutoring}/students/{enrollment}` | `name`, `phone` opcional; identidad y correo no se aceptan. |
+| POST | `/tutorings/{tutoring}/students` | `student_id` existente **o** `identification`, `first_names`, `last_names`, `email`, `phone` opcional. |
+| PATCH | `/tutorings/{tutoring}/students/{enrollment}` | `first_names` y `last_names` opcionales (ambos o ninguno; sin ellos se conserva el nombre), `phone` opcional; identidad y correo no se aceptan. |
 | PATCH | `/tutorings/{tutoring}/students/{enrollment}/deactivate` | Baja de la inscripción. |
 | PUT | `/tutorings/{tutoring}/students/{enrollment}/grades/{type}` | `value`; `type` es `diagnostic` o `partial`. |
 | GET | `/tutorings/{tutoring}/topics` | Temas con actividades y metodologías; `search`, `status`, `page`, `per_page`. |
