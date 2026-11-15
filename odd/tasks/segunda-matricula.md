@@ -24,7 +24,7 @@ Out of scope: report statistics by matrícula; computing matrícula from history
 | ID | Specs | Scope | Route | Status | Commit |
 |---|---|---|---|---|---|
 | T1 | S1-S3 | Backend: migration, model, requests, resources, import, advancement, config, docs, tests | delegated (parallel writer, trigger a) | done | backend f1920ec |
-| T2 | S1-S3 | Frontend: types, "Matrícula" select on enroll/edit forms, labels in lists, roster import note, tests | delegated (parallel writer, trigger a) | done | |
+| T2 | S1-S3 | Frontend: types, "Matrícula" select on enroll/edit forms, labels in lists, roster import note, tests | delegated (parallel writer, trigger a) | done | frontend d7265bb |
 
 Risk: item 1 (migration adds a column to `inscripcion_tutoria`). Independent verifier after both units.
 
