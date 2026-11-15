@@ -26,6 +26,25 @@ class PersonName
     }
 
     /**
+     * Reemplaza `first_names` y `last_names` por `name` (apellidos y nombres)
+     * cuando llegan; si no, devuelve los datos sin cambios.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public static function combine(array $data): array
+    {
+        if (! array_key_exists('first_names', $data) && ! array_key_exists('last_names', $data)) {
+            return $data;
+        }
+
+        $data['name'] = self::full($data['last_names'] ?? null, $data['first_names'] ?? null);
+        unset($data['first_names'], $data['last_names']);
+
+        return $data;
+    }
+
+    /**
      * Cuántos nombres (o apellidos) contiene el texto. Las partículas forman parte
      * del nombre que acompañan y no cuentan por separado.
      */

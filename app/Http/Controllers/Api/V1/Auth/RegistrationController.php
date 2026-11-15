@@ -9,6 +9,7 @@ use App\Http\Requests\Api\V1\Auth\RegisterRequest;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
+use Illuminate\Support\Arr;
 
 class RegistrationController extends Controller
 {
@@ -21,10 +22,9 @@ class RegistrationController extends Controller
             abort(Response::HTTP_FORBIDDEN, 'El registro público no está habilitado.');
         }
 
-        $user = $creator->create([
-            ...$request->safe()->only(['identification', 'email', 'password', 'password_confirmation']),
-            'name' => $request->fullName(),
-        ]);
+        $user = $creator->create(Arr::only($request->validated(), [
+            'identification', 'name', 'email', 'password', 'password_confirmation',
+        ]));
 
         event(new Registered($user));
 

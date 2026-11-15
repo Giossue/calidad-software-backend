@@ -21,7 +21,7 @@ class CompleteProfileController extends Controller
         DB::transaction(function () use ($request, $user, $cycles): void {
             $user->update(array_filter([
                 'cedula' => $request->validated('identification'),
-                'nombre' => $request->fullName(),
+                'nombre' => $request->validated('name'),
                 'telefono' => $request->validated('phone'),
                 'password_hash' => $request->validated('password'),
                 'must_complete_profile' => false,

@@ -2,10 +2,9 @@
 
 namespace App\Http\Requests\Api\V1\Auth;
 
-use App\Concerns\ProfileValidationRules;
+use App\Http\Requests\Concerns\CombinesPersonNames;
 use App\Models\Usuario;
 use App\Rules\CedulaOPasaporte;
-use App\Support\PersonName;
 use Closure;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Hash;
@@ -14,7 +13,7 @@ use Illuminate\Validation\Rules\Password;
 
 class CompleteProfileRequest extends FormRequest
 {
-    use ProfileValidationRules;
+    use CombinesPersonNames;
 
     public function authorize(): bool
     {
@@ -27,15 +26,8 @@ class CompleteProfileRequest extends FormRequest
     {
         $this->merge([
             'identification' => strtoupper(trim((string) $this->input('identification'))),
-            'first_names' => PersonName::normalize($this->input('first_names')),
-            'last_names' => PersonName::normalize($this->input('last_names')),
         ]);
-    }
-
-    /** Nombre completo tal como se guarda: apellidos seguidos de nombres. */
-    public function fullName(): ?string
-    {
-        return PersonName::full($this->validated('last_names'), $this->validated('first_names'));
+        $this->preparePersonNames();
     }
 
     /** @return array<string, array<int, mixed>> */
@@ -69,8 +61,7 @@ class CompleteProfileRequest extends FormRequest
     {
         return [
             'identification' => 'cédula o pasaporte',
-            'first_names' => 'nombres',
-            'last_names' => 'apellidos',
+            ...$this->personNameAttributes(),
             'phone' => 'teléfono',
             'faculty_id' => 'facultad',
             'career_id' => 'carrera',
@@ -84,8 +75,7 @@ class CompleteProfileRequest extends FormRequest
     {
         return [
             'phone.digits' => 'El teléfono debe tener exactamente 10 dígitos numéricos.',
-            'first_names.regex' => 'Los nombres solo pueden contener letras y espacios.',
-            'last_names.regex' => 'Los apellidos solo pueden contener letras y espacios.',
+            ...$this->personNameMessages(),
             'career_id.exists' => 'Selecciona una carrera activa de la facultad elegida.',
             'cycle_id.exists' => 'Selecciona un ciclo activo de la carrera elegida.',
         ];
