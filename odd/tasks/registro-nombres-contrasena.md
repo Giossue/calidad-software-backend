@@ -18,10 +18,10 @@ Objective: relax the password policy and capture first names and last names as t
 | T2 | S2,S3,S4 | Backend: `first_names`/`last_names` in profile completion and register, word-count rule | inline | done | backend 571f38a |
 | T3 | S2,S3,S4 | Frontend: two fields in the profile-completion modal, prefill split | inline | done | frontend 4275ef9 |
 | T4 | S5 | Shared base: backend `CombinesPersonNames` + `PersonNameCount::rules`; frontend `PersonNameFields` | inline | done | backend 3ccb87f, frontend 6934095 |
-| T5 | S5 | Admin Usuarios create + edit (backend + frontend) | delegated (parallel writer, trigger a) | pending | |
-| T6 | S5 | Coordinator Docentes (backend + frontend) | delegated (parallel writer, trigger a) | pending | |
-| T7 | S5 | Coordinator Estudiantes (backend + frontend) | delegated (parallel writer, trigger a) | pending | |
-| T8 | S5 | Teacher enrollment of a new student (backend + frontend) | delegated (parallel writer, trigger a) | pending | |
+| T5 | S5 | Admin Usuarios create + edit (backend + frontend) | delegated (parallel writer, trigger a) | done | backend 00141a2, frontend 7096f49 |
+| T6 | S5 | Coordinator Docentes (backend + frontend) | delegated (parallel writer, trigger a) | done | backend ec13225, frontend 6080c37 |
+| T7 | S5 | Coordinator Estudiantes (backend + frontend) | delegated (same writer as T6) | done | backend ec13225, frontend 6080c37 |
+| T8 | S5 | Teacher enrollment of a new student (backend + frontend) | delegated (parallel writer, trigger a) | done | backend 44c94af, frontend e678437 |
 
 Risk: item 2 (password policy relaxed, requested) and item 3 (profile-completion/register API payload changes `name` → `first_names` + `last_names`; only consumer is this frontend).
 
@@ -32,3 +32,4 @@ Risk: item 2 (password policy relaxed, requested) and item 3 (profile-completion
 - **L3:** RED/GREEN: `PasswordPolicyTest` (production policy) and `PersonNamesTest` (6 cases) red before, green after; frontend `person-name.test.ts` and modal tests red before, green after. Backend suite 483 tests: only failure `AdministrativeCatalogsTest::test_only_one_academic_period_can_be_active_at_the_same_time`, which also fails at base 17a7369 (`CatalogImportTest::test_degree_coordinator_imports_sections_into_current_period` fails at base when run alone). Frontend suite 432 passed. Prefill: the stored name is split only when it has 3+ parts (first two = last names); with 2 parts both fields start empty because the order is unknown (email-derived provisional names are "Nombre Apellido"). RDD off globally (assess: high, item 2) → no native review; independent verifier run for items 2-3.
 - **L4:** Independent verifier: S1–S4 met, no blockers. Fixed advisories in frontend (length counted in characters, symbol = \p{P}\p{S} like Laravel) — frontend 24cd864. Open advisories: prefill split is a guess for 1-surname names ("Smith Ana María"); names allow only letters and spaces (pre-existing); `uncompromised` can reject a password the checklist shows valid (pre-existing).
 - **L5 (2026-11-15, user):** "pero mira como me sale" — screenshot of admin "Registrar usuario" showing a single "Nombre completo" field. Interpreted as: the two-field rule applies to every form that registers people, not only the profile-completion modal.
+- **L6:** T5–T8 done. Shared-rule defect found by the writers and fixed in `PersonNameCount::rules(false)` (`sometimes` skipped the "both or neither" check; now `required_with:<other>` + `filled`). Decision (parent): on edit forms names are validated and sent only when changed from the `splitStoredName` prefill, so a stored name that can't be split doesn't block other edits. The teacher Estudiantes page has no name-edit form (API only). Full suites: frontend 447 passed; backend 487/495 with only the two base failures. Browser check: admin "Registrar usuario" shows Nombres + Apellidos.
