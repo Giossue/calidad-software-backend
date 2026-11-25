@@ -103,6 +103,8 @@ class StudentTutoringTest extends TestCase
             ->assertJsonPath('data.0.id', $enrollment->getKey())
             ->assertJsonPath('data.0.enrolled_at', '2026-05-10')
             ->assertJsonPath('data.0.is_active', true)
+            ->assertJsonStructure(['data' => [['final_result']]])
+            ->assertJsonPath('data.0.final_result', null)
             ->assertJsonPath('data.0.subject.id', $subject->getKey())
             ->assertJsonPath('data.0.subject.name', 'Ingeniería de Software y Calidad')
             ->assertJsonPath('data.0.subject.academic_period.name', 'PAO 2026-1')
@@ -113,11 +115,16 @@ class StudentTutoringTest extends TestCase
             ->assertJsonPath('data.0.subject.teacher.id', $teacher->getKey())
             ->assertJsonPath('data.0.subject.teacher.name', 'Ing. Roberto Profesor')
             ->assertJsonPath('data.0.subject.teacher.email', 'roberto.docente@mail.com')
-            ->assertJsonPath('data.0.subject.teacher.phone', '0981234567')
+            ->assertJsonMissingPath('data.0.subject.teacher.phone')
             ->assertJsonCount(1, 'data.0.subject.schedules')
             ->assertJsonPath('data.0.subject.schedules.0.id', $schedule->getKey())
             ->assertJsonPath('data.0.subject.schedules.0.day_of_week', 'Martes')
             ->assertJsonPath('data.0.subject.schedules.0.room', 'Laboratorio 1');
+
+        $enrollment->update(['final_result' => InscripcionTutoria::APPROVED, 'final_result_at' => now()]);
+        $this->getJson('/api/v1/student/tutoring')->assertOk()->assertJsonPath('data.0.final_result', 'approved');
+        $enrollment->update(['final_result' => InscripcionTutoria::FAILED]);
+        $this->getJson('/api/v1/student/tutoring')->assertOk()->assertJsonPath('data.0.final_result', 'failed');
     }
 
     public function test_student_only_sees_their_own_tutoring_enrollments(): void

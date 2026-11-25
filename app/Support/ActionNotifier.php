@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\AsignaturaTutoria;
+use App\Models\InscripcionTutoria;
 use App\Models\TemaTitulacion;
 use App\Models\Usuario;
 use App\Notifications\ActionNotification;
@@ -73,6 +74,19 @@ class ActionNotifier
         self::send($students, 'tutoring_schedule_changed', 'Cambio de horario', $body, '/panel/student-tutorings');
         self::send($tutoring->docente, 'tutoring_schedule_changed', 'Cambio de horario', $body, '/panel/teacher-tutorings');
         self::send(self::careerCoordinators($tutoring->ciclo?->fk_carrera), 'tutoring_schedule_changed', 'Cambio de horario', $body, '/panel/tutorings');
+    }
+
+    /** Resultado final (aprobado o reprobado) que el docente registró para el estudiante. */
+    public static function tutoringFinalResult(AsignaturaTutoria $tutoring, ?Usuario $student, string $result): void
+    {
+        $approved = $result === InscripcionTutoria::APPROVED;
+        self::send(
+            $student,
+            'tutoring_final_result',
+            $approved ? 'Tutoría aprobada' : 'Tutoría reprobada',
+            ($approved ? 'Aprobaste' : 'Reprobaste')." la tutoría de {$tutoring->nombre}",
+            '/panel/student-tutorings?tutoring='.$tutoring->getKey(),
+        );
     }
 
     /** Avance de la ficha de seguimiento de titulación. */

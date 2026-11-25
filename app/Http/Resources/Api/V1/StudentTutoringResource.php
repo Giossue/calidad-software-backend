@@ -24,6 +24,7 @@ class StudentTutoringResource extends JsonResource
             'id' => $this->getKey(),
             'enrolled_at' => $this->fecha_inscripcion?->toDateString(),
             'is_active' => $this->estado,
+            'final_result' => $this->final_result,
             'subject' => $subject ? [
                 'id' => $subject->getKey(),
                 'name' => $subject->nombre,
@@ -50,7 +51,6 @@ class StudentTutoringResource extends JsonResource
                     'id' => $teacher->getKey(),
                     'name' => $teacher->nombre,
                     'email' => $teacher->correo,
-                    'phone' => $teacher->telefono,
                 ] : null,
                 'schedules' => $schedules->map(fn ($schedule) => [
                     'id' => $schedule->getKey(),

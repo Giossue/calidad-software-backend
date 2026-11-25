@@ -17,7 +17,7 @@ de coordinación.
 | DOC-06 | Estudiantes | Deshabilitar la inscripción conservando cuenta, notas y asistencia. |
 | DOC-06C | Estudiantes | Registrar la matrícula del estudiante en la asignatura (1.ª, 2.ª o 3.ª; 1.ª por defecto) al inscribirlo y cambiarla al editar. Desde la 2.ª matrícula la asistencia es obligatoria y se muestra «Asistencia obligatoria» junto al estudiante. |
 | DOC-06B | Estudiantes | Registrar que un estudiante abandonó la tutoría, con el motivo en texto libre. Mientras figure como abandonó no se le registran notas, asistencia ni resultado final, y no avanza a la asignatura siguiente. Se puede quitar. |
-| DOC-06A | Resultado final | Registrar si el estudiante aprobó o reprobó la asignatura al cerrar el ciclo; el aprobado avanza a la asignatura siguiente de la malla (ver `../subject-sequence/specification.md`). |
+| DOC-06A | Resultado final | Registrar si el estudiante aprobó o reprobó la asignatura al cerrar el ciclo; el aprobado avanza a la asignatura siguiente de la malla (ver `../subject-sequence/specification.md`). Al registrar o cambiar el resultado a aprobado o reprobado, el estudiante recibe un aviso en la campana («Aprobaste la tutoría de {asignatura}» / «Reprobaste la tutoría de {asignatura}»); quitarlo o guardar el mismo valor no envía aviso. |
 | DOC-07 | Asistencia | Guardar presentes y ausentes por fecha, junto con temas vistos. |
 | DOC-08 | Contenido | Registrar temas dentro de la tutoría propia. |
 | DOC-09 | Contenido | Actualizar nombre y descripción del tema. |
@@ -203,12 +203,24 @@ grupo diagnóstico.
   lista o desde Contenido («Asignar temas a esta sesión»); si no tiene ninguno
   vinculado, los que se registraron ese día en la tutoría. Contenido se filtra
   por sesión y, en «Todas», indica en qué sesión se trató cada tema.
-- La asistencia **solo se toma mientras la tutoría está en curso**: la fecha es
-  hoy y la hora actual está dentro de uno de sus horarios activos de hoy (inicio y
-  fin incluidos). Sin horario registrado no se puede tomar. Fuera de esa franja la
-  lista de hoy tampoco se puede modificar. Los horarios se leen en la hora local de
-  la universidad (`APP_SCHEDULE_TIMEZONE`, por defecto `America/Guayaquil`),
-  aunque la aplicación trabaje en UTC.
+- La sesión (asistencia y temas) de **cualquier día con clase del período vigente,
+  desde su inicio hasta hoy**, se registra o modifica durante todo el PAO: el día
+  debe caer en un día de la semana con un horario activo de la tutoría. Hoy ya no
+  exige estar dentro de la franja horaria. Se rechazan con 422 en `date`: fechas
+  futuras («No se pueden registrar sesiones de fechas futuras.»), fechas fuera del
+  período de la tutoría, tutorías sin horario activo y días sin clase («La tutoría
+  no tiene clase ese día.»). Las tutorías de períodos cerrados siguen siendo de
+  solo consulta. Hoy y los días de la semana se leen en la hora local de la
+  universidad (`APP_SCHEDULE_TIMEZONE`, por defecto `America/Guayaquil`), aunque
+  la aplicación trabaje en UTC.
+- En **Asistencia** un calendario mensual (de lunes a domingo, limitado a los meses
+  del período) habilita los días con clase hasta hoy y marca los que ya tienen
+  sesión. Elegir un día, o una fila de la lista de sesiones, abre la sesión de esa
+  fecha en el mismo formulario de asistencia para registrarla o modificarla; al
+  guardar se conservan sus temas. En una tutoría de un período cerrado solo se
+  abren los días con sesión, para consulta. El calendario usa los datos ya
+  existentes: horarios y fechas del período de `GET /tutorings` y las sesiones de
+  `GET /tutorings/{tutoring}/sessions`.
 - Las sesiones se identifican por tutoría y fecha. Repetir el guardado actualiza
   la sesión y la asistencia, conservando las demás fechas.
 - La UI exige marcar a todos los estudiantes activos. La API admite guardar un
@@ -258,7 +270,7 @@ falta de permiso, `403`; elementos anidados ajenos, `404`.
 | PATCH | `/tutorings/{tutoring}/topics/{topic}/activities/{activity}/methodologies/{methodology}/deactivate` | Baja lógica de la metodología. |
 | GET | `/tutorings/{tutoring}/sessions` | Sesiones con asistencia y temas; `date`, `page`, `per_page`. Cada fila de `attendance` trae `attendance_required`. |
 | GET | `/tutorings/{tutoring}/attendance` | Asistencia actual e histórica; `date`, `page`, `per_page`. |
-| PUT | `/tutorings/{tutoring}/sessions` | `date` (hoy, durante el horario de la tutoría), `topics_covered`, `topic_ids`, `attendance: [{enrollment_id, present}]`. |
+| PUT | `/tutorings/{tutoring}/sessions` | `date` (un día con clase del período vigente, desde su inicio hasta hoy), `topics_covered`, `topic_ids`, `attendance: [{enrollment_id, present}]`. Crea o actualiza la sesión de esa fecha. |
 | GET | `/tutorings/{tutoring}/reports` | Informes conservados; `page`, `per_page`. |
 | POST | `/tutorings/{tutoring}/reports` | `title`, `observations` opcional; el servidor calcula `summary` y `content`. |
 | GET | `/tutorings/{tutoring}/reports/diagnostic/preview` | `date` opcional (hoy por defecto); devuelve el reporte diagnóstico calculado sin guardarlo. |

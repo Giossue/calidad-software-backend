@@ -8,6 +8,7 @@ use App\Models\InscripcionTutoria;
 use App\Models\Role;
 use App\Models\Usuario;
 use App\Notifications\ProvisionalPasswordNotification;
+use App\Support\ActionNotifier;
 use App\Support\EnrollmentNumber;
 use App\Support\Mallas;
 use App\Support\PendingSubjects;
@@ -157,7 +158,11 @@ class ManageEnrollment
             if ($enrollment->isAbandoned()) {
                 throw ValidationException::withMessages(['result' => 'El estudiante abandonó la tutoría; no se puede registrar su resultado final.']);
             }
+            $previous = $enrollment->final_result;
             $enrollment->update(['final_result' => $result, 'final_result_at' => $result === null ? null : now()]);
+            if ($result !== null && $result !== $previous) {
+                DB::afterCommit(fn () => ActionNotifier::tutoringFinalResult($tutoring, $enrollment->estudiante, $result));
+            }
             if ($result === InscripcionTutoria::APPROVED) {
                 if ($tutoring->subject_id !== null) {
                     PendingSubjects::resolve($enrollment->estudiante, (int) $tutoring->subject_id);
