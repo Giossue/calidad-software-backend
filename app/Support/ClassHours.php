@@ -27,39 +27,16 @@ class ClassHours
     }
 
     /**
-     * Horarios activos de la tutoría para el día de hoy, ordenados por hora.
+     * Horarios activos de la tutoría en el día de la semana de `$date` (Y-m-d), ordenados por hora.
      *
      * @return Collection<int, Horario>
      */
-    public static function todaySchedules(AsignaturaTutoria $tutoring): Collection
+    public static function schedulesOn(AsignaturaTutoria $tutoring, string $date): Collection
     {
-        $today = self::DAYS[self::now()->dayOfWeek];
+        $day = self::DAYS[CarbonImmutable::parse($date)->dayOfWeek];
 
         return $tutoring->horarios()->where('estado', true)->orderBy('hora_inicio')->get()
-            ->filter(fn (Horario $schedule): bool => ManageSchedule::getDayVariants((string) $schedule->dia_semana)[0] === $today)
+            ->filter(fn (Horario $schedule): bool => ManageSchedule::getDayVariants((string) $schedule->dia_semana)[0] === $day)
             ->values();
-    }
-
-    /** El horario que está en curso ahora mismo, si hay uno. */
-    public static function current(AsignaturaTutoria $tutoring): ?Horario
-    {
-        $time = self::now()->format('H:i:s');
-
-        return self::todaySchedules($tutoring)->first(
-            fn (Horario $schedule): bool => self::time($schedule->hora_inicio) <= $time && $time <= self::time($schedule->hora_fin),
-        );
-    }
-
-    /** "08:00 a 10:00" */
-    public static function label(Horario $schedule): string
-    {
-        return substr(self::time($schedule->hora_inicio), 0, 5).' a '.substr(self::time($schedule->hora_fin), 0, 5);
-    }
-
-    private static function time(mixed $value): string
-    {
-        $time = (string) $value;
-
-        return strlen($time) === 5 ? $time.':00' : substr($time, 0, 8);
     }
 }

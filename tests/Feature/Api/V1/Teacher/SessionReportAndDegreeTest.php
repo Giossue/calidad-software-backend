@@ -4,7 +4,6 @@ namespace Tests\Feature\Api\V1\Teacher;
 
 use App\Models\AsignacionDocente;
 use App\Models\Asistencia;
-use App\Models\Horario;
 use App\Models\Reporte;
 use App\Models\Tema;
 use App\Models\TemaTitulacion;
@@ -52,20 +51,6 @@ class SessionReportAndDegreeTest extends TeacherTestCase
         $this->assertSame($expected, collect($this->getJson(self::API.'/tutorings/'.$this->tutoring->getKey().'/attendance')->assertOk()->json('data'))->pluck('student_name')->all());
     }
 
-    public function test_sessions_from_previous_dates_are_read_only(): void
-    {
-        $enrollment = $this->enrollment();
-        $this->classNow();
-        $payload = ['date' => '2026-09-29', 'topics_covered' => false, 'attendance' => [['enrollment_id' => $enrollment->getKey(), 'present' => true]]];
-
-        $this->putJson($this->path('/sessions'), $payload)->assertOk();
-        $this->travelTo('2026-09-30 12:00:00');
-        $this->classNow();
-        $this->putJson($this->path('/sessions'), [...$payload, 'attendance' => [['enrollment_id' => $enrollment->getKey(), 'present' => false]]])
-            ->assertUnprocessable()->assertJsonValidationErrors('date');
-        $this->assertTrue((bool) Asistencia::query()->where('fk_inscripcion', $enrollment->getKey())->value('estado_asistencia'));
-    }
-
     public function test_dates_duplicates_foreign_and_inactive_students_are_rejected_atomically(): void
     {
         $enrollment = $this->enrollment();
@@ -98,7 +83,6 @@ class SessionReportAndDegreeTest extends TeacherTestCase
         $enrollment = $this->enrollment();
         $topic = Tema::query()->create(['fk_asig_tutoria' => $this->tutoring->getKey(), 'nombre' => 'Pruebas', 'estado' => true]);
         $data = ['date' => '2026-09-28', 'topics_covered' => true, 'topic_ids' => [$topic->getKey()], 'attendance' => [['enrollment_id' => $enrollment->getKey(), 'present' => true]]];
-        // Cada sesión se guarda el mismo día que ocurre: las de fechas anteriores son de solo consulta.
         $this->travelTo('2026-09-28 10:00:00');
         $this->classNow();
         $this->putJson($this->path('/sessions'), $data)->assertOk();
@@ -145,39 +129,6 @@ class SessionReportAndDegreeTest extends TeacherTestCase
         $this->postJson('/api/v1/coordination/degree-topics/'.$topic->getKey().'/approve', [])->assertForbidden();
         $own->update(['estado' => false]);
         $this->getJson('/api/v1/teacher/degree-assignments')->assertOk()->assertJsonCount(0, 'data');
-    }
-
-    public function test_attendance_can_only_be_taken_while_the_class_is_in_progress(): void
-    {
-        // Horario en hora local (America/Guayaquil, UTC-5): lunes de 08:00 a 10:00.
-        Horario::query()->create([
-            'fk_asig_tutoria' => $this->tutoring->getKey(), 'dia_semana' => 'lunes',
-            'hora_inicio' => '08:00:00', 'hora_fin' => '10:00:00', 'room' => 'Aula 1', 'estado' => true,
-        ]);
-        $enrollment = $this->enrollment();
-        $payload = fn (string $date): array => ['date' => $date, 'topics_covered' => false, 'attendance' => [['enrollment_id' => $enrollment->getKey(), 'present' => true]]];
-
-        // Martes 29 a las 07:00 locales: hoy no hay clase.
-        $this->putJson($this->path('/sessions'), $payload('2026-09-29'))->assertUnprocessable()
-            ->assertJsonValidationErrors(['date' => 'Hoy no hay clase de esta tutoría']);
-
-        // Lunes 28 a las 07:59 locales: todavía no empieza.
-        $this->travelTo('2026-09-28 12:59:00');
-        $this->putJson($this->path('/sessions'), $payload('2026-09-28'))->assertUnprocessable()
-            ->assertJsonValidationErrors(['date' => 'hoy de 08:00 a 10:00']);
-
-        // Lunes 28 a las 09:00 locales: clase en curso.
-        $this->travelTo('2026-09-28 14:00:00');
-        $this->putJson($this->path('/sessions'), $payload('2026-09-28'))->assertOk();
-
-        // Lunes 28 a las 10:01 locales: ya terminó; tampoco se puede modificar.
-        $this->travelTo('2026-09-28 15:01:00');
-        $this->putJson($this->path('/sessions'), $payload('2026-09-28'))->assertUnprocessable()->assertJsonValidationErrors('date');
-
-        // Otro día no se puede tomar la de una fecha anterior, aunque esté en clase.
-        $this->travelTo('2026-10-05 14:00:00');
-        $this->putJson($this->path('/sessions'), $payload('2026-09-28'))->assertUnprocessable()
-            ->assertJsonValidationErrors(['date' => 'el día de la clase']);
     }
 
     public function test_an_evening_class_can_modify_todays_list_after_midnight_utc(): void

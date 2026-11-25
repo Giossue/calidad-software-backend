@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api\V1\Teacher;
 
 use App\Support\ClassHours;
+use Carbon\CarbonImmutable;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
 
@@ -13,19 +14,8 @@ class SessionRequest extends TeacherMutationRequest
     {
         $tutoring = $this->selectedTutoring();
 
-        $periodStart = $tutoring->periodo?->fecha_inicio?->toDateString();
-        $periodEnd = $tutoring->periodo?->fecha_fin?->toDateString();
-
-        $dateRules = ['required', 'date_format:Y-m-d', 'before_or_equal:today'];
-        if ($periodStart && $periodStart <= now()->toDateString()) {
-            $dateRules[] = 'after_or_equal:'.$periodStart;
-        }
-        if ($periodEnd) {
-            $dateRules[] = 'before_or_equal:'.$periodEnd;
-        }
-
         return [
-            'date' => $dateRules,
+            'date' => ['required', 'date_format:Y-m-d'],
             'topics_covered' => ['required', 'boolean'],
             'topic_ids' => ['exclude_unless:topics_covered,true', 'array', 'max:100'],
             'topic_ids.*' => ['integer', 'distinct', Rule::exists('tema', 'id_tema')->where('fk_asig_tutoria', $tutoring->getKey())],
@@ -36,8 +26,8 @@ class SessionRequest extends TeacherMutationRequest
     }
 
     /**
-     * La asistencia solo se toma mientras la tutoría está en curso: hoy (hora local)
-     * y dentro de uno de sus horarios activos.
+     * La sesión se registra o modifica en cualquier día con clase del período de la
+     * tutoría, desde su inicio hasta hoy (hora local de la universidad).
      */
     public function withValidator(Validator $validator): void
     {
@@ -45,22 +35,28 @@ class SessionRequest extends TeacherMutationRequest
             if (! $this->filled('date') || $validator->errors()->has('date')) {
                 return;
             }
+            $date = $this->string('date')->toString();
             $tutoring = $this->selectedTutoring();
+            if ($date > ClassHours::today()) {
+                $validator->errors()->add('date', 'No se pueden registrar sesiones de fechas futuras.');
+
+                return;
+            }
+            $start = $tutoring->periodo?->fecha_inicio?->toDateString();
+            $end = $tutoring->periodo?->fecha_fin?->toDateString();
+            if (($start && $date < $start) || ($end && $date > $end)) {
+                $validator->errors()->add('date', 'La fecha debe estar dentro del período académico de la tutoría'
+                    .($start && $end ? ' (del '.CarbonImmutable::parse($start)->format('d/m/Y').' al '.CarbonImmutable::parse($end)->format('d/m/Y').').' : '.'));
+
+                return;
+            }
             if (! $tutoring->horarios()->where('estado', true)->exists()) {
                 $validator->errors()->add('date', 'Registra el horario de la tutoría antes de tomar asistencia.');
 
                 return;
             }
-            if ($this->string('date')->toString() !== ClassHours::today()) {
-                $validator->errors()->add('date', 'La asistencia solo se puede tomar el día de la clase, durante su horario.');
-
-                return;
-            }
-            if (ClassHours::current($tutoring) === null) {
-                $today = ClassHours::todaySchedules($tutoring);
-                $validator->errors()->add('date', $today->isEmpty()
-                    ? 'Hoy no hay clase de esta tutoría: la asistencia solo se puede tomar durante su horario.'
-                    : 'La asistencia solo se puede tomar durante el horario de la tutoría (hoy de '.$today->map(fn ($schedule) => ClassHours::label($schedule))->implode(' y de ').').');
+            if (ClassHours::schedulesOn($tutoring, $date)->isEmpty()) {
+                $validator->errors()->add('date', 'La tutoría no tiene clase ese día.');
             }
         });
     }
