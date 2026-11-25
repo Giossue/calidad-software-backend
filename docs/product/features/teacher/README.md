@@ -50,6 +50,10 @@ de coordinación.
   indicados. El servidor valida estos vínculos aunque la petición omita la UI.
 - El docente consulta sus asignaciones de titulación; su administración sigue a
   cargo del Coordinador de Titulación.
+- El menú **Titulación** (Titulación y Seguimiento) solo aparece al docente que
+  tiene alguna asignación de titulación vigente como tutor o par académico; a los
+  docentes solo de tutorías no se les muestra, y un enlace directo a esas
+  pantallas los lleva a **Mis tutorías**.
 
 ## Manual de uso
 
