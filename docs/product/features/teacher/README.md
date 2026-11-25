@@ -59,7 +59,9 @@ de coordinación.
    número de inscritos y horarios. Una tutoría sin horario activo dice
    «Sin horario» en la lista y, al abrirla, una línea pide definirlo en
    «Horarios». En **Horarios** el horario es obligatorio para el docente (al
-   menos una fila de día, inicio y fin; `schedules` exige `min:1`). El menú de
+   menos una fila de día, inicio y fin; `schedules` exige `min:1`). Un horario
+   ingresado por error se quita con «Quitar horario» al editar: el servidor lo
+   deja inactivo y la tabla de **Horarios** solo lista los vigentes. El menú de
    cada fila abre sus secciones con `?tutoring=<id>` para conservar el contexto.
 3. En **Estudiantes**, seleccionar una tutoría. **Registrar estudiante** permite
    buscar una cuenta activa del mismo paralelo o registrar una nueva con cédula
