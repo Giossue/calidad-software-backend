@@ -45,5 +45,6 @@ titulación, docente y estudiante.
 
 - `POST /api/v1/auth/tours/complete` con `{ "tour": "<identificador>" }`:
   registra la guía como vista y devuelve el usuario. Es idempotente. El
-  identificador admite minúsculas, números y guiones, con una sola `/` opcional
-  (máximo 80 caracteres). Requiere sesión y perfil completo.
+  identificador admite minúsculas, números y guiones, en hasta tres partes
+  separadas por `/` (por ejemplo `teacher-tutorings/attendance/register`;
+  máximo 80 caracteres). Requiere sesión y perfil completo.

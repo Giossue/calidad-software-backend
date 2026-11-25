@@ -16,7 +16,7 @@ class TourController extends Controller
     public function complete(Request $request): UserResource
     {
         $tour = $request->validate([
-            'tour' => ['required', 'string', 'max:80', 'regex:/^[a-z0-9-]+(\/[a-z0-9-]+)?$/'],
+            'tour' => ['required', 'string', 'max:80', 'regex:/^[a-z0-9-]+(\/[a-z0-9-]+){0,2}$/'],
         ], [], ['tour' => 'recorrido'])['tour'];
 
         /** @var Usuario $user */

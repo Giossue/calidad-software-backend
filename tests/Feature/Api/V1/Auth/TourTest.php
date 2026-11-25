@@ -35,9 +35,20 @@ class TourTest extends TestCase
     {
         Sanctum::actingAs(Usuario::factory()->withRole('docente')->create(), ['access-api']);
 
-        foreach (['', 'Con Mayúsculas', 'a/b/c', '<script>', str_repeat('a', 81)] as $tour) {
+        foreach (['', 'Con Mayúsculas', 'a/b/c/d', 'a//b', '<script>', str_repeat('a', 81)] as $tour) {
             $this->postJson('/api/v1/auth/tours/complete', ['tour' => $tour])->assertUnprocessable()->assertJsonValidationErrors('tour');
         }
+    }
+
+    public function test_tours_of_screens_inside_a_tab_are_recorded(): void
+    {
+        $user = Usuario::factory()->withRole('docente')->create();
+        Sanctum::actingAs($user, ['access-api']);
+
+        $this->postJson('/api/v1/auth/tours/complete', ['tour' => 'teacher-tutorings/attendance/register'])
+            ->assertOk()
+            ->assertJsonPath('data.completed_tours', ['teacher-tutorings/attendance/register']);
+        $this->assertSame(['teacher-tutorings/attendance/register'], $user->refresh()->completed_tours);
     }
 
     public function test_guests_cannot_complete_tours(): void
