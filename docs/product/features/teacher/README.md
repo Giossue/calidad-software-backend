@@ -101,11 +101,12 @@ de coordinación.
    reúne la lista de estudiantes y sus notas (`?tab=grades` abre las notas).
 6. En **Contenido**, crear temas y abrir sus **Actividades** y **Metodologías**.
    Las acciones de edición y baja lógica se ofrecen dentro de cada nivel.
-7. En **Asistencia**, elegir una fecha dentro del período y hasta hoy. Cada
-   estudiante comienza como **Sin registrar**: marcar explícitamente su estado o
-   usar **Todos presentes** y corregir las ausencias. Indicar si se abordaron
-   temas y seleccionar los correspondientes. Guardar y consultar el historial.
-   Cambiar de fecha con modificaciones pendientes exige confirmar su descarte.
+7. En **Asistencia**, elegir en el calendario un día con clase del período,
+   hasta hoy. Marcar a cada estudiante presente o ausente (o usar **Marcar
+   todos**) y guardar; la sesión se puede corregir durante todo el PAO. Los
+   temas de la sesión se asignan en **Contenido**: desde una sesión ya guardada,
+   **Asignar temas en Contenido** abre esa sesión en Contenido; en una sesión
+   nueva se avisa que los temas se asignan después de guardar.
 8. En **Informes**, el docente envía solo los cuatro formatos oficiales desde
    **Reportes oficiales**; la interfaz ya no ofrece el informe libre (título y
    observaciones). Los informes libres enviados antes se siguen leyendo como texto
