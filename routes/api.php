@@ -182,6 +182,7 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::patch('tutorings/{tutoring}/topics/{topic}', [TeacherContentController::class, 'updateTopic'])->name('topics.update');
             Route::patch('tutorings/{tutoring}/topics/{topic}/toggle-covered', [TeacherContentController::class, 'toggleCovered'])->name('topics.toggle-covered');
             Route::patch('tutorings/{tutoring}/topics/{topic}/deactivate', [TeacherContentController::class, 'deactivateTopic'])->name('topics.deactivate');
+            Route::delete('tutorings/{tutoring}/topics/{topic}', [TeacherContentController::class, 'destroyTopic'])->name('topics.destroy');
             Route::post('tutorings/{tutoring}/topics/{topic}/files', [TeacherTopicFileController::class, 'store'])->middleware('throttle:30,1')->name('topics.files.store');
             Route::get('tutorings/{tutoring}/topics/{topic}/files/{file}', [TeacherTopicFileController::class, 'download'])->name('topics.files.download');
             Route::delete('tutorings/{tutoring}/topics/{topic}/files/{file}', [TeacherTopicFileController::class, 'destroy'])->name('topics.files.destroy');

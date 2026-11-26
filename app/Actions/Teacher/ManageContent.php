@@ -6,8 +6,11 @@ use App\Models\Actividad;
 use App\Models\AsignaturaTutoria;
 use App\Models\Metodologia;
 use App\Models\Tema;
+use App\Models\TutoringSession;
 use App\Models\Usuario;
 use App\Support\TeacherWorkspace;
+use App\Support\TopicFiles;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 class ManageContent
@@ -104,6 +107,31 @@ class ManageContent
             $record->update(['estado' => false]);
 
             return $record->refresh();
+        });
+    }
+
+    /**
+     * Elimina un tema registrado por error junto con sus actividades, metodologías y archivos,
+     * y lo quita de las sesiones; una sesión que se queda sin temas deja de marcarlos como vistos.
+     */
+    public function deleteTopic(Usuario $teacher, AsignaturaTutoria $tutoring, Tema $topic): void
+    {
+        $this->workspace->write($teacher, $tutoring, function () use ($tutoring, $topic): void {
+            $this->workspace->topic($tutoring, $topic);
+            $sessionIds = $topic->sessions()->pluck('tutoring_sessions.id');
+            $paths = $topic->files()->pluck('path')->all();
+
+            $topic->sessions()->detach();
+            TutoringSession::query()->whereKey($sessionIds)->whereDoesntHave('topics')->update(['topics_covered' => false]);
+            foreach ($topic->actividades()->get() as $activity) {
+                $activity->metodologias()->delete();
+            }
+            $topic->actividades()->delete();
+            $topic->files()->delete();
+            $topic->delete();
+
+            // Los archivos del disco se borran después de confirmar la transacción.
+            DB::afterCommit(fn () => TopicFiles::disk()->delete($paths));
         });
     }
 

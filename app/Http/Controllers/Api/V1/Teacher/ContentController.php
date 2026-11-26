@@ -18,6 +18,7 @@ use App\Models\Metodologia;
 use App\Models\Tema;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
 
 class ContentController extends Controller
 {
@@ -54,6 +55,13 @@ class ContentController extends Controller
     public function deactivateTopic(TeacherMutationRequest $request, AsignaturaTutoria $tutoring, Tema $topic, ManageContent $action): TopicResource
     {
         return TopicResource::make($action->deactivate($request->user(), $tutoring, $topic)->load('actividades.metodologias', 'files'));
+    }
+
+    public function destroyTopic(TeacherMutationRequest $request, AsignaturaTutoria $tutoring, Tema $topic, ManageContent $action): Response
+    {
+        $action->deleteTopic($request->user(), $tutoring, $topic);
+
+        return response()->noContent();
     }
 
     public function storeActivity(ActivityRequest $request, AsignaturaTutoria $tutoring, Tema $topic, ManageContent $action): JsonResponse

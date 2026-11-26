@@ -104,7 +104,11 @@ de coordinación.
    defecto), **Contenido**, **Horarios** y **Estudiantes y Calificaciones**, que
    reúne la lista de estudiantes y sus notas (`?tab=grades` abre las notas).
 6. En **Contenido**, crear temas y abrir sus **Actividades** y **Metodologías**.
-   Las acciones de edición y baja lógica se ofrecen dentro de cada nivel.
+   Las acciones de edición y baja lógica se ofrecen dentro de cada nivel. Un
+   tema registrado por error se borra con **Eliminar tema** (en la pantalla del
+   tema, con confirmación): se eliminan sus actividades, metodologías y archivos,
+   se quita de las sesiones y una sesión que se queda sin temas deja de marcarlos
+   como vistos (`DELETE /tutorings/{tutoring}/topics/{topic}`, 204).
 7. En **Asistencia**, elegir en el calendario un día con clase del período,
    hasta hoy. Marcar a cada estudiante presente o ausente (o usar **Marcar
    todos**) y guardar; la sesión se puede corregir durante todo el PAO. Los
