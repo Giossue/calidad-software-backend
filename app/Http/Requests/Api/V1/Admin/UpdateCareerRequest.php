@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api\V1\Admin;
 
 use App\Actions\Academic\GenerateCareerCycles;
+use App\Http\Requests\Concerns\UppercasesInput;
 use App\Models\Carrera;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
@@ -11,6 +12,13 @@ use Illuminate\Validation\Validator;
 
 class UpdateCareerRequest extends FormRequest
 {
+    use UppercasesInput;
+
+    protected function uppercaseFields(): array
+    {
+        return ['name'];
+    }
+
     public function authorize(): bool
     {
         $career = $this->route('career');

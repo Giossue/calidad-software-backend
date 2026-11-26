@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\V1\Admin;
 
+use App\Http\Requests\Concerns\UppercasesInput;
 use App\Models\Facultad;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
@@ -10,6 +11,13 @@ use Illuminate\Validation\Rules\Unique;
 
 class StoreFacultyRequest extends FormRequest
 {
+    use UppercasesInput;
+
+    protected function uppercaseFields(): array
+    {
+        return ['name'];
+    }
+
     public function authorize(): bool
     {
         return $this->user()?->can('create', Facultad::class) ?? false;

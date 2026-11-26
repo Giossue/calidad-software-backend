@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\StoresUppercase;
 use App\Support\Mallas;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -22,6 +23,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Subject extends Model
 {
+    use StoresUppercase;
+
+    /** @var list<string> */
+    protected array $uppercase = ['name'];
+
     protected $fillable = ['career_id', 'malla_id', 'code', 'name', 'cycle_number', 'modality_id', 'is_active'];
 
     /** @return array<string, string> */

@@ -149,18 +149,18 @@ class StudentTutoringTopicsTest extends TestCase
         $response->assertOk()
             ->assertJsonPath('data.tutoring.id', $tutoring->getKey())
             ->assertJsonPath('data.tutoring.name', 'Calidad y Pruebas de Software')
-            ->assertJsonPath('data.tutoring.teacher.name', 'Ing. Carlos Docente')
+            ->assertJsonPath('data.tutoring.teacher.name', 'ING. CARLOS DOCENTE')
             ->assertJsonPath('data.progress.total_topics', 2)
             ->assertJsonPath('data.progress.covered_topics', 1)
             ->assertJsonPath('data.progress.pending_topics', 1)
             ->assertJsonPath('data.progress.progress_percentage', 50)
             ->assertJsonCount(2, 'data.topics')
-            ->assertJsonPath('data.topics.0.name', 'Diseño de Casos de Prueba')
+            ->assertJsonPath('data.topics.0.name', 'DISEÑO DE CASOS DE PRUEBA')
             ->assertJsonPath('data.topics.0.is_covered', true)
             ->assertJsonPath('data.topics.0.activities.0.name', 'Taller de Partición Equivalente')
             ->assertJsonPath('data.topics.0.activities.0.duration', '45 minutos')
             ->assertJsonPath('data.topics.0.activities.0.methodologies.0.description', 'Resolución de problemas prácticos en grupo.')
-            ->assertJsonPath('data.topics.1.name', 'Automatización de Pruebas API')
+            ->assertJsonPath('data.topics.1.name', 'AUTOMATIZACIÓN DE PRUEBAS API')
             ->assertJsonPath('data.topics.1.is_covered', false);
     }
 
@@ -197,7 +197,7 @@ class StudentTutoringTopicsTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('data.id', $topic->getKey())
-            ->assertJsonPath('data.name', 'Diseño de Casos de Prueba')
+            ->assertJsonPath('data.name', 'DISEÑO DE CASOS DE PRUEBA')
             ->assertJsonPath('data.is_covered', true)
             ->assertJsonCount(1, 'data.activities')
             ->assertJsonPath('data.activities.0.name', 'Taller de Partición Equivalente')

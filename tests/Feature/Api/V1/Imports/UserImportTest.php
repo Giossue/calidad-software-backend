@@ -56,7 +56,7 @@ class UserImportTest extends TutoringTestCase
 
         $student = Usuario::query()->where('correo', 'ana.torres@ueb.edu.ec')->firstOrFail();
         $this->assertNull($student->cedula);
-        $this->assertSame('Ana Torres', $student->nombre);
+        $this->assertSame('ANA TORRES', $student->nombre);
         $this->assertTrue($student->must_complete_profile);
         $this->assertTrue($student->hasRole('estudiante'));
         $this->assertSame([$this->career->getKey(), $this->cycle->getKey()], [$student->fk_carrera, $student->fk_ciclo]);
@@ -64,7 +64,7 @@ class UserImportTest extends TutoringTestCase
         $this->assertNotNull($student->email_verified_at);
 
         $teacher = Usuario::query()->where('correo', 'luis@ueb.edu.ec')->firstOrFail();
-        $this->assertSame('Pérez Mora Luis Alberto', $teacher->nombre);
+        $this->assertSame('PÉREZ MORA LUIS ALBERTO', $teacher->nombre);
         $this->assertSame('0926687856', $teacher->cedula);
         $this->assertSame('0991234567', $teacher->telefono);
         $this->assertNull($teacher->fk_ciclo);
@@ -111,7 +111,7 @@ class UserImportTest extends TutoringTestCase
             ->assertJsonPath('data.errors.0.messages.0', 'En esta carga todas las cuentas son de rol estudiante.');
         $student = Usuario::query()->where('correo', 'alumno@ueb.edu.ec')->firstOrFail();
         $this->assertTrue($student->hasRole('estudiante'));
-        $this->assertSame(['Vera Rosa', $this->cycle->getKey()], [$student->nombre, $student->fk_ciclo]);
+        $this->assertSame(['VERA ROSA', $this->cycle->getKey()], [$student->nombre, $student->fk_ciclo]);
         $this->assertTrue(Usuario::query()->where('correo', 'yechacha@mailes.ueb.edu.ec')->firstOrFail()->hasRole('estudiante'));
 
         $this->upload('users', "correo,rol,carrera\nx@ueb.edu.ec,estudiante,Software\n")->assertForbidden();
@@ -153,7 +153,7 @@ class UserImportTest extends TutoringTestCase
             ->assertJsonPath('data.cycle_id', $this->cycle->getKey());
 
         $user->refresh();
-        $this->assertSame('Torres Ana', $user->nombre);
+        $this->assertSame('TORRES ANA', $user->nombre);
         $this->assertSame($this->cycle->getKey(), $user->fk_ciclo);
         $this->assertTrue($user->paralelos()->whereKey($this->cycle->fk_paralelo)->exists());
         $this->assertTrue(password_verify('Nueva-Clave-2026', $user->password_hash));
@@ -222,7 +222,7 @@ class UserImportTest extends TutoringTestCase
             ...$payload, 'career_id' => $this->career->getKey(), 'cycle_id' => $this->cycle->getKey(),
         ])->assertOk()
             ->assertJsonPath('data.must_complete_profile', false)
-            ->assertJsonPath('data.name', 'Mora Luis')
+            ->assertJsonPath('data.name', 'MORA LUIS')
             ->assertJsonPath('data.career_id', $this->career->getKey())
             ->assertJsonPath('data.cycle_number', $this->cycle->numero)
             ->assertJsonPath('data.academic_stage', 'tutorias');

@@ -14,7 +14,7 @@ class EnrollmentAndGradeTest extends TeacherTestCase
     {
         $draft = Usuario::factory()->make();
         $response = $this->postJson($this->path('/students'), ['identification' => $draft->cedula, 'first_names' => ' Ana  María ', 'last_names' => 'Torres Vera', 'email' => 'ana.perez@ueb.edu.ec', 'phone' => '0991234567']);
-        $response->assertCreated()->assertJsonPath('data.name', 'Torres Vera Ana María')->assertJsonPath('data.is_active', true)->assertJsonMissingPath('data.password')->assertJsonMissingPath('data.password_hash');
+        $response->assertCreated()->assertJsonPath('data.name', 'TORRES VERA ANA MARÍA')->assertJsonPath('data.is_active', true)->assertJsonMissingPath('data.password')->assertJsonMissingPath('data.password_hash');
         $student = Usuario::query()->findOrFail($response->json('data.student_id'));
         $this->assertTrue($student->hasRole('estudiante'));
         $this->assertTrue($student->must_complete_profile);
@@ -32,7 +32,7 @@ class EnrollmentAndGradeTest extends TeacherTestCase
         $this->postJson($this->path('/students'), [...$payload, 'first_names' => 'Ana 2', 'last_names' => 'Torres'])->assertUnprocessable()->assertJsonValidationErrors(['first_names' => 'Los nombres solo pueden contener letras y espacios.']);
         $this->assertDatabaseCount('inscripcion_tutoria', 0);
         // Un solo apellido es la excepción admitida; las partículas no cuentan aparte.
-        $this->postJson($this->path('/students'), [...$payload, 'first_names' => 'María de los Ángeles', 'last_names' => 'De la Torre'])->assertCreated()->assertJsonPath('data.name', 'De la Torre María de los Ángeles');
+        $this->postJson($this->path('/students'), [...$payload, 'first_names' => 'María de los Ángeles', 'last_names' => 'De la Torre'])->assertCreated()->assertJsonPath('data.name', 'DE LA TORRE MARÍA DE LOS ÁNGELES');
     }
 
     public function test_an_existing_student_is_enrolled_without_names_and_cannot_receive_new_ones(): void
@@ -40,7 +40,7 @@ class EnrollmentAndGradeTest extends TeacherTestCase
         $student = Usuario::factory()->withRole('estudiante')->create(['nombre' => 'Mora Luis']);
         $student->paralelos()->attach($this->tutoring->fk_paralelo, ['fecha_asignacion' => today(), 'estado' => true]);
         $this->postJson($this->path('/students'), ['student_id' => $student->getKey(), 'first_names' => 'Otro', 'last_names' => 'Nombre'])->assertUnprocessable()->assertJsonValidationErrors(['first_names', 'last_names']);
-        $this->postJson($this->path('/students'), ['student_id' => $student->getKey()])->assertCreated()->assertJsonPath('data.name', 'Mora Luis');
+        $this->postJson($this->path('/students'), ['student_id' => $student->getKey()])->assertCreated()->assertJsonPath('data.name', 'MORA LUIS');
     }
 
     public function test_existing_student_selection_is_limited_to_the_parallel_and_role(): void
@@ -62,15 +62,15 @@ class EnrollmentAndGradeTest extends TeacherTestCase
     {
         $enrollment = $this->enrollment();
         $path = $this->path('/students/'.$enrollment->getKey());
-        $this->patchJson($path, ['first_names' => 'María José', 'last_names' => 'López Vera', 'phone' => '0987654321'])->assertOk()->assertJsonPath('data.name', 'López Vera María José')->assertJsonPath('data.phone', '0987654321');
-        $this->assertSame('López Vera María José', $enrollment->estudiante->refresh()->nombre);
+        $this->patchJson($path, ['first_names' => 'María José', 'last_names' => 'López Vera', 'phone' => '0987654321'])->assertOk()->assertJsonPath('data.name', 'LÓPEZ VERA MARÍA JOSÉ')->assertJsonPath('data.phone', '0987654321');
+        $this->assertSame('LÓPEZ VERA MARÍA JOSÉ', $enrollment->estudiante->refresh()->nombre);
         $this->patchJson($path, ['first_names' => 'María', 'last_names' => 'López', 'email' => 'otra@ueb.edu.ec'])->assertUnprocessable()->assertJsonValidationErrors('email');
         $this->patchJson($path, ['first_names' => 'María 123', 'last_names' => 'López'])->assertUnprocessable()->assertJsonValidationErrors('first_names');
         $this->patchJson($path, ['first_names' => 'María', 'last_names' => 'López Vera Mora'])->assertUnprocessable()->assertJsonValidationErrors('last_names');
         // Nombres y apellidos van juntos: uno solo no reemplaza el nombre guardado.
         $this->patchJson($path, ['first_names' => 'María'])->assertUnprocessable()->assertJsonValidationErrors('last_names');
         // Los nombres son opcionales al editar: sin ellos se conserva el nombre guardado.
-        $this->patchJson($path, ['phone' => '0991112222'])->assertOk()->assertJsonPath('data.name', 'López Vera María José')->assertJsonPath('data.phone', '0991112222');
+        $this->patchJson($path, ['phone' => '0991112222'])->assertOk()->assertJsonPath('data.name', 'LÓPEZ VERA MARÍA JOSÉ')->assertJsonPath('data.phone', '0991112222');
         $this->assertTrue($enrollment->estudiante->refresh()->hasRole('estudiante'));
     }
 
@@ -177,6 +177,6 @@ class EnrollmentAndGradeTest extends TeacherTestCase
         $middle->estudiante->update(['nombre' => 'Loor Mateo']);
 
         $this->getJson($this->path('/students'))->assertOk()
-            ->assertJsonPath('data.0.name', 'Andrade Sofía')->assertJsonPath('data.1.name', 'Loor Mateo')->assertJsonPath('data.2.name', 'Zambrano Luis');
+            ->assertJsonPath('data.0.name', 'ANDRADE SOFÍA')->assertJsonPath('data.1.name', 'LOOR MATEO')->assertJsonPath('data.2.name', 'ZAMBRANO LUIS');
     }
 }

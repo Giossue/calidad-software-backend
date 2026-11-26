@@ -27,11 +27,11 @@ class FacultyManagementTest extends TestCase
         ]);
 
         $response->assertCreated()
-            ->assertJsonPath('data.name', 'Facultad de Ingeniería')
+            ->assertJsonPath('data.name', 'FACULTAD DE INGENIERÍA')
             ->assertJsonPath('data.is_active', true);
 
         $this->assertDatabaseHas('facultad', [
-            'nombre' => 'Facultad de Ingeniería',
+            'nombre' => 'FACULTAD DE INGENIERÍA',
             'estado' => true,
         ]);
     }
@@ -54,12 +54,12 @@ class FacultyManagementTest extends TestCase
         ]);
 
         $response->assertOk()
-            ->assertJsonPath('data.name', 'Facultad de Ingeniería')
+            ->assertJsonPath('data.name', 'FACULTAD DE INGENIERÍA')
             ->assertJsonPath('data.is_active', true);
 
         $this->assertDatabaseHas('facultad', [
             'id_facultad' => $faculty->getKey(),
-            'nombre' => 'Facultad de Ingeniería',
+            'nombre' => 'FACULTAD DE INGENIERÍA',
         ]);
     }
 
@@ -85,7 +85,7 @@ class FacultyManagementTest extends TestCase
 
         $this->assertDatabaseHas('facultad', [
             'id_facultad' => $faculty->getKey(),
-            'nombre' => 'Facultad de Derecho',
+            'nombre' => 'FACULTAD DE DERECHO',
             'estado' => false,
         ]);
         $this->assertDatabaseCount('facultad', 1);
@@ -199,8 +199,8 @@ class FacultyManagementTest extends TestCase
 
         $response->assertOk();
         $names = collect($response->json('data'))->pluck('name');
-        $this->assertTrue($names->contains('Facultad de Ingeniería'));
-        $this->assertFalse($names->contains('Facultad de Salud'));
+        $this->assertTrue($names->contains('FACULTAD DE INGENIERÍA'));
+        $this->assertFalse($names->contains('FACULTAD DE SALUD'));
     }
 
     public function test_faculty_all_mode_returns_every_active_faculty_unpaginated(): void
@@ -213,8 +213,8 @@ class FacultyManagementTest extends TestCase
 
         $response->assertOk()->assertJsonMissingPath('meta');
         $names = collect($response->json('data'))->pluck('name');
-        $this->assertTrue($names->contains('Facultad Activa Uno'));
-        $this->assertTrue($names->contains('Facultad Activa Dos'));
-        $this->assertFalse($names->contains('Facultad Inactiva'));
+        $this->assertTrue($names->contains('FACULTAD ACTIVA UNO'));
+        $this->assertTrue($names->contains('FACULTAD ACTIVA DOS'));
+        $this->assertFalse($names->contains('FACULTAD INACTIVA'));
     }
 }

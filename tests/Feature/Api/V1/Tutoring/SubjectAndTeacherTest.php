@@ -108,7 +108,7 @@ class SubjectAndTeacherTest extends TutoringTestCase
         $this->patchJson($url.'/deactivate')->assertForbidden();
         $this->putJson($url.'/cycles/'.$this->otherCycle->getKey())->assertForbidden();
         $this->deleteJson($url.'/cycles/'.$this->otherCycle->getKey())->assertForbidden();
-        $this->assertSame('Calidad de software', $foreign->refresh()->name);
+        $this->assertSame('CALIDAD DE SOFTWARE', $foreign->refresh()->name);
     }
 
     public function test_subject_codes_are_unique_per_career_and_career_cannot_be_changed(): void
@@ -218,7 +218,7 @@ class SubjectAndTeacherTest extends TutoringTestCase
         $this->assertTrue($teacher->must_complete_profile);
         $this->patchJson(self::API.'/teachers/'.$teacher->getKey(), [
             'first_names' => 'María', 'last_names' => 'Torres', 'email' => 'maria.torres@ueb.edu.ec',
-        ])->assertOk()->assertJsonPath('data.name', 'Torres María')->assertJsonPath('data.email', 'maria.torres@ueb.edu.ec');
+        ])->assertOk()->assertJsonPath('data.name', 'TORRES MARÍA')->assertJsonPath('data.email', 'maria.torres@ueb.edu.ec');
     }
 
     public function test_teacher_registration_takes_first_names_and_last_names_stored_as_last_names_first(): void
@@ -228,8 +228,8 @@ class SubjectAndTeacherTest extends TutoringTestCase
         $payload = ['first_names' => '  Ana   María ', 'last_names' => 'Torres Vera'] + $this->teacherPayload();
 
         $response = $this->postJson(self::API.'/teachers', $payload)->assertCreated()
-            ->assertJsonPath('data.name', 'Torres Vera Ana María');
-        $this->assertSame('Torres Vera Ana María', Usuario::query()->findOrFail($response->json('data.id'))->nombre);
+            ->assertJsonPath('data.name', 'TORRES VERA ANA MARÍA');
+        $this->assertSame('TORRES VERA ANA MARÍA', Usuario::query()->findOrFail($response->json('data.id'))->nombre);
     }
 
     public function test_teacher_registration_rejects_more_than_two_first_names_or_last_names(): void
@@ -253,11 +253,11 @@ class SubjectAndTeacherTest extends TutoringTestCase
         $url = self::API.'/teachers/'.$teacher->getKey();
 
         $this->patchJson($url, ['phone' => '0992222222'])->assertOk()
-            ->assertJsonPath('data.name', 'Torres Vera Ana María')->assertJsonPath('data.phone', '0992222222');
+            ->assertJsonPath('data.name', 'TORRES VERA ANA MARÍA')->assertJsonPath('data.phone', '0992222222');
         $this->patchJson($url, ['first_names' => 'Ana'])->assertUnprocessable()->assertJsonValidationErrors('last_names');
         $this->patchJson($url, ['last_names' => 'Mora'])->assertUnprocessable()->assertJsonValidationErrors('first_names');
-        $this->assertSame('Torres Vera Ana María', $teacher->refresh()->nombre);
-        $this->patchJson($url, ['first_names' => 'Ana', 'last_names' => 'Mora'])->assertOk()->assertJsonPath('data.name', 'Mora Ana');
+        $this->assertSame('TORRES VERA ANA MARÍA', $teacher->refresh()->nombre);
+        $this->patchJson($url, ['first_names' => 'Ana', 'last_names' => 'Mora'])->assertOk()->assertJsonPath('data.name', 'MORA ANA');
     }
 
     public function test_once_the_teacher_completes_the_profile_the_coordinator_cannot_change_email_or_identification(): void
@@ -281,7 +281,7 @@ class SubjectAndTeacherTest extends TutoringTestCase
             ->assertJsonValidationErrors(['identification' => 'El docente ya completó su perfil: su cédula no se puede cambiar.']);
         // Enviar los mismos valores (el formulario manda todos los campos) sí se acepta.
         $this->patchJson($url, ['identification' => $cedula, 'email' => 'ANA.TORRES2@ueb.edu.ec', 'first_names' => 'Ana', 'last_names' => 'Torres', 'phone' => '0999999999'])
-            ->assertOk()->assertJsonPath('data.name', 'Torres Ana');
+            ->assertOk()->assertJsonPath('data.name', 'TORRES ANA');
         $this->assertSame('ana.torres2@ueb.edu.ec', $teacher->refresh()->correo);
         $this->assertSame($cedula, $teacher->cedula);
     }

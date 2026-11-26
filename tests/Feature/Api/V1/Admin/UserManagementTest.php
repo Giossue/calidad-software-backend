@@ -61,7 +61,7 @@ class UserManagementTest extends TestCase
 
         $response->assertCreated()
             ->assertJsonPath('data.identification', '0926687856')
-            ->assertJsonPath('data.name', 'Torres Vera Ana María')
+            ->assertJsonPath('data.name', 'TORRES VERA ANA MARÍA')
             ->assertJsonPath('data.email', 'luis@example.com')
             ->assertJsonPath('data.role', 'estudiante')
             ->assertJsonPath('data.is_active', true)
@@ -69,7 +69,7 @@ class UserManagementTest extends TestCase
 
         $this->assertDatabaseHas('usuario', [
             'cedula' => '0926687856',
-            'nombre' => 'Torres Vera Ana María',
+            'nombre' => 'TORRES VERA ANA MARÍA',
             'correo' => 'luis@example.com',
             'telefono' => '0991234567',
             'estado' => true,
@@ -250,14 +250,14 @@ class UserManagementTest extends TestCase
         ]);
 
         $response->assertOk()
-            ->assertJsonPath('data.name', 'Gómez Ruiz Pedro')
+            ->assertJsonPath('data.name', 'GÓMEZ RUIZ PEDRO')
             ->assertJsonPath('data.email', 'nuevo@example.com')
             ->assertJsonPath('data.role', 'docente')
             ->assertJsonPath('data.phone', '0987654321');
 
         $this->assertDatabaseHas('usuario', [
             'id_usuario' => $user->getKey(),
-            'nombre' => 'Gómez Ruiz Pedro',
+            'nombre' => 'GÓMEZ RUIZ PEDRO',
             'correo' => 'nuevo@example.com',
             'telefono' => '0987654321',
         ]);
@@ -270,12 +270,12 @@ class UserManagementTest extends TestCase
 
         $this->patchJson("/api/v1/users/{$user->getKey()}", ['email' => 'otro@example.com', 'phone' => '0987654321'])
             ->assertOk()
-            ->assertJsonPath('data.name', 'Torres Vera Ana María')
+            ->assertJsonPath('data.name', 'TORRES VERA ANA MARÍA')
             ->assertJsonPath('data.email', 'otro@example.com');
 
         $this->assertDatabaseHas('usuario', [
             'id_usuario' => $user->getKey(),
-            'nombre' => 'Torres Vera Ana María',
+            'nombre' => 'TORRES VERA ANA MARÍA',
             'correo' => 'otro@example.com',
         ]);
     }
@@ -291,7 +291,7 @@ class UserManagementTest extends TestCase
         $this->patchJson("/api/v1/users/{$user->getKey()}", ['name' => 'Nombre Antiguo'])
             ->assertOk();
 
-        $this->assertSame('Torres Vera Ana María', $user->fresh()->nombre);
+        $this->assertSame('TORRES VERA ANA MARÍA', $user->fresh()->nombre);
     }
 
     public function test_update_without_password_keeps_the_existing_hash(): void
@@ -397,8 +397,8 @@ class UserManagementTest extends TestCase
 
         $bySearch = $this->getJson('/api/v1/users?search=laura');
         $names = collect($bySearch->json('data'))->pluck('name');
-        $this->assertTrue($names->contains('Laura Estudiante'));
-        $this->assertFalse($names->contains('Marco Docente'));
+        $this->assertTrue($names->contains('LAURA ESTUDIANTE'));
+        $this->assertFalse($names->contains('MARCO DOCENTE'));
 
         $byRole = $this->getJson('/api/v1/users?role=docente');
         $roles = collect($byRole->json('data'))->pluck('role');

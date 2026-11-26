@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\StoresUppercase;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -22,6 +23,11 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
  */
 class Malla extends Model
 {
+    use StoresUppercase;
+
+    /** @var list<string> */
+    protected array $uppercase = ['name'];
+
     protected $table = 'malla';
 
     protected $fillable = ['career_id', 'name', 'is_current'];

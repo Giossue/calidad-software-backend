@@ -47,7 +47,7 @@ class CatalogImportTest extends TutoringTestCase
             ->assertJsonPath('data.warnings.0.row', 4)
             ->assertJsonPath('data.warnings.1.row', 5);
 
-        $this->assertDatabaseHas('facultad', ['nombre' => 'Facultad de Educación']);
+        $this->assertDatabaseHas('facultad', ['nombre' => 'FACULTAD DE EDUCACIÓN']);
         $this->assertNull(BulkImport::query()->findOrFail($response->json('data.id'))->rows);
     }
 
@@ -70,7 +70,7 @@ class CatalogImportTest extends TutoringTestCase
             // La fila repetida está en la línea 7 del archivo, contando los comentarios.
             ->assertJsonPath('data.warnings.0.row', 7);
 
-        $this->assertDatabaseHas('facultad', ['nombre' => 'Facultad de Salud']);
+        $this->assertDatabaseHas('facultad', ['nombre' => 'FACULTAD DE SALUD']);
     }
 
     public function test_upload_queues_the_import_and_stores_rows_encrypted(): void
@@ -96,7 +96,7 @@ class CatalogImportTest extends TutoringTestCase
         $this->upload('faculties', mb_convert_encoding("nombre;\nFacultad de Agronomía;\n", 'Windows-1252', 'UTF-8'))
             ->assertAccepted();
 
-        $this->assertDatabaseHas('facultad', ['nombre' => 'Facultad de Agronomía']);
+        $this->assertDatabaseHas('facultad', ['nombre' => 'FACULTAD DE AGRONOMÍA']);
     }
 
     public function test_file_without_required_columns_is_rejected(): void
@@ -120,7 +120,7 @@ class CatalogImportTest extends TutoringTestCase
             ->assertJsonPath('data.errors.0.row', 3)
             ->assertJsonPath('data.errors.0.messages.0', 'La facultad «Inexistente» no existe o está inactiva.');
 
-        $career = Carrera::query()->where('nombre', 'Electrónica')->firstOrFail();
+        $career = Carrera::query()->where('nombre', 'ELECTRÓNICA')->firstOrFail();
         $this->assertSame($this->modality->getKey(), $career->fk_modalidad);
         $this->assertSame(2, Ciclo::query()->where('fk_carrera', $career->getKey())->count());
     }
@@ -139,8 +139,8 @@ class CatalogImportTest extends TutoringTestCase
             ->assertJsonPath('data.created_count', 1)
             ->assertJsonPath('data.errors.0.row', 2)
             ->assertJsonPath('data.errors.0.messages.0', 'El campo modalidad es obligatorio.');
-        $this->assertDatabaseMissing('carrera', ['nombre' => 'Electrónica']);
-        $this->assertSame($this->modality->getKey(), Carrera::query()->where('nombre', 'Mecánica')->value('fk_modalidad'));
+        $this->assertDatabaseMissing('carrera', ['nombre' => 'ELECTRÓNICA']);
+        $this->assertSame($this->modality->getKey(), Carrera::query()->where('nombre', 'MECÁNICA')->value('fk_modalidad'));
     }
 
     public function test_admin_imports_cycles_and_academic_periods(): void
@@ -201,7 +201,7 @@ class CatalogImportTest extends TutoringTestCase
 
         Sanctum::actingAs(Usuario::factory()->withRole('administrador')->create(), ['*']);
         $this->getJson('/api/v1/imports/'.$id)->assertNotFound();
-        $this->assertSame(1, Facultad::query()->where('nombre', 'Facultad Privada')->count());
+        $this->assertSame(1, Facultad::query()->where('nombre', 'FACULTAD PRIVADA')->count());
     }
 
     private function upload(string $type, string $contents): TestResponse

@@ -114,7 +114,7 @@ class RosterImportTest extends TutoringTestCase
         $this->assertSame(['ana.andrade@ueb.edu.ec', 'bruno.benitez@mailes.ueb.edu.ec', 'carla.cando-rios@ueb.edu.ec', 'diego.duran@ueb.edu.ec', 'elena.espin@ueb.edu.ec'], $enrolled);
 
         $new = Usuario::query()->where('correo', 'carla.cando-rios@ueb.edu.ec')->firstOrFail();
-        $this->assertSame(['Cando Rios Carla Sofia', '0993334455', $this->cycle->getKey(), $this->career->getKey()], [$new->nombre, $new->telefono, $new->fk_ciclo, $new->fk_carrera]);
+        $this->assertSame(['CANDO RIOS CARLA SOFIA', '0993334455', $this->cycle->getKey(), $this->career->getKey()], [$new->nombre, $new->telefono, $new->fk_ciclo, $new->fk_carrera]);
         $this->assertTrue($new->hasRole('estudiante') && $new->must_complete_profile);
         $this->assertSame($this->cycle->getKey(), $existing->refresh()->fk_ciclo);
         Notification::assertSentTo($new, QueuedProvisionalPasswordNotification::class);
@@ -131,7 +131,7 @@ class RosterImportTest extends TutoringTestCase
         Sanctum::actingAs($this->coordinator, ['*']);
         $this->upload(true, str_replace('CALCULO DIFERENCIAL PARA', 'FISICA', self::TEXT))->assertOk()
             ->assertJsonPath('data.applied', false)
-            ->assertJsonPath('data.errors.0', 'La asignatura «FISICA INGENIERIA» no está registrada en Software. Regístrala en Asignaturas.');
+            ->assertJsonPath('data.errors.0', 'La asignatura «FISICA INGENIERIA» no está registrada en SOFTWARE. Regístrala en Asignaturas.');
         $this->assertSame(0, Usuario::query()->where('correo', 'like', '%@ueb.edu.ec')->whereHas('roles', fn ($q) => $q->where('slug', 'estudiante'))->count());
 
         $previous = $this->createSubject($this->cycle, 'TI-B0-001');
@@ -142,7 +142,7 @@ class RosterImportTest extends TutoringTestCase
 
         $this->upload()->assertOk()
             ->assertJsonPath('data.students.0.status', 'blocked')
-            ->assertJsonPath('data.students.0.message', 'Arrastra «Matemática básica», previa de esta asignatura.')
+            ->assertJsonPath('data.students.0.message', 'Arrastra «MATEMÁTICA BÁSICA», previa de esta asignatura.')
             ->assertJsonPath('data.teacher', null)
             ->assertJsonPath('data.notes.0', 'No se encontró al docente «PEREZ MORA LUIS ALBERTO» entre los docentes registrados; asígnalo después en Tutorías.');
 

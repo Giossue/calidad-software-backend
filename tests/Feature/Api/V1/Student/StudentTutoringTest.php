@@ -113,7 +113,7 @@ class StudentTutoringTest extends TestCase
             ->assertJsonPath('data.0.subject.cycle.name', 'Quinto Ciclo')
             ->assertJsonPath('data.0.subject.cycle.number', 5)
             ->assertJsonPath('data.0.subject.teacher.id', $teacher->getKey())
-            ->assertJsonPath('data.0.subject.teacher.name', 'Ing. Roberto Profesor')
+            ->assertJsonPath('data.0.subject.teacher.name', 'ING. ROBERTO PROFESOR')
             ->assertJsonPath('data.0.subject.teacher.email', 'roberto.docente@mail.com')
             ->assertJsonMissingPath('data.0.subject.teacher.phone')
             ->assertJsonCount(1, 'data.0.subject.schedules')

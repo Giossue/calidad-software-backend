@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\StoresUppercase;
 use App\Support\Mallas;
 use Database\Factories\UsuarioFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
@@ -42,6 +43,11 @@ use Laravel\Sanctum\HasApiTokens;
 #[Hidden(['password_hash', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class Usuario extends Authenticatable implements MustVerifyEmail
 {
+    use StoresUppercase;
+
+    /** @var list<string> */
+    protected array $uppercase = ['nombre'];
+
     /** @use HasFactory<UsuarioFactory> */
     use HasApiTokens, HasFactory, Notifiable, TwoFactorAuthenticatable;
 

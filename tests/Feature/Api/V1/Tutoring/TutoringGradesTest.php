@@ -53,14 +53,14 @@ class TutoringGradesTest extends TutoringTestCase
         $this->getJson($this->url($tutoring))->assertOk()
             ->assertJsonCount(2, 'data')
             ->assertJsonPath('data.0.enrollment_id', $ana->getKey())
-            ->assertJsonPath('data.0.name', 'Ana Torres')
+            ->assertJsonPath('data.0.name', 'ANA TORRES')
             ->assertJsonPath('data.0.final_result', 'approved')
             ->assertJsonPath('data.0.grades', [
                 ['stage' => 'diagnostic', 'label' => 'Diagnóstico', 'value' => '8.50'],
                 ['stage' => 'partial', 'label' => 'Parcial 1', 'value' => '9.00'],
                 ['stage' => 'partial_two', 'label' => 'Parcial 2', 'value' => '7.00'],
             ])
-            ->assertJsonPath('data.1.name', 'Beto Ruiz')
+            ->assertJsonPath('data.1.name', 'BETO RUIZ')
             ->assertJsonPath('data.1.final_result', null)
             ->assertJsonPath('data.1.grades.0.value', null)
             ->assertJsonPath('data.1.grades.1.value', '6.00')

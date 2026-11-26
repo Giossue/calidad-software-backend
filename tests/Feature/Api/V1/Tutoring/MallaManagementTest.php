@@ -21,7 +21,7 @@ class MallaManagementTest extends TutoringTestCase
 
     public function test_a_new_career_starts_with_a_current_initial_malla(): void
     {
-        $this->assertSame(['Malla inicial'], Malla::query()->where('career_id', $this->career->getKey())->pluck('name')->all());
+        $this->assertSame(['MALLA INICIAL'], Malla::query()->where('career_id', $this->career->getKey())->pluck('name')->all());
         $this->assertTrue($this->initial()->is_current);
 
         $admin = Usuario::factory()->withRole('administrador')->create();
@@ -31,7 +31,7 @@ class MallaManagementTest extends TutoringTestCase
             'faculty_id' => $faculty->getKey(), 'name' => 'Telemática', 'code' => 'TL-2026', 'modality_id' => $this->modality->getKey(),
         ])->assertCreated()->json('data.id');
 
-        $this->assertSame([['name' => 'Malla inicial', 'is_current' => true]],
+        $this->assertSame([['name' => 'MALLA INICIAL', 'is_current' => true]],
             Malla::query()->where('career_id', $careerId)->get(['name', 'is_current'])->map(fn (Malla $malla): array => ['name' => $malla->name, 'is_current' => $malla->is_current])->all());
     }
 
@@ -43,7 +43,7 @@ class MallaManagementTest extends TutoringTestCase
 
         $this->getJson(self::API.'/careers')->assertOk()
             ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.mallas.*.name', ['Malla inicial', 'Malla 2018', 'Malla 2020'])
+            ->assertJsonPath('data.0.mallas.*.name', ['MALLA INICIAL', 'MALLA 2018', 'MALLA 2020'])
             ->assertJsonPath('data.0.mallas.*.is_current', [true, false, false])
             ->assertJsonPath('data.0.mallas.0.id', $this->initial()->getKey());
     }
@@ -59,8 +59,8 @@ class MallaManagementTest extends TutoringTestCase
 
         $this->getJson(self::API.'/mallas?career_id='.$this->career->getKey())->assertOk()
             ->assertJsonPath('data', [
-                ['id' => $this->initial()->getKey(), 'career_id' => $this->career->getKey(), 'name' => 'Malla inicial', 'is_current' => true, 'subjects_count' => 1, 'students_count' => 1, 'tutorings_count' => 1],
-                ['id' => $old->getKey(), 'career_id' => $this->career->getKey(), 'name' => 'Malla 2020', 'is_current' => false, 'subjects_count' => 0, 'students_count' => 0, 'tutorings_count' => 0],
+                ['id' => $this->initial()->getKey(), 'career_id' => $this->career->getKey(), 'name' => 'MALLA INICIAL', 'is_current' => true, 'subjects_count' => 1, 'students_count' => 1, 'tutorings_count' => 1],
+                ['id' => $old->getKey(), 'career_id' => $this->career->getKey(), 'name' => 'MALLA 2020', 'is_current' => false, 'subjects_count' => 0, 'students_count' => 0, 'tutorings_count' => 0],
             ]);
         $this->getJson(self::API.'/mallas?career_id='.$this->otherCareer->getKey())->assertForbidden();
     }
@@ -70,11 +70,11 @@ class MallaManagementTest extends TutoringTestCase
         Sanctum::actingAs($this->coordinator, ['*']);
 
         $response = $this->postJson(self::API.'/mallas', ['career_id' => $this->career->getKey(), 'name' => '  Malla 2025 '])->assertCreated()
-            ->assertJsonPath('data.name', 'Malla 2025')
+            ->assertJsonPath('data.name', 'MALLA 2025')
             ->assertJsonPath('data.career_id', $this->career->getKey())
             ->assertJsonPath('data.is_current', false)
             ->assertJsonPath('data.subjects_count', 0);
-        $this->assertDatabaseHas('malla', ['id' => $response->json('data.id'), 'career_id' => $this->career->getKey(), 'name' => 'Malla 2025', 'is_current' => false]);
+        $this->assertDatabaseHas('malla', ['id' => $response->json('data.id'), 'career_id' => $this->career->getKey(), 'name' => 'MALLA 2025', 'is_current' => false]);
         $this->assertTrue($this->initial()->is(Malla::query()->where('career_id', $this->career->getKey())->where('is_current', true)->first()));
 
         $this->postJson(self::API.'/mallas', ['career_id' => $this->career->getKey(), 'name' => 'Malla 2025'])
@@ -113,8 +113,8 @@ class MallaManagementTest extends TutoringTestCase
         $other = Malla::query()->create(['career_id' => $this->career->getKey(), 'name' => 'Malla 2020', 'is_current' => false]);
 
         $this->patchJson(self::API.'/mallas/'.$initial->getKey(), ['name' => 'Malla 2016'])->assertOk()
-            ->assertJsonPath('data.name', 'Malla 2016')->assertJsonPath('data.is_current', true);
-        $this->assertDatabaseHas('malla', ['id' => $initial->getKey(), 'name' => 'Malla 2016', 'is_current' => true]);
+            ->assertJsonPath('data.name', 'MALLA 2016')->assertJsonPath('data.is_current', true);
+        $this->assertDatabaseHas('malla', ['id' => $initial->getKey(), 'name' => 'MALLA 2016', 'is_current' => true]);
 
         $this->patchJson(self::API.'/mallas/'.$initial->getKey(), ['is_current' => false])->assertUnprocessable()->assertJsonValidationErrors('is_current');
         $this->patchJson(self::API.'/mallas/'.$other->getKey(), ['name' => 'Malla 2016'])
@@ -126,7 +126,7 @@ class MallaManagementTest extends TutoringTestCase
 
         $foreign = Malla::query()->where('career_id', $this->otherCareer->getKey())->firstOrFail();
         $this->patchJson(self::API.'/mallas/'.$foreign->getKey(), ['name' => 'Otra'])->assertForbidden();
-        $this->assertSame('Malla inicial', $foreign->refresh()->name);
+        $this->assertSame('MALLA INICIAL', $foreign->refresh()->name);
     }
 
     public function test_a_malla_is_deleted_only_when_empty_and_not_current(): void

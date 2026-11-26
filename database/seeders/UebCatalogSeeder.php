@@ -9,6 +9,7 @@ use App\Models\Ciclo;
 use App\Models\Facultad;
 use App\Models\Modalidad;
 use App\Support\Mallas;
+use App\Support\Uppercase;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -1954,7 +1955,7 @@ class UebCatalogSeeder extends Seeder
     public function run(): void
     {
         foreach (self::FACULTIES as $name) {
-            Facultad::query()->firstOrCreate(['nombre' => $name], ['estado' => true]);
+            Facultad::query()->firstOrCreate(['nombre' => Uppercase::text($name)], ['estado' => true]);
         }
 
         $cycles = new GenerateCareerCycles;
@@ -1966,11 +1967,11 @@ class UebCatalogSeeder extends Seeder
             // carreras anteriores quedan guardadas y esta se revierte entera
             // en vez de dejar ciclos/asignaturas a medio insertar.
             DB::transaction(function () use ($careerName, $data, $cycles, $now): void {
-                $faculty = Facultad::query()->where('nombre', $data['faculty'])->first();
+                $faculty = Facultad::query()->where('nombre', Uppercase::text($data['faculty']))->first();
                 $modality = Modalidad::query()->firstOrCreate(['nombre' => $data['modality']], ['estado' => true]);
 
                 $career = Carrera::query()->firstOrCreate(
-                    ['nombre' => $careerName],
+                    ['nombre' => Uppercase::text($careerName)],
                     [
                         'fk_facultad' => $faculty->id_facultad,
                         'fk_modalidad' => $modality->id_modalidad,

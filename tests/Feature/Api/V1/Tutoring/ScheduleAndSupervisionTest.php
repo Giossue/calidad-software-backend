@@ -133,8 +133,8 @@ class ScheduleAndSupervisionTest extends TutoringTestCase
             ->assertJsonPath('data.0.date', '2026-05-11')
             ->assertJsonPath('data.0.present_count', 1)
             ->assertJsonPath('data.0.absent_count', 1)
-            ->assertJsonPath('data.0.topics.0.name', 'Derivadas')
-            ->assertJsonPath('data.0.attendance.0.student_name', 'Ana Pérez')
+            ->assertJsonPath('data.0.topics.0.name', 'DERIVADAS')
+            ->assertJsonPath('data.0.attendance.0.student_name', 'ANA PÉREZ')
             ->assertJsonPath('data.0.attendance.1.present', false)
             ->assertJsonPath('data.1.number', 1)
             ->assertJsonPath('data.1.present_count', 2);
@@ -155,8 +155,8 @@ class ScheduleAndSupervisionTest extends TutoringTestCase
 
         $this->getJson(self::API.'/tutorings/'.$tutoring->getKey().'/sessions')->assertOk()
             ->assertJsonCount(2, 'data.0.topics')
-            ->assertJsonPath('data.0.topics.0.name', 'Formularios HTML')
-            ->assertJsonPath('data.0.topics.1.name', 'Hojas de estilo');
+            ->assertJsonPath('data.0.topics.0.name', 'FORMULARIOS HTML')
+            ->assertJsonPath('data.0.topics.1.name', 'HOJAS DE ESTILO');
     }
 
     public function test_supervision_returns_only_records_of_the_authorized_tutoring_and_preserves_history(): void

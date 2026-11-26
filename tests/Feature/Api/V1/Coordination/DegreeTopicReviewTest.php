@@ -74,11 +74,11 @@ class DegreeTopicReviewTest extends TestCase
         $response->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $topicA->getKey())
-            ->assertJsonPath('data.0.title', 'Sistema de Gestión de Calidad Universitaria')
+            ->assertJsonPath('data.0.title', 'SISTEMA DE GESTIÓN DE CALIDAD UNIVERSITARIA')
             ->assertJsonPath('data.0.description', 'Desarrollo de plataforma web para titulación')
             ->assertJsonPath('data.0.status', 'pendiente')
             ->assertJsonPath('data.0.student.id', $studentA->getKey())
-            ->assertJsonPath('data.0.student.name', 'Carlos Estudiante A')
+            ->assertJsonPath('data.0.student.name', 'CARLOS ESTUDIANTE A')
             ->assertJsonPath('data.0.student.email', 'carlos@mail.com')
             ->assertJsonPath('data.0.section.name', 'A')
             ->assertJsonPath('data.0.academic_period.name', 'PAO 2026-1');
@@ -149,8 +149,8 @@ class DegreeTopicReviewTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('data.id', $topic->getKey())
-            ->assertJsonPath('data.title', 'Tema para Detalle')
-            ->assertJsonPath('data.student.name', 'Estudiante Detalle');
+            ->assertJsonPath('data.title', 'TEMA PARA DETALLE')
+            ->assertJsonPath('data.student.name', 'ESTUDIANTE DETALLE');
     }
 
     public function test_unauthorized_roles_cannot_review_degree_topics(): void

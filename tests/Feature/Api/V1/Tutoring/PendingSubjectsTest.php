@@ -65,14 +65,14 @@ class PendingSubjectsTest extends TutoringTestCase
         $this->assertSame([$this->programmingOne->id], Usuario::query()->where('correo', 'arrastra@ueb.edu.ec')->firstOrFail()->pendingSubjects()->pluck('subjects.id')->all());
         $this->assertSame([], Usuario::query()->where('correo', 'al.dia@ueb.edu.ec')->firstOrFail()->pendingSubjects()->pluck('subjects.id')->all());
         $listed = collect($this->getJson(self::API.'/students?per_page=50')->assertOk()->json('data'))->firstWhere('email', 'arrastra@ueb.edu.ec');
-        $this->assertSame([['id' => $this->programmingOne->id, 'code' => 'TI-B2-006', 'name' => 'Programación I']], $listed['pending_subjects']);
+        $this->assertSame([['id' => $this->programmingOne->id, 'code' => 'TI-B2-006', 'name' => 'PROGRAMACIÓN I']], $listed['pending_subjects']);
         $this->assertDatabaseMissing('usuario', ['correo' => 'no.existe@ueb.edu.ec']);
         $this->assertDatabaseMissing('usuario', ['correo' => 'mismo.ciclo@ueb.edu.ec']);
 
         $this->getJson('/api/v1/imports/1')
             ->assertJsonPath('data.created_count', 2)
             ->assertJsonPath('data.errors.0.messages.0', 'La asignatura pendiente «Física» no existe en la carrera indicada.')
-            ->assertJsonPath('data.errors.1.messages.0', '«Redes» es de 3.º ciclo: solo se arrastran asignaturas de ciclos anteriores al 3.º.');
+            ->assertJsonPath('data.errors.1.messages.0', '«REDES» es de 3.º ciclo: solo se arrastran asignaturas de ciclos anteriores al 3.º.');
     }
 
     public function test_reimporting_a_registered_student_updates_only_the_pending_subjects(): void
@@ -103,7 +103,7 @@ class PendingSubjectsTest extends TutoringTestCase
 
         $this->postJson(self::API."/tutorings/{$programming->getKey()}/students", ['student_id' => $carrier->getKey()])
             ->assertUnprocessable()
-            ->assertJsonValidationErrors(['student_id' => 'El estudiante arrastra «Programación I», previa de esta asignatura. Podrá inscribirse cuando la apruebe.']);
+            ->assertJsonValidationErrors(['student_id' => 'El estudiante arrastra «PROGRAMACIÓN I», previa de esta asignatura. Podrá inscribirse cuando la apruebe.']);
         $this->postJson(self::API."/tutorings/{$networks->getKey()}/students", ['student_id' => $carrier->getKey()])->assertCreated();
 
         $offered = collect($this->getJson(self::API."/students/{$carrier->getKey()}/available-tutorings")->assertOk()->json('data'))->pluck('id')->all();

@@ -99,11 +99,11 @@ class StudentDegreeTopicSubmissionTest extends TestCase
         ]);
 
         $response->assertCreated()
-            ->assertJsonPath('data.title', 'Sistema Inteligente de Evaluación de Calidad de Software')
+            ->assertJsonPath('data.title', 'SISTEMA INTELIGENTE DE EVALUACIÓN DE CALIDAD DE SOFTWARE')
             ->assertJsonPath('data.description', 'Plataforma para automatizar el análisis estático y dinámico de código.')
             ->assertJsonPath('data.status', 'pendiente')
             ->assertJsonPath('data.student.id', $student->getKey())
-            ->assertJsonPath('data.student.name', 'Estudiante Titulante')
+            ->assertJsonPath('data.student.name', 'ESTUDIANTE TITULANTE')
             ->assertJsonPath('data.section.id', $this->section->getKey())
             ->assertJsonPath('data.academic_period.id', $this->period->getKey())
             ->assertJsonPath('data.reviewer', null)
@@ -113,7 +113,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
         $this->assertDatabaseHas('tema_titulacion', [
             'fk_id_usuario' => $student->getKey(),
             'fk_periodo' => $this->period->getKey(),
-            'titulo' => 'Sistema Inteligente de Evaluación de Calidad de Software',
+            'titulo' => 'SISTEMA INTELIGENTE DE EVALUACIÓN DE CALIDAD DE SOFTWARE',
             'estado' => 'pendiente',
         ]);
     }
@@ -158,7 +158,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
 
         $response->assertOk()
             ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.title', 'Herramienta de Métricas de Calidad de Software')
+            ->assertJsonPath('data.0.title', 'HERRAMIENTA DE MÉTRICAS DE CALIDAD DE SOFTWARE')
             ->assertJsonPath('data.0.status', 'pendiente')
             ->assertJsonPath('data.0.student.id', $student->getKey());
     }
@@ -235,7 +235,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
         ]);
 
         $response->assertCreated()
-            ->assertJsonPath('data.title', 'Nueva Propuesta con Enfoque Corregido')
+            ->assertJsonPath('data.title', 'NUEVA PROPUESTA CON ENFOQUE CORREGIDO')
             ->assertJsonPath('data.status', 'pendiente');
     }
 
@@ -312,7 +312,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
         ]);
 
         $response->assertCreated()
-            ->assertJsonPath('data.title', 'Nueva Alternativa de Titulación Reemplazante')
+            ->assertJsonPath('data.title', 'NUEVA ALTERNATIVA DE TITULACIÓN REEMPLAZANTE')
             ->assertJsonPath('data.status', 'pendiente');
 
         // La primera propuesta queda marcada como descartada
@@ -339,13 +339,13 @@ class StudentDegreeTopicSubmissionTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('data.id', $topic)
-            ->assertJsonPath('data.title', 'Propuesta Modificada y Mejorada')
+            ->assertJsonPath('data.title', 'PROPUESTA MODIFICADA Y MEJORADA')
             ->assertJsonPath('data.description', 'Descripción actualizada y corregida.')
             ->assertJsonPath('data.status', 'pendiente');
 
         $this->assertDatabaseHas('tema_titulacion', [
             'id_tema_tit' => $topic,
-            'titulo' => 'Propuesta Modificada y Mejorada',
+            'titulo' => 'PROPUESTA MODIFICADA Y MEJORADA',
         ]);
     }
 
@@ -402,7 +402,7 @@ class StudentDegreeTopicSubmissionTest extends TestCase
 
         $this->assertDatabaseHas('tema_titulacion', [
             'id_tema_tit' => $discardedTopic->getKey(),
-            'titulo' => 'Tema Reemplazado Previamente',
+            'titulo' => 'TEMA REEMPLAZADO PREVIAMENTE',
         ]);
     }
 

@@ -19,9 +19,9 @@ class PersonNamesTest extends TestCase
 
         $this->complete($user, ['first_names' => '  Ana   María ', 'last_names' => 'Torres  Vera'])
             ->assertOk()
-            ->assertJsonPath('data.name', 'Torres Vera Ana María');
+            ->assertJsonPath('data.name', 'TORRES VERA ANA MARÍA');
 
-        $this->assertSame('Torres Vera Ana María', $user->refresh()->nombre);
+        $this->assertSame('TORRES VERA ANA MARÍA', $user->refresh()->nombre);
     }
 
     public function test_first_names_require_one_or_two_names(): void
@@ -50,7 +50,7 @@ class PersonNamesTest extends TestCase
             ->assertJsonValidationErrors(['last_names']);
 
         $this->complete($user, ['first_names' => 'John', 'last_names' => 'Smith'])->assertOk();
-        $this->assertSame('Smith John', $user->refresh()->nombre);
+        $this->assertSame('SMITH JOHN', $user->refresh()->nombre);
     }
 
     public function test_connecting_particles_are_part_of_a_name(): void
@@ -59,7 +59,7 @@ class PersonNamesTest extends TestCase
 
         $this->complete($user, ['first_names' => 'María de los Ángeles', 'last_names' => 'De la Torre Vera'])->assertOk();
 
-        $this->assertSame('De la Torre Vera María de los Ángeles', $user->refresh()->nombre);
+        $this->assertSame('DE LA TORRE VERA MARÍA DE LOS ÁNGELES', $user->refresh()->nombre);
     }
 
     public function test_names_only_accept_letters_and_spaces(): void
@@ -86,7 +86,7 @@ class PersonNamesTest extends TestCase
             'device_name' => 'frontend-web',
         ])->assertCreated();
 
-        $this->assertSame('Torres Vera Ana', Usuario::query()->where('correo', 'ana@ueb.edu.ec')->value('nombre'));
+        $this->assertSame('TORRES VERA ANA', Usuario::query()->where('correo', 'ana@ueb.edu.ec')->value('nombre'));
 
         $this->postJson('/api/v1/auth/register', [
             'identification' => '0201234568',

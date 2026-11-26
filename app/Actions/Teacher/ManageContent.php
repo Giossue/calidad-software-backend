@@ -10,6 +10,7 @@ use App\Models\TutoringSession;
 use App\Models\Usuario;
 use App\Support\TeacherWorkspace;
 use App\Support\TopicFiles;
+use App\Support\Uppercase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -25,7 +26,7 @@ class ManageContent
                 $this->workspace->topic($tutoring, $topic);
                 $this->active($topic->estado);
             }
-            if (isset($data['name']) && $tutoring->temas()->where('nombre', $data['name'])->when($topic, fn ($query) => $query->whereKeyNot($topic->getKey()))->exists()) {
+            if (isset($data['name']) && $tutoring->temas()->where('nombre', Uppercase::text($data['name']))->when($topic, fn ($query) => $query->whereKeyNot($topic->getKey()))->exists()) {
                 throw ValidationException::withMessages(['name' => 'Ya existe un tema con ese nombre en esta tutoría.']);
             }
             $topic ??= new Tema(['fk_asig_tutoria' => $tutoring->getKey(), 'visto' => false, 'estado' => true]);

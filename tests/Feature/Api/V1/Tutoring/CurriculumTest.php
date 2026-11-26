@@ -121,7 +121,7 @@ class CurriculumTest extends TutoringTestCase
         $physics = Subject::query()->where('name', 'FISICA')->firstOrFail();
         $this->assertSame(4, $physics->cycle_number);
         $this->assertTrue(Ciclo::query()->where('fk_carrera', $this->career->getKey())->where('numero', 4)->exists());
-        $this->assertSame(['Cálculo', 'REDES'], $physics->previousSubjects()->orderBy('subjects.id')->pluck('name')->all());
+        $this->assertSame(['CÁLCULO', 'REDES'], $physics->previousSubjects()->orderBy('subjects.id')->pluck('name')->all());
         $this->assertSame(['FISICA'], $existing->nextSubjects()->pluck('name')->all());
     }
 

@@ -37,15 +37,15 @@ class FinalPaoReportTest extends TeacherTestCase
         $this->assertSame('01-TA-2026', $summary['report_number']);
         $this->assertSame(['name' => $this->teacher->nombre, 'email' => $this->teacher->correo, 'extension' => null, 'position' => 'Docente'], $summary['teacher']);
         $this->assertSame($this->coordinator->nombre, $summary['coordinator']['name']);
-        $this->assertStringContainsString('asignaturas de Calidad de software y Métodos Numéricos de la carrera de Software', $summary['objective']);
-        $this->assertStringContainsString('En la carrera de Software, este acompañamiento', $summary['background']);
+        $this->assertStringContainsString('asignaturas de CALIDAD DE SOFTWARE y Métodos Numéricos de la carrera de SOFTWARE', $summary['objective']);
+        $this->assertStringContainsString('En la carrera de SOFTWARE, este acompañamiento', $summary['background']);
 
         // Solo tutorías propias del mismo período y carrera.
         $this->assertSame([$this->tutoring->getKey(), $this->second->getKey()], array_column($summary['available_tutorings'], 'id'));
-        $this->assertSame(['Calidad de software', 'Métodos Numéricos'], array_column($summary['matrix'], 'subject'));
+        $this->assertSame(['CALIDAD DE SOFTWARE', 'Métodos Numéricos'], array_column($summary['matrix'], 'subject'));
 
         $this->assertSame(
-            [['subject' => 'Calidad de software', 'section' => 'A', 'day' => 'lunes', 'start' => '08:00', 'end' => '10:00', 'room' => 'Lab 1'], ['subject' => 'Calidad de software', 'section' => 'A', 'day' => 'miercoles', 'start' => '14:00', 'end' => '15:00', 'room' => null]],
+            [['subject' => 'CALIDAD DE SOFTWARE', 'section' => 'A', 'day' => 'lunes', 'start' => '08:00', 'end' => '10:00', 'room' => 'Lab 1'], ['subject' => 'CALIDAD DE SOFTWARE', 'section' => 'A', 'day' => 'miercoles', 'start' => '14:00', 'end' => '15:00', 'room' => null]],
             $summary['schedule'],
         );
 
@@ -66,7 +66,7 @@ class FinalPaoReportTest extends TeacherTestCase
         $this->assertSame([], $summary['improved'][1]['students']);
         // Anexo 2: registro de tutorías por asignatura.
         $this->assertCount(3, $summary['register'][0]['sessions']);
-        $this->assertSame(['Pruebas unitarias'], $summary['register'][0]['sessions'][0]['topics']);
+        $this->assertSame(['PRUEBAS UNITARIAS'], $summary['register'][0]['sessions'][0]['topics']);
         $this->assertDatabaseCount('reporte', 0);
     }
 

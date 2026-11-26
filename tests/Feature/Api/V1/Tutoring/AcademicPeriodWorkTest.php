@@ -270,7 +270,7 @@ class AcademicPeriodWorkTest extends TutoringTestCase
 
         $this->postJson(self::API."/tutorings/{$sectionA->getKey()}/students", ['student_id' => $student->getKey()])->assertCreated();
         $this->postJson(self::API."/tutorings/{$sectionBTutoring->getKey()}/students", ['student_id' => $student->getKey()])
-            ->assertUnprocessable()->assertJsonPath('errors.student_id.0', 'El estudiante ya está inscrito en «Calidad de software» en otro paralelo de este período.');
+            ->assertUnprocessable()->assertJsonPath('errors.student_id.0', 'El estudiante ya está inscrito en «CALIDAD DE SOFTWARE» en otro paralelo de este período.');
         $this->postJson(self::API."/students/{$student->getKey()}/enroll", ['tutoring_id' => $sectionBTutoring->getKey()])
             ->assertUnprocessable()->assertJsonValidationErrors('tutoring_id');
     }

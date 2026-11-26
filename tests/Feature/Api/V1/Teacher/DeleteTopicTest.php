@@ -37,7 +37,7 @@ class DeleteTopicTest extends TeacherTestCase
         $this->assertDatabaseHas('tutoring_session_topic', ['session_id' => $session->getKey(), 'topic_id' => $kept]);
         $this->assertTrue($session->refresh()->topics_covered);
         TopicFiles::disk()->assertMissing($path);
-        $this->getJson($this->path('/topics'))->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.name', 'Tema correcto');
+        $this->getJson($this->path('/topics'))->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.name', 'TEMA CORRECTO');
     }
 
     public function test_a_session_left_without_topics_is_no_longer_marked_as_covering_topics(): void

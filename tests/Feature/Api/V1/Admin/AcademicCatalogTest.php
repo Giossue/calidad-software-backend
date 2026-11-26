@@ -32,7 +32,7 @@ class AcademicCatalogTest extends TestCase
         ]);
 
         $careerId = $response->assertCreated()
-            ->assertJsonPath('data.name', 'Ingeniería de Software')
+            ->assertJsonPath('data.name', 'INGENIERÍA DE SOFTWARE')
             ->assertJsonPath('data.code', 'SW-2020')
             ->assertJsonPath('data.status', true)
             ->json('data.id');
@@ -41,7 +41,7 @@ class AcademicCatalogTest extends TestCase
 
         $this->patchJson('/api/v1/admin/careers/'.$career->getKey(), [
             'name' => 'Ingeniería de Software Aplicado',
-        ])->assertOk()->assertJsonPath('data.name', 'Ingeniería de Software Aplicado');
+        ])->assertOk()->assertJsonPath('data.name', 'INGENIERÍA DE SOFTWARE APLICADO');
 
         $this->patchJson('/api/v1/admin/careers/'.$career->getKey().'/deactivate')
             ->assertOk()
@@ -210,7 +210,7 @@ class AcademicCatalogTest extends TestCase
             'name' => 'Matemática',
             'code' => 'MAT-2024',
             'modality_id' => $this->modalityId(),
-        ])->assertCreated()->assertJsonPath('data.name', 'Matemática')->assertJsonPath('data.code', 'MAT-2024');
+        ])->assertCreated()->assertJsonPath('data.name', 'MATEMÁTICA')->assertJsonPath('data.code', 'MAT-2024');
         $this->postJson('/api/v1/admin/careers', [
             'faculty_id' => $faculty->getKey(),
             'name' => 'Física',
@@ -233,8 +233,8 @@ class AcademicCatalogTest extends TestCase
         $this->patchJson('/api/v1/admin/careers/'.$legacy->getKey(), ['name' => 'Matemática', 'code' => 'MAT-2019'])
             ->assertOk()->assertJsonPath('data.code', 'MAT-2019');
 
-        $this->assertSame(2, Carrera::query()->where('nombre', 'Matemática')->count());
-        $this->assertSame(2, Carrera::query()->where('nombre', 'Física')->count());
+        $this->assertSame(2, Carrera::query()->where('nombre', 'MATEMÁTICA')->count());
+        $this->assertSame(2, Carrera::query()->where('nombre', 'FÍSICA')->count());
     }
 
     public function test_career_lists_expose_the_code(): void
@@ -245,7 +245,7 @@ class AcademicCatalogTest extends TestCase
         Carrera::query()->create(['fk_facultad' => $faculty->getKey(), 'nombre' => 'Química', 'estado' => true]);
 
         $this->getJson('/api/v1/admin/careers')->assertOk()
-            ->assertJsonPath('data.0.name', 'Física')
+            ->assertJsonPath('data.0.name', 'FÍSICA')
             ->assertJsonPath('data.0.code', 'FIS-01')
             ->assertJsonPath('data.1.code', null);
         $this->getJson('/api/v1/admin/careers?all=1')->assertOk()
@@ -270,8 +270,8 @@ class AcademicCatalogTest extends TestCase
             ->assertJsonPath('data.created_count', 2)
             ->assertJsonPath('data.skipped_count', 1)
             ->assertJsonPath('data.warnings.0.row', 3);
-        $this->assertSame(['FIS-01', 'FIS-02'], Carrera::query()->where('nombre', 'Física')->orderBy('codigo')->pluck('codigo')->all());
-        $this->assertNull(Carrera::query()->where('nombre', 'Química')->value('codigo'));
+        $this->assertSame(['FIS-01', 'FIS-02'], Carrera::query()->where('nombre', 'FÍSICA')->orderBy('codigo')->pluck('codigo')->all());
+        $this->assertNull(Carrera::query()->where('nombre', 'QUÍMICA')->value('codigo'));
     }
 
     public function test_only_administrators_can_create_a_career(): void
@@ -378,13 +378,13 @@ class AcademicCatalogTest extends TestCase
 
         $searched = $this->getJson('/api/v1/admin/careers?search=ingenier');
         $names = collect($searched->json('data'))->pluck('name');
-        $this->assertTrue($names->contains('Ingeniería de Software'));
-        $this->assertTrue($names->contains('Ingeniería Civil'));
-        $this->assertFalse($names->contains('Medicina'));
+        $this->assertTrue($names->contains('INGENIERÍA DE SOFTWARE'));
+        $this->assertTrue($names->contains('INGENIERÍA CIVIL'));
+        $this->assertFalse($names->contains('MEDICINA'));
 
         $searchedByFaculty = $this->getJson('/api/v1/admin/careers?search=salud');
         $byFacultyNames = collect($searchedByFaculty->json('data'))->pluck('name');
-        $this->assertTrue($byFacultyNames->contains('Medicina'));
+        $this->assertTrue($byFacultyNames->contains('MEDICINA'));
     }
 
     public function test_career_all_mode_returns_every_active_career_unpaginated(): void
@@ -398,8 +398,8 @@ class AcademicCatalogTest extends TestCase
 
         $response->assertOk()->assertJsonMissingPath('meta');
         $names = collect($response->json('data'))->pluck('name');
-        $this->assertTrue($names->contains('Física'));
-        $this->assertFalse($names->contains('Química Inactiva'));
+        $this->assertTrue($names->contains('FÍSICA'));
+        $this->assertFalse($names->contains('QUÍMICA INACTIVA'));
     }
 
     public function test_cycle_index_paginates_and_searches_by_own_or_career_name(): void

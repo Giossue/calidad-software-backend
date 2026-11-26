@@ -87,7 +87,7 @@ class MallaCurriculumTest extends TutoringTestCase
 
         $id = $this->postJson(self::API.'/subjects', $this->subjectPayload($this->next))->assertCreated()
             ->assertJsonPath('data.malla_id', $this->next->getKey())
-            ->assertJsonPath('data.malla_name', 'Malla 2025')
+            ->assertJsonPath('data.malla_name', 'MALLA 2025')
             ->assertJsonPath('data.career_id', $this->career->getKey())
             ->assertJsonPath('data.code', 'SW-1')
             ->json('data.id');
@@ -113,7 +113,7 @@ class MallaCurriculumTest extends TutoringTestCase
 
         $this->getJson(self::API.'/subjects?malla_id='.$this->next->getKey())->assertOk()
             ->assertJsonPath('data.*.id', [$inNext->getKey(), $nextSecond->getKey()])
-            ->assertJsonPath('data.*.malla_name', ['Malla 2025', 'Malla 2025']);
+            ->assertJsonPath('data.*.malla_name', ['MALLA 2025', 'MALLA 2025']);
         $this->getJson(self::API.'/subjects?malla_id='.$this->current->getKey())->assertOk()
             ->assertJsonPath('data.*.id', [$inCurrent->getKey()])
             ->assertJsonPath('data.0.malla_id', $this->current->getKey());

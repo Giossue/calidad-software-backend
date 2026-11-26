@@ -111,27 +111,27 @@ class StudentDegreeAssignmentsTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('data.topic.id', $topic->getKey())
-            ->assertJsonPath('data.topic.title', 'Desarrollo de Software Seguro con Arquitectura Limpia')
+            ->assertJsonPath('data.topic.title', 'DESARROLLO DE SOFTWARE SEGURO CON ARQUITECTURA LIMPIA')
             ->assertJsonPath('data.topic.status', 'aprobado')
             ->assertJsonPath('data.topic.approved_at', '2026-05-20')
-            ->assertJsonPath('data.topic.coordinator.name', 'Ing. Coordinador Revisor')
+            ->assertJsonPath('data.topic.coordinator.name', 'ING. COORDINADOR REVISOR')
             ->assertJsonPath('data.tutor.id', $tutor->getKey())
-            ->assertJsonPath('data.tutor.name', 'Ing. Tutor Principal')
+            ->assertJsonPath('data.tutor.name', 'ING. TUTOR PRINCIPAL')
             ->assertJsonPath('data.tutor.email', 'tutor@mail.com')
             ->assertJsonPath('data.tutor.phone', '0981112233')
             ->assertJsonPath('data.tutor.role', 'tutor')
             ->assertJsonPath('data.tutor.assigned_at', '2026-05-21')
             ->assertJsonCount(2, 'data.peers')
             ->assertJsonPath('data.peers.0.id', $peer1->getKey())
-            ->assertJsonPath('data.peers.0.name', 'Dra. Primer Par Académico')
+            ->assertJsonPath('data.peers.0.name', 'DRA. PRIMER PAR ACADÉMICO')
             ->assertJsonPath('data.peers.1.id', $peer2->getKey())
-            ->assertJsonPath('data.peers.1.name', 'Msc. Segundo Par Académico')
+            ->assertJsonPath('data.peers.1.name', 'MSC. SEGUNDO PAR ACADÉMICO')
             ->assertJsonPath('data.total_teachers_assigned', 3);
 
         // 2. Consulta específica por el ID del tema
         $specificResponse = $this->getJson('/api/v1/student/degree-topics/'.$topic->getKey().'/assignments');
         $specificResponse->assertOk()
-            ->assertJsonPath('data.tutor.name', 'Ing. Tutor Principal')
+            ->assertJsonPath('data.tutor.name', 'ING. TUTOR PRINCIPAL')
             ->assertJsonCount(2, 'data.peers');
     }
 

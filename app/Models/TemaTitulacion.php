@@ -6,6 +6,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\StoresUppercase;
 use App\Observers\DegreeTopicObserver;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
@@ -38,6 +39,11 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 #[ObservedBy([DegreeTopicObserver::class])]
 class TemaTitulacion extends Model
 {
+    use StoresUppercase;
+
+    /** @var list<string> */
+    protected array $uppercase = ['titulo'];
+
     public const REVIEW_RELATIONS = [
         'estudiante.paralelos',
         'periodo',

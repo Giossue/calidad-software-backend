@@ -6,6 +6,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\StoresUppercase;
 use App\Support\Mallas;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,6 +15,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Carrera extends Model
 {
+    use StoresUppercase;
+
+    /** @var list<string> */
+    protected array $uppercase = ['nombre'];
+
     protected $table = 'carrera';
 
     protected $primaryKey = 'id_carrera';

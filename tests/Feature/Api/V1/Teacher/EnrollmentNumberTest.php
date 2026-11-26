@@ -65,8 +65,8 @@ class EnrollmentNumberTest extends TeacherTestCase
         $this->assertSame(2, $enrollment->refresh()->numero_matricula);
 
         $this->patchJson($this->path("/students/{$enrollment->getKey()}"), ['first_names' => 'Ana', 'last_names' => 'Mora', 'phone' => '0991234567'])->assertOk()
-            ->assertJsonPath('data.enrollment_number', 2)->assertJsonPath('data.name', 'Mora Ana');
-        $this->assertSame([2, 'Mora Ana'], [$enrollment->refresh()->numero_matricula, $student->refresh()->nombre]);
+            ->assertJsonPath('data.enrollment_number', 2)->assertJsonPath('data.name', 'MORA ANA');
+        $this->assertSame([2, 'MORA ANA'], [$enrollment->refresh()->numero_matricula, $student->refresh()->nombre]);
     }
 
     public function test_the_matricula_of_a_student_with_other_roles_changes_but_their_profile_does_not(): void

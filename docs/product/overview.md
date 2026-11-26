@@ -47,6 +47,18 @@ Una persona puede tener más de un rol. Los roles no crean cuentas duplicadas.
 - Observaciones, horarios e informes de titulación.
 - Consultas y reportes necesarios para los actores del diagrama de contexto.
 
+## Consistencia de los datos
+
+- Se guardan en MAYÚSCULAS, sin importar cómo se escriban o importen: los
+  nombres de personas, los catálogos (facultades, carreras, mallas y
+  asignaturas), los temas del docente y los títulos de titulación. Los
+  duplicados se comparan ya en mayúsculas. Las descripciones, observaciones y
+  demás textos largos se guardan como se escriben. La migración
+  `2026_11_26_100000_uppercase_names_catalogs_topics_and_titles` convierte los
+  datos existentes y no se revierte.
+- Los campos de texto del frontend tienen el corrector ortográfico del navegador
+  en español; correos, contraseñas y campos numéricos no.
+
 ## Fuera de alcance hasta tener una historia
 
 - Integración automática con sistemas académicos externos.

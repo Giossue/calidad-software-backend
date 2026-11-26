@@ -5,6 +5,7 @@ namespace App\Http\Requests\Api\V1\AcademicPeriods;
 use App\Models\PeriodoAcademico;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator;
 
 class StoreAcademicPeriodRequest extends FormRequest
 {
@@ -38,9 +39,9 @@ class StoreAcademicPeriodRequest extends FormRequest
         return ['nombre' => 'nombre', 'fecha_inicio' => 'fecha de inicio', 'fecha_fin' => 'fecha de fin'];
     }
 
-    public function withValidator(\Illuminate\Validation\Validator $validator): void
+    public function withValidator(Validator $validator): void
     {
-        $validator->after(function (\Illuminate\Validation\Validator $validator) {
+        $validator->after(function (Validator $validator) {
             $inicio = $this->input('fecha_inicio');
             $fin = $this->input('fecha_fin');
 

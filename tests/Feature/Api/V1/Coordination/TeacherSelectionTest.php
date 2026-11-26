@@ -72,14 +72,14 @@ class TeacherSelectionTest extends TestCase
         // Ambos docentes están disponibles para ser seleccionados
         $response->assertJsonFragment([
             'id' => $teacher1->getKey(),
-            'name' => 'Ing. Juan Docente Tutor',
+            'name' => 'ING. JUAN DOCENTE TUTOR',
             'active_tutorships_count' => 2,
             'active_peer_reviews_count' => 0,
         ]);
 
         $response->assertJsonFragment([
             'id' => $teacher2->getKey(),
-            'name' => 'Dra. María Docente Par',
+            'name' => 'DRA. MARÍA DOCENTE PAR',
             'active_tutorships_count' => 0,
             'active_peer_reviews_count' => 1,
         ]);
@@ -124,7 +124,7 @@ class TeacherSelectionTest extends TestCase
 
         $response->assertOk()
             ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.name', 'Alberto Romero');
+            ->assertJsonPath('data.0.name', 'ALBERTO ROMERO');
     }
 
     public function test_unauthorized_user_cannot_access_teachers_catalog(): void
@@ -157,15 +157,15 @@ class TeacherSelectionTest extends TestCase
         $responseCareer->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $teacherSoftware->getKey())
-            ->assertJsonPath('data.0.careers.0.name', 'Ingeniería de Software')
-            ->assertJsonPath('data.0.careers.0.faculty_name', 'Facultad de Ingeniería');
+            ->assertJsonPath('data.0.careers.0.name', 'INGENIERÍA DE SOFTWARE')
+            ->assertJsonPath('data.0.careers.0.faculty_name', 'FACULTAD DE INGENIERÍA');
 
         // Buscar por facultad
         $responseFaculty = $this->getJson('/api/v1/coordination/teachers?search=Salud');
         $responseFaculty->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $teacherHealth->getKey())
-            ->assertJsonPath('data.0.careers.0.name', 'Enfermería')
-            ->assertJsonPath('data.0.careers.0.faculty_name', 'Facultad de Ciencias de la Salud');
+            ->assertJsonPath('data.0.careers.0.name', 'ENFERMERÍA')
+            ->assertJsonPath('data.0.careers.0.faculty_name', 'FACULTAD DE CIENCIAS DE LA SALUD');
     }
 }

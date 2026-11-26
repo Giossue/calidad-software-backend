@@ -23,7 +23,7 @@ class TutoringFollowUpReportTest extends TeacherTestCase
         $summary = $this->getJson($this->path('/reports/follow-up/preview?'.http_build_query(self::RANGE)))->assertOk()->json('data');
 
         $this->assertSame('tutoring_follow_up', $summary['format']);
-        $this->assertSame(['Ciencias', 'Software', 'PAO 2026', $this->teacher->nombre, '2026-09-29'], [
+        $this->assertSame(['CIENCIAS', 'SOFTWARE', 'PAO 2026', $this->teacher->nombre, '2026-09-29'], [
             $summary['faculty'], $summary['career'], $summary['academic_period'], $summary['teacher'], $summary['date'],
         ]);
         $this->assertSame('primer parcial', $summary['partial_label']);
@@ -33,8 +33,8 @@ class TutoringFollowUpReportTest extends TeacherTestCase
         // Solo las tutorías dentro del rango; una fila por actividad activa y una para el tema sin actividades.
         $this->assertSame(1, $summary['session_count']);
         $this->assertSame([
-            ['date' => '2026-09-20', 'topic' => 'Regla del Trapecio', 'activity' => 'Resolución de ejercicios', 'methodology' => 'Aprendizaje basado en problemas (ABP)'],
-            ['date' => '2026-09-20', 'topic' => 'Integración de Romberg', 'activity' => null, 'methodology' => null],
+            ['date' => '2026-09-20', 'topic' => 'REGLA DEL TRAPECIO', 'activity' => 'Resolución de ejercicios', 'methodology' => 'Aprendizaje basado en problemas (ABP)'],
+            ['date' => '2026-09-20', 'topic' => 'INTEGRACIÓN DE ROMBERG', 'activity' => null, 'methodology' => null],
         ], $summary['activities']);
 
         // Riesgo académico: diagnóstico Bajo o Medio; asisten quienes tienen asistencia en el rango.
@@ -74,7 +74,7 @@ class TutoringFollowUpReportTest extends TeacherTestCase
 
         $content = Reporte::query()->findOrFail($id)->content;
         $this->assertStringContainsString('Fecha de presentación: 29 de septiembre del 2026', $content);
-        $this->assertStringContainsString('2026/09/20 | Regla del Trapecio | Resolución de ejercicios', $content);
+        $this->assertStringContainsString('2026/09/20 | REGLA DEL TRAPECIO | Resolución de ejercicios', $content);
 
         Sanctum::actingAs($this->coordinator, ['access-api']);
         $this->getJson(self::API.'/tutorings/'.$this->tutoring->getKey().'/reports')->assertOk()

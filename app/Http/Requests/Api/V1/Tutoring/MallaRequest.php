@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\V1\Tutoring;
 
+use App\Http\Requests\Concerns\UppercasesInput;
 use App\Models\Malla;
 use App\Models\Subject;
 use App\Support\TutoringCoordinatorAccess;
@@ -14,6 +15,13 @@ use Illuminate\Validation\Rule;
  */
 class MallaRequest extends FormRequest
 {
+    use UppercasesInput;
+
+    protected function uppercaseFields(): array
+    {
+        return ['name'];
+    }
+
     public function authorize(): bool
     {
         return $this->user()->can('create', Subject::class);

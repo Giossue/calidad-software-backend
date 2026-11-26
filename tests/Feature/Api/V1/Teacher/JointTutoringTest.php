@@ -39,7 +39,7 @@ class JointTutoringTest extends TeacherTestCase
         $this->getJson($this->path('/joint-tutorings'))->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $joint->getKey())
-            ->assertJsonPath('data.0.career_name', 'Administración')
+            ->assertJsonPath('data.0.career_name', 'ADMINISTRACIÓN')
             ->assertJsonPath('data.0.days', ['lunes'])
             ->assertJsonPath('data.0.can_manage', true);
         $this->getJson($this->path('/joint-tutorings', $joint))->assertOk()->assertJsonPath('data.0.id', $this->tutoring->getKey());

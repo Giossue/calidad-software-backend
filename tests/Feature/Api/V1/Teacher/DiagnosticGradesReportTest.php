@@ -15,7 +15,7 @@ class DiagnosticGradesReportTest extends TeacherTestCase
 
         $summary = $this->getJson($this->path('/reports/diagnostic-grades/preview'))->assertOk()->json('data');
         $this->assertSame('diagnostic_grades', $summary['format']);
-        $this->assertSame('Software', $summary['career']);
+        $this->assertSame('SOFTWARE', $summary['career']);
         $this->assertSame('PAO 2026', $summary['academic_period']);
         $this->assertSame($this->teacher->nombre, $summary['teacher']);
         $this->assertSame('A', $summary['section']);

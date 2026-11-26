@@ -130,7 +130,7 @@ class StudentTutoringGradesTest extends TestCase
             ->assertJsonPath('data.enrollment_id', $enrollment->getKey())
             ->assertJsonPath('data.tutoring.id', $tutoring->getKey())
             ->assertJsonPath('data.tutoring.name', 'Calidad y Pruebas de Software')
-            ->assertJsonPath('data.tutoring.teacher.name', 'Ing. Carlos Docente')
+            ->assertJsonPath('data.tutoring.teacher.name', 'ING. CARLOS DOCENTE')
             ->assertJsonPath('data.grades.diagnostic.value', 8.5)
             ->assertJsonPath('data.grades.diagnostic.formatted_value', '8.50')
             ->assertJsonPath('data.grades.diagnostic.registered_at', '2026-05-15')

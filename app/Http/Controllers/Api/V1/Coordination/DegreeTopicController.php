@@ -23,6 +23,7 @@ use App\Models\PeriodoAcademico;
 use App\Models\TemaTitulacion;
 use App\Models\Usuario;
 use App\Support\ActionNotifier;
+use App\Support\Uppercase;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -74,11 +75,14 @@ class DegreeTopicController extends Controller
         }
 
         if ($search !== '') {
-            $query->where(function (Builder $query) use ($search): void {
-                $query->whereLike('titulo', "%{$search}%")
+            // Titles and names are stored uppercase; matching the term in the same
+            // form keeps non-ASCII letters (Ó/ó) matching on every database.
+            $upper = Uppercase::text($search);
+            $query->where(function (Builder $query) use ($search, $upper): void {
+                $query->whereLike('titulo', "%{$upper}%")
                     ->orWhereLike('descripcion', "%{$search}%")
-                    ->orWhereHas('estudiante', function (Builder $student) use ($search): void {
-                        $student->whereLike('nombre', "%{$search}%")
+                    ->orWhereHas('estudiante', function (Builder $student) use ($search, $upper): void {
+                        $student->whereLike('nombre', "%{$upper}%")
                             ->orWhereLike('cedula', "%{$search}%")
                             ->orWhereLike('correo', "%{$search}%");
                     });
@@ -369,9 +373,10 @@ class DegreeTopicController extends Controller
 
         if ($search = trim((string) $request->string('search'))) {
             $like = "%{$search}%";
-            $query->where(function (Builder $q) use ($like) {
+            $upperLike = '%'.Uppercase::text($search).'%';
+            $query->where(function (Builder $q) use ($like, $upperLike) {
                 $q->whereLike('observaciones_finales', $like)
-                    ->orWhereHas('ficha.temaTitulacion', fn (Builder $q2) => $q2->whereLike('titulo', $like)->orWhereHas('estudiante', fn (Builder $q3) => $q3->whereLike('nombre', $like)->orWhereLike('cedula', $like)));
+                    ->orWhereHas('ficha.temaTitulacion', fn (Builder $q2) => $q2->whereLike('titulo', $upperLike)->orWhereHas('estudiante', fn (Builder $q3) => $q3->whereLike('nombre', $upperLike)->orWhereLike('cedula', $like)));
             });
         }
 

@@ -175,7 +175,7 @@ class SessionReportAndDegreeTest extends TeacherTestCase
         // 1. List assigned topics for tracking
         $res = $this->getJson('/api/v1/teacher/degree-tracking');
         $res->assertOk()->assertJsonCount(1, 'data');
-        $this->assertSame('Desarrollo de Software Seguro', $res->json('data.0.title'));
+        $this->assertSame('DESARROLLO DE SOFTWARE SEGURO', $res->json('data.0.title'));
 
         // 2. Show topic tracking detail
         $this->getJson('/api/v1/teacher/degree-tracking/'.$topic->getKey())

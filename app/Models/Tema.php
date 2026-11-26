@@ -6,6 +6,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\StoresUppercase;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -13,6 +14,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Tema extends Model
 {
+    use StoresUppercase;
+
+    /** @var list<string> */
+    protected array $uppercase = ['nombre'];
+
     protected $table = 'tema';
 
     protected $primaryKey = 'id_tema';

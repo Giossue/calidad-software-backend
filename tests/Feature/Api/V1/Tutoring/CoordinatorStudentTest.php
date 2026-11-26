@@ -17,7 +17,7 @@ class CoordinatorStudentTest extends TutoringTestCase
 
         $response->assertOk()
             ->assertJsonPath('data.0.id', $student->getKey())
-            ->assertJsonPath('data.0.name', 'Ana Estudiante');
+            ->assertJsonPath('data.0.name', 'ANA ESTUDIANTE');
     }
 
     public function test_coordinator_can_filter_students_by_career_cycle_and_tutoring_status(): void
@@ -30,11 +30,11 @@ class CoordinatorStudentTest extends TutoringTestCase
         $base = self::API.'/students?career_id='.$this->career->getKey();
 
         $this->actingAs($this->coordinator)->getJson($base.'&tutoring_status=with')
-            ->assertOk()->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.name', 'Con Tutoria');
+            ->assertOk()->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.name', 'CON TUTORIA');
         $this->actingAs($this->coordinator)->getJson($base.'&tutoring_status=without')
-            ->assertOk()->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.name', 'Sin Tutoria');
+            ->assertOk()->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.name', 'SIN TUTORIA');
         $this->actingAs($this->coordinator)->getJson($base.'&cycle_number='.$this->cycle->numero)
-            ->assertOk()->assertJsonPath('data.0.name', 'Con Tutoria')->assertJsonPath('meta.from', 1);
+            ->assertOk()->assertJsonPath('data.0.name', 'CON TUTORIA')->assertJsonPath('meta.from', 1);
         $this->actingAs($this->coordinator)->getJson($base.'&cycle_number='.($this->cycle->numero + 5))
             ->assertOk()->assertJsonPath('meta.total', 0);
         $this->actingAs($this->coordinator)->getJson(self::API.'/students?career_id=999999')->assertForbidden();
@@ -57,7 +57,7 @@ class CoordinatorStudentTest extends TutoringTestCase
         ]);
 
         $response->assertCreated()
-            ->assertJsonPath('data.name', 'Estudiante Nuevo Carlos')
+            ->assertJsonPath('data.name', 'ESTUDIANTE NUEVO CARLOS')
             ->assertJsonPath('data.cycle_id', $this->cycle->getKey())
             ->assertJsonPath('data.cycle_number', $this->cycle->numero)
             ->assertJsonPath('data.tutoring_count', 1);
@@ -100,8 +100,8 @@ class CoordinatorStudentTest extends TutoringTestCase
         $this->assertDatabaseMissing('usuario', ['cedula' => '0926687856']);
 
         $this->actingAs($this->coordinator)->postJson(self::API.'/students', [...$payload, 'first_names' => ' Ana   María', 'last_names' => 'Torres Vera'])
-            ->assertCreated()->assertJsonPath('data.name', 'Torres Vera Ana María');
-        $this->assertDatabaseHas('usuario', ['cedula' => '0926687856', 'nombre' => 'Torres Vera Ana María']);
+            ->assertCreated()->assertJsonPath('data.name', 'TORRES VERA ANA MARÍA');
+        $this->assertDatabaseHas('usuario', ['cedula' => '0926687856', 'nombre' => 'TORRES VERA ANA MARÍA']);
     }
 
     public function test_coordinator_enrolls_a_new_student_with_first_names_and_last_names(): void
@@ -117,8 +117,8 @@ class CoordinatorStudentTest extends TutoringTestCase
         $this->assertDatabaseMissing('usuario', ['cedula' => '0926687856']);
 
         $this->actingAs($this->coordinator)->postJson($url, [...$payload, 'first_names' => 'Ana María', 'last_names' => 'Torres Vera'])
-            ->assertCreated()->assertJsonPath('data.name', 'Torres Vera Ana María');
-        $this->assertDatabaseHas('usuario', ['cedula' => '0926687856', 'nombre' => 'Torres Vera Ana María']);
+            ->assertCreated()->assertJsonPath('data.name', 'TORRES VERA ANA MARÍA');
+        $this->assertDatabaseHas('usuario', ['cedula' => '0926687856', 'nombre' => 'TORRES VERA ANA MARÍA']);
     }
 
     public function test_editing_an_enrolled_student_keeps_the_name_without_names_and_names_go_together(): void
@@ -132,14 +132,14 @@ class CoordinatorStudentTest extends TutoringTestCase
         $this->actingAs($this->coordinator);
 
         $this->patchJson($url, ['phone' => '0992222222'])->assertOk();
-        $this->assertSame(['Torres Vera Ana María', '0992222222'], [$student->refresh()->nombre, $student->telefono]);
+        $this->assertSame(['TORRES VERA ANA MARÍA', '0992222222'], [$student->refresh()->nombre, $student->telefono]);
         $this->patchJson($url, ['first_names' => 'Ana', 'phone' => '0993333333'])->assertUnprocessable()->assertJsonValidationErrors('last_names');
         $this->patchJson($url, ['last_names' => 'Mora', 'phone' => '0993333333'])->assertUnprocessable()->assertJsonValidationErrors('first_names');
         $this->patchJson($url, ['first_names' => 'Ana María José', 'last_names' => 'Mora'])->assertUnprocessable()->assertJsonValidationErrors('first_names');
-        $this->assertSame(['Torres Vera Ana María', '0992222222'], [$student->refresh()->nombre, $student->telefono]);
+        $this->assertSame(['TORRES VERA ANA MARÍA', '0992222222'], [$student->refresh()->nombre, $student->telefono]);
 
         $this->patchJson($url, ['first_names' => 'Ana', 'last_names' => 'Mora', 'phone' => '0992222222'])->assertOk();
-        $this->assertSame('Mora Ana', $student->refresh()->nombre);
+        $this->assertSame('MORA ANA', $student->refresh()->nombre);
     }
 
     public function test_coordinator_can_enroll_and_unenroll_student_in_tutoring(): void
@@ -189,14 +189,14 @@ class CoordinatorStudentTest extends TutoringTestCase
 
         $base = self::API.'/students?career_id='.$this->career->getKey();
         $this->actingAs($this->coordinator)->getJson($base.'&cycle_number=1')->assertOk()
-            ->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.name', 'Primer Ciclo')
+            ->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.name', 'PRIMER CICLO')
             ->assertJsonPath('data.0.cycle_number', 1)->assertJsonPath('data.0.section_name', 'A')
             ->assertJsonPath('data.0.academic_stage', 'tutorias');
         $this->actingAs($this->coordinator)->getJson($base.'&cycle_number=6')->assertOk()
-            ->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.name', 'Segundo Ciclo')
+            ->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.name', 'SEGUNDO CICLO')
             ->assertJsonPath('data.0.academic_stage', 'titulacion');
         $this->actingAs($this->coordinator)->getJson($base.'&without_cycle=1')->assertOk()
-            ->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.name', 'Sin Ciclo');
+            ->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.name', 'SIN CICLO');
         $this->actingAs($this->coordinator)->getJson($base)->assertOk()->assertJsonPath('meta.total', 3);
     }
 
@@ -246,7 +246,7 @@ class CoordinatorStudentTest extends TutoringTestCase
         Usuario::factory()->withRole('estudiante')->create(['nombre' => 'En Tutorias', 'fk_carrera' => $this->career->getKey(), 'fk_ciclo' => $this->cycle->getKey()]);
 
         $this->actingAs($this->coordinator)->getJson('/api/v1/tutoring-coordination/degree-students?career_id='.$this->career->getKey().'&cycle_number=6')->assertOk()
-            ->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.name', 'En Titulacion')
+            ->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.name', 'EN TITULACION')
             ->assertJsonPath('data.0.academic_stage', 'titulacion');
     }
 

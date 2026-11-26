@@ -68,10 +68,10 @@ class MallaStudentsTest extends TutoringTestCase
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $this->oldTutoring->getKey())
             ->assertJsonPath('data.0.malla_id', $this->old->getKey())
-            ->assertJsonPath('data.0.malla_name', 'Malla 2016');
+            ->assertJsonPath('data.0.malla_name', 'MALLA 2016');
         $this->getJson(self::API.'/tutorings?malla_id='.$this->current->getKey())->assertOk()
             ->assertJsonPath('data.*.id', [$this->currentTutoring->getKey()])
-            ->assertJsonPath('data.0.malla_name', 'Malla inicial');
+            ->assertJsonPath('data.0.malla_name', 'MALLA INICIAL');
         $this->getJson(self::API.'/tutorings')->assertOk()->assertJsonCount(2, 'data');
     }
 
@@ -85,9 +85,9 @@ class MallaStudentsTest extends TutoringTestCase
             ->assertJsonPath('meta.total', 1)
             ->assertJsonPath('data.0.id', $beto->getKey())
             ->assertJsonPath('data.0.malla_id', $this->old->getKey())
-            ->assertJsonPath('data.0.malla_name', 'Malla 2016');
+            ->assertJsonPath('data.0.malla_name', 'MALLA 2016');
         $this->getJson(self::API.'/students?career_id='.$this->career->getKey().'&malla_id='.$this->current->getKey())->assertOk()
-            ->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.id', $ana->getKey())->assertJsonPath('data.0.malla_name', 'Malla inicial');
+            ->assertJsonPath('meta.total', 1)->assertJsonPath('data.0.id', $ana->getKey())->assertJsonPath('data.0.malla_name', 'MALLA INICIAL');
         $this->getJson(self::API.'/students?career_id='.$this->career->getKey())->assertOk()->assertJsonPath('meta.total', 2);
     }
 
@@ -114,7 +114,7 @@ class MallaStudentsTest extends TutoringTestCase
         $this->patchJson(self::API."/students/{$student->getKey()}/malla", ['malla_id' => $this->old->getKey()])->assertOk()
             ->assertJsonPath('data.id', $student->getKey())
             ->assertJsonPath('data.malla_id', $this->old->getKey())
-            ->assertJsonPath('data.malla_name', 'Malla 2016');
+            ->assertJsonPath('data.malla_name', 'MALLA 2016');
         $this->assertSame($this->old->getKey(), $student->refresh()->malla_id);
 
         $foreign = $this->currentMalla($this->otherCareer);
@@ -211,7 +211,7 @@ class MallaStudentsTest extends TutoringTestCase
 
         $this->postJson(self::API."/tutorings/{$this->oldTutoring->getKey()}/students", $person('uno@ueb.edu.ec', '0926687856'))->assertCreated();
         $this->postJson(self::API.'/students', [...$person('dos@ueb.edu.ec', '0102030400'), 'cycle_id' => $this->cycle->getKey(), 'tutoring_id' => $this->oldTutoring->getKey()])
-            ->assertCreated()->assertJsonPath('data.malla_id', $this->old->getKey())->assertJsonPath('data.malla_name', 'Malla 2016');
+            ->assertCreated()->assertJsonPath('data.malla_id', $this->old->getKey())->assertJsonPath('data.malla_name', 'MALLA 2016');
         $this->postJson(self::API.'/students', [...$person('tres@ueb.edu.ec', '1710034065'), 'cycle_id' => $this->cycle->getKey()])
             ->assertCreated()->assertJsonPath('data.malla_id', $this->current->getKey());
 
@@ -237,7 +237,7 @@ class MallaStudentsTest extends TutoringTestCase
         $this->assertDatabaseMissing('usuario', ['correo' => 'uno@ueb.edu.ec']);
 
         $this->postJson(self::API.'/students', [...$payload, 'malla_id' => $this->old->getKey()])->assertCreated()
-            ->assertJsonPath('data.malla_id', $this->old->getKey())->assertJsonPath('data.malla_name', 'Malla 2016');
+            ->assertJsonPath('data.malla_id', $this->old->getKey())->assertJsonPath('data.malla_name', 'MALLA 2016');
         $this->assertSame($this->old->getKey(), Usuario::query()->where('correo', 'uno@ueb.edu.ec')->value('malla_id'));
     }
 

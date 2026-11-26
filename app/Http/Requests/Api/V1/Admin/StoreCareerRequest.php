@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Api\V1\Admin;
 
+use App\Http\Requests\Concerns\UppercasesInput;
 use App\Models\Carrera;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
@@ -9,6 +10,13 @@ use Illuminate\Validation\Rule;
 
 class StoreCareerRequest extends FormRequest
 {
+    use UppercasesInput;
+
+    protected function uppercaseFields(): array
+    {
+        return ['name'];
+    }
+
     public function authorize(): bool
     {
         return $this->user()?->can('create', Carrera::class) ?? false;

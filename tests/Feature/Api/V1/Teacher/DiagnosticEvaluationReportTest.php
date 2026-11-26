@@ -23,8 +23,8 @@ class DiagnosticEvaluationReportTest extends TeacherTestCase
         $summary = $this->getJson($this->path('/reports/diagnostic/preview?date=2026-09-15'))->assertOk()->json('data');
 
         $this->assertSame('diagnostic_evaluation', $summary['format']);
-        $this->assertSame('Ciencias', $summary['faculty']);
-        $this->assertSame('Software', $summary['career']);
+        $this->assertSame('CIENCIAS', $summary['faculty']);
+        $this->assertSame('SOFTWARE', $summary['career']);
         $this->assertSame('2026-09-15', $summary['date']);
         $this->assertSame($this->teacher->nombre, $summary['teacher']);
         $this->assertSame(1, $summary['cycle']);

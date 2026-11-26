@@ -170,7 +170,7 @@ class StudentTutoringAttendanceTest extends TestCase
             ->assertJsonPath('data.records.2.present', true)
             ->assertJsonPath('data.records.2.status', 'presente')
             ->assertJsonPath('data.records.2.topics_covered', true)
-            ->assertJsonPath('data.records.2.topics.0.name', 'Métricas de Software ISO 25010');
+            ->assertJsonPath('data.records.2.topics.0.name', 'MÉTRICAS DE SOFTWARE ISO 25010');
     }
 
     public function test_student_receives_zero_sessions_summary_when_no_sessions_recorded_yet(): void

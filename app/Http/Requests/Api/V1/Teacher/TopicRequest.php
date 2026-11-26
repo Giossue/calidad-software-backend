@@ -2,10 +2,18 @@
 
 namespace App\Http\Requests\Api\V1\Teacher;
 
+use App\Http\Requests\Concerns\UppercasesInput;
 use Illuminate\Validation\Rule;
 
 class TopicRequest extends TeacherMutationRequest
 {
+    use UppercasesInput;
+
+    protected function uppercaseFields(): array
+    {
+        return ['name'];
+    }
+
     /** @return array<string, array<int, mixed>> */
     public function rules(): array
     {
