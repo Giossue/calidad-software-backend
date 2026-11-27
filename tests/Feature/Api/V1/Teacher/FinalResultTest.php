@@ -81,6 +81,19 @@ class FinalResultTest extends TeacherTestCase
         $this->putJson($this->resultPath($enrollment), ['result' => InscripcionTutoria::FAILED])->assertOk()->assertJsonPath('data.final_result', 'failed');
     }
 
+    public function test_a_bulk_save_without_new_grades_fixes_the_state_of_students_with_both_partials(): void
+    {
+        $enrollment = $this->enrollment();
+        $pending = $this->enrollment();
+        Nota::query()->create(['fk_inscripcion' => $enrollment->getKey(), 'tipo' => 'partial', 'valor' => 5, 'fecha_registro' => today()]);
+        Nota::query()->create(['fk_inscripcion' => $enrollment->getKey(), 'tipo' => 'partial_two', 'valor' => 6, 'fecha_registro' => today()]);
+        Nota::query()->create(['fk_inscripcion' => $pending->getKey(), 'tipo' => 'partial', 'valor' => 9, 'fecha_registro' => today()]);
+
+        $this->putJson($this->path('/grades'), ['grades' => [['enrollment_id' => $enrollment->getKey()], ['enrollment_id' => $pending->getKey()]]])->assertOk()
+            ->assertJsonPath('data.0.final_result', InscripcionTutoria::FAILED)
+            ->assertJsonPath('data.1.final_result', null);
+    }
+
     public function test_an_approved_student_is_enrolled_in_the_next_tutoring_that_already_exists(): void
     {
         $next = $this->nextTutoring();
