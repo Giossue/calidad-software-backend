@@ -123,7 +123,7 @@ class EnrollmentAndGradeTest extends TeacherTestCase
         $other = $this->createTutoring($this->otherCycle);
         $other->update(['fk_docente' => $this->teacher->getKey()]);
         $second = $this->enrollment($other, $enrollment->estudiante);
-        $this->getJson('/api/v1/teacher/grade-settings')->assertOk()->assertJsonPath('data.maximum', 20);
+        $this->getJson('/api/v1/teacher/grade-settings')->assertOk()->assertJsonPath('data.maximum', 20)->assertJsonPath('data.passing_grade', 7);
         $this->putJson($this->path('/students/'.$enrollment->getKey().'/grades/diagnostic'), ['value' => 15])->assertOk()->assertJsonPath('data.knowledge_group', 'Avanzado');
         $this->assertNull($second->refresh()->knowledgeMetric);
         $this->assertSame($enrollment->getKey(), MetricaConocimiento::query()->first()->enrollment_id);

@@ -44,20 +44,30 @@ class RegisterGrade
                 ]);
             }
 
-            // Con los dos parciales, el resultado final se ajusta solo a lo que indican las notas
-            // (el docente aún puede cambiarlo a mano). Usa el mismo registro que la elección manual,
-            // así el aprobado avanza a la asignatura siguiente y el estudiante recibe el aviso.
             if ($type !== 'diagnostic') {
-                $result = InscripcionTutoria::resultForPartials(
-                    $locked->notas()->where('tipo', 'partial')->orderByDesc('id_nota')->value('valor'),
-                    $locked->notas()->where('tipo', 'partial_two')->orderByDesc('id_nota')->value('valor'),
-                );
-                if ($result !== null && $result !== $locked->final_result) {
-                    $this->enrollments->recordFinalResult($teacher, $tutoring, $locked, $result);
-                }
+                $this->syncFinalResult($teacher, $tutoring, $locked);
             }
 
             return $locked->load(ManageEnrollment::RELATIONS);
         });
+    }
+
+    /**
+     * Con los dos parciales, el resultado final (estado) se ajusta solo a lo que indican las notas.
+     * Usa el mismo registro que la elección manual, así el aprobado avanza a la asignatura siguiente
+     * y el estudiante recibe el aviso. Sin los dos parciales, o si la inscripción no está activa, no cambia nada.
+     */
+    public function syncFinalResult(Usuario $teacher, AsignaturaTutoria $tutoring, InscripcionTutoria $enrollment): void
+    {
+        if (! $enrollment->estado || $enrollment->isAbandoned()) {
+            return;
+        }
+        $result = InscripcionTutoria::resultForPartials(
+            $enrollment->notas()->where('tipo', 'partial')->orderByDesc('id_nota')->value('valor'),
+            $enrollment->notas()->where('tipo', 'partial_two')->orderByDesc('id_nota')->value('valor'),
+        );
+        if ($result !== null && $result !== $enrollment->final_result) {
+            $this->enrollments->recordFinalResult($teacher, $tutoring, $enrollment, $result);
+        }
     }
 }

@@ -9,7 +9,10 @@ use App\Models\Usuario;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
-/** Registra en una sola operación las notas de varios estudiantes: o se guardan todas, o ninguna. */
+/**
+ * Registra en una sola operación las notas de varios estudiantes: o se guardan todas, o ninguna.
+ * Una entrada puede venir sin notas: entonces solo se ajusta el estado del estudiante.
+ */
 class RegisterGrades
 {
     public function __construct(private RegisterGrade $registerGrade) {}
@@ -31,6 +34,9 @@ class RegisterGrades
                         $enrollment = $this->registerGrade->execute($teacher, $tutoring, $enrollment, $type, (string) $entry[$type]);
                     }
                 }
+                // También los que vienen sin notas nuevas: así se corrige el estado de quien ya tenía
+                // los dos parciales antes de que el estado se calculara solo.
+                $this->registerGrade->syncFinalResult($teacher, $tutoring, $enrollment);
                 $updated->push($enrollment->loadMissing(ManageEnrollment::RELATIONS));
             }
 

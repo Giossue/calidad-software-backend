@@ -44,6 +44,6 @@ class TutoringController extends Controller
 
     public function gradeSettings(TeacherListRequest $request): JsonResource
     {
-        return JsonResource::make(['minimum' => config('teaching.grade_min'), 'maximum' => config('teaching.grade_max'), 'groups' => config('teaching.groups')]);
+        return JsonResource::make(['minimum' => config('teaching.grade_min'), 'maximum' => config('teaching.grade_max'), 'passing_grade' => (float) config('teaching.passing_grade', 7), 'groups' => config('teaching.groups')]);
     }
 }
