@@ -136,6 +136,25 @@ class ManageContent
         });
     }
 
+    /** Elimina una actividad registrada por error junto con sus metodologías. */
+    public function deleteActivity(Usuario $teacher, AsignaturaTutoria $tutoring, Tema $topic, Actividad $activity): void
+    {
+        $this->workspace->write($teacher, $tutoring, function () use ($tutoring, $topic, $activity): void {
+            $this->workspace->activity($tutoring, $topic, $activity);
+            $activity->metodologias()->delete();
+            $activity->delete();
+        });
+    }
+
+    /** Elimina una metodología registrada por error. */
+    public function deleteMethodology(Usuario $teacher, AsignaturaTutoria $tutoring, Tema $topic, Actividad $activity, Metodologia $methodology): void
+    {
+        $this->workspace->write($teacher, $tutoring, function () use ($tutoring, $topic, $activity, $methodology): void {
+            $this->workspace->methodology($tutoring, $topic, $activity, $methodology);
+            $methodology->delete();
+        });
+    }
+
     private function active(bool $active): void
     {
         if (! $active) {

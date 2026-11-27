@@ -189,15 +189,18 @@ Route::prefix('v1')->name('api.v1.')->group(function (): void {
             Route::post('tutorings/{tutoring}/topics/{topic}/activities', [TeacherContentController::class, 'storeActivity'])->name('activities.store');
             Route::patch('tutorings/{tutoring}/topics/{topic}/activities/{activity}', [TeacherContentController::class, 'updateActivity'])->name('activities.update');
             Route::patch('tutorings/{tutoring}/topics/{topic}/activities/{activity}/deactivate', [TeacherContentController::class, 'deactivateActivity'])->name('activities.deactivate');
+            Route::delete('tutorings/{tutoring}/topics/{topic}/activities/{activity}', [TeacherContentController::class, 'destroyActivity'])->name('activities.destroy');
             Route::post('tutorings/{tutoring}/topics/{topic}/activities/{activity}/methodologies', [TeacherContentController::class, 'storeMethodology'])->name('methodologies.store');
             Route::patch('tutorings/{tutoring}/topics/{topic}/activities/{activity}/methodologies/{methodology}', [TeacherContentController::class, 'updateMethodology'])->name('methodologies.update');
             Route::patch('tutorings/{tutoring}/topics/{topic}/activities/{activity}/methodologies/{methodology}/deactivate', [TeacherContentController::class, 'deactivateMethodology'])->name('methodologies.deactivate');
+            Route::delete('tutorings/{tutoring}/topics/{topic}/activities/{activity}/methodologies/{methodology}', [TeacherContentController::class, 'destroyMethodology'])->name('methodologies.destroy');
 
             Route::get('tutorings/{tutoring}/sessions', [SessionController::class, 'index'])->name('sessions.index');
             Route::get('tutorings/{tutoring}/attendance', [SessionController::class, 'attendance'])->name('attendance.index');
             Route::get('tutorings/{tutoring}/absence-notices', [SessionController::class, 'absenceNotices'])->name('absence-notices.index');
             Route::put('tutorings/{tutoring}/sessions', [SessionController::class, 'store'])->name('sessions.store');
             Route::patch('tutorings/{tutoring}/sessions/{session}/topics', [SessionController::class, 'updateTopics'])->name('sessions.topics.update');
+            Route::delete('tutorings/{tutoring}/sessions/{session}', [SessionController::class, 'destroy'])->name('sessions.destroy');
             Route::get('tutorings/{tutoring}/reports', [TeacherReportController::class, 'index'])->name('reports.index');
             Route::post('tutorings/{tutoring}/reports', [TeacherReportController::class, 'store'])->name('reports.store');
             Route::get('tutorings/{tutoring}/reports/diagnostic/preview', [TeacherReportController::class, 'previewDiagnostic'])->name('reports.diagnostic.preview');

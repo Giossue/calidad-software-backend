@@ -79,6 +79,13 @@ class ContentController extends Controller
         return ActivityResource::make($action->deactivate($request->user(), $tutoring, $activity)->load('metodologias'));
     }
 
+    public function destroyActivity(TeacherMutationRequest $request, AsignaturaTutoria $tutoring, Tema $topic, Actividad $activity, ManageContent $action): Response
+    {
+        $action->deleteActivity($request->user(), $tutoring, $topic, $activity);
+
+        return response()->noContent();
+    }
+
     public function storeMethodology(MethodologyRequest $request, AsignaturaTutoria $tutoring, Tema $topic, Actividad $activity, ManageContent $action): JsonResponse
     {
         return MethodologyResource::make($action->methodology($request->user(), $tutoring, $topic, $activity, $request->validated()))->response()->setStatusCode(201);
@@ -92,5 +99,12 @@ class ContentController extends Controller
     public function deactivateMethodology(TeacherMutationRequest $request, AsignaturaTutoria $tutoring, Tema $topic, Actividad $activity, Metodologia $methodology, ManageContent $action): MethodologyResource
     {
         return MethodologyResource::make($action->deactivate($request->user(), $tutoring, $methodology));
+    }
+
+    public function destroyMethodology(TeacherMutationRequest $request, AsignaturaTutoria $tutoring, Tema $topic, Actividad $activity, Metodologia $methodology, ManageContent $action): Response
+    {
+        $action->deleteMethodology($request->user(), $tutoring, $topic, $activity, $methodology);
+
+        return response()->noContent();
     }
 }

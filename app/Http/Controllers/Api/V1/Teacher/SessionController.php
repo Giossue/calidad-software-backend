@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api\V1\Teacher;
 
+use App\Actions\Teacher\DeleteSession;
 use App\Actions\Teacher\SaveSession;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\V1\Teacher\SessionRequest;
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
+use Illuminate\Http\Response;
 use Illuminate\Validation\Rule;
 
 class SessionController extends Controller
@@ -63,6 +65,13 @@ class SessionController extends Controller
     public function store(SessionRequest $request, AsignaturaTutoria $tutoring, SaveSession $action): JsonResponse
     {
         return SessionResource::make($action->execute($request->user(), $tutoring, $request->sessionData()))->response()->setStatusCode(200);
+    }
+
+    public function destroy(Request $request, AsignaturaTutoria $tutoring, TutoringSession $session, DeleteSession $action): Response
+    {
+        $action->execute($request->user(), $tutoring, $session);
+
+        return response()->noContent();
     }
 
     public function updateTopics(Request $request, AsignaturaTutoria $tutoring, TutoringSession $session): SessionResource
