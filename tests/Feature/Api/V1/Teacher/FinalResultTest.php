@@ -49,6 +49,38 @@ class FinalResultTest extends TeacherTestCase
         $this->putJson($this->resultPath($enrollment), [])->assertUnprocessable()->assertJsonValidationErrors('result');
     }
 
+    public function test_saving_both_partials_sets_the_final_result_from_their_average(): void
+    {
+        $next = $this->nextTutoring();
+        $enrollment = $this->enrollment();
+        $grade = fn (string $type, string $value) => $this->putJson($this->path("/students/{$enrollment->getKey()}/grades/{$type}"), ['value' => $value])->assertOk();
+
+        // Solo con el primer parcial aún no hay resultado; la diagnóstica no cuenta.
+        $grade('diagnostic', '2.00');
+        $grade('partial', '8.00');
+        $this->assertNull($enrollment->refresh()->final_result);
+
+        // (8 + 8) / 2 = 8 ≥ 7: aprobó y avanza a la tutoría siguiente, como al elegirlo a mano.
+        $grade('partial_two', '8.00')->assertJsonPath('data.final_result', InscripcionTutoria::APPROVED);
+        $this->assertTrue(InscripcionTutoria::query()->where('fk_asig_tutoria', $next->getKey())->where('fk_id_usuario', $enrollment->fk_id_usuario)->exists());
+
+        // Al corregir una nota se ajusta de nuevo: (8 + 5) / 2 = 6.5 < 7.
+        $grade('partial_two', '5.00')->assertJsonPath('data.final_result', InscripcionTutoria::FAILED);
+        $this->assertNotNull($enrollment->refresh()->final_result_at);
+    }
+
+    public function test_bulk_grades_also_adjust_the_final_result_and_the_teacher_can_still_change_it(): void
+    {
+        $enrollment = $this->enrollment();
+        Nota::query()->create(['fk_inscripcion' => $enrollment->getKey(), 'tipo' => 'partial', 'valor' => 6, 'fecha_registro' => today()]);
+        $enrollment->update(['final_result' => InscripcionTutoria::FAILED]);
+
+        $this->putJson($this->path('/grades'), ['grades' => [['enrollment_id' => $enrollment->getKey(), 'partial_two' => '9.00']]])->assertOk()
+            ->assertJsonPath('data.0.final_result', InscripcionTutoria::APPROVED);
+
+        $this->putJson($this->resultPath($enrollment), ['result' => InscripcionTutoria::FAILED])->assertOk()->assertJsonPath('data.final_result', 'failed');
+    }
+
     public function test_an_approved_student_is_enrolled_in_the_next_tutoring_that_already_exists(): void
     {
         $next = $this->nextTutoring();

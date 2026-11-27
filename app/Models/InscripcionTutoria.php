@@ -36,6 +36,19 @@ class InscripcionTutoria extends Model
 
     public const FAILED = 'failed';
 
+    /**
+     * Resultado que corresponde a las notas: promedio de los dos parciales frente a la nota mínima
+     * (la diagnóstica no cuenta). Null mientras falte alguno de los parciales.
+     */
+    public static function resultForPartials(int|float|string|null $partial, int|float|string|null $secondPartial): ?string
+    {
+        if ($partial === null || $secondPartial === null) {
+            return null;
+        }
+
+        return ((float) $partial + (float) $secondPartial) / 2 >= (float) config('teaching.passing_grade', 7) ? self::APPROVED : self::FAILED;
+    }
+
     protected $fillable = [
         'fk_asig_tutoria', 'fk_id_usuario',
         'fecha_inscripcion', 'estado', 'final_result', 'final_result_at',

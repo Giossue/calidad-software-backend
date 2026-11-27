@@ -32,9 +32,8 @@ class EnrollmentResource extends JsonResource
             'is_abandoned' => $this->isAbandoned(),
             'abandoned_at' => $this->abandoned_at?->toIso8601String(),
             'abandonment_reason' => $this->abandonment_reason,
-            // Sugerencia para el docente: promedio de los dos parciales frente a la nota mínima.
-            'suggested_result' => $partial === null || $secondPartial === null ? null
-                : ((((float) $partial + (float) $secondPartial) / 2) >= (float) config('teaching.passing_grade', 7) ? InscripcionTutoria::APPROVED : InscripcionTutoria::FAILED),
+            // Lo que corresponde a las notas: promedio de los dos parciales frente a la nota mínima.
+            'suggested_result' => InscripcionTutoria::resultForPartials($partial, $secondPartial),
             'knowledge_group' => $this->knowledgeMetric?->descripcion,
             'knowledge_group_key' => $this->knowledgeMetric?->rango,
         ];

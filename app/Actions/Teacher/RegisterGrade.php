@@ -13,11 +13,11 @@ use Illuminate\Validation\ValidationException;
 
 class RegisterGrade
 {
-    public function __construct(private TeacherWorkspace $workspace) {}
+    public function __construct(private TeacherWorkspace $workspace, private ManageEnrollment $enrollments) {}
 
     public function execute(Usuario $teacher, AsignaturaTutoria $tutoring, InscripcionTutoria $enrollment, string $type, string $value): InscripcionTutoria
     {
-        return $this->workspace->write($teacher, $tutoring, function () use ($tutoring, $enrollment, $type, $value): InscripcionTutoria {
+        return $this->workspace->write($teacher, $tutoring, function () use ($teacher, $tutoring, $enrollment, $type, $value): InscripcionTutoria {
             $this->workspace->enrollment($tutoring, $enrollment);
             $locked = InscripcionTutoria::query()->whereKey($enrollment->getKey())->lockForUpdate()->firstOrFail();
             if (! $locked->estado || ! $locked->estudiante->estado || ! $locked->estudiante->hasRole('estudiante')) {
@@ -42,6 +42,19 @@ class RegisterGrade
                     'fk_id_usuario' => $locked->fk_id_usuario, 'descripcion' => $group['label'],
                     'rango' => $group['key'], 'nota_minima' => $group['min'], 'nota_maxima' => $group['max'], 'estado' => 'active',
                 ]);
+            }
+
+            // Con los dos parciales, el resultado final se ajusta solo a lo que indican las notas
+            // (el docente aún puede cambiarlo a mano). Usa el mismo registro que la elección manual,
+            // así el aprobado avanza a la asignatura siguiente y el estudiante recibe el aviso.
+            if ($type !== 'diagnostic') {
+                $result = InscripcionTutoria::resultForPartials(
+                    $locked->notas()->where('tipo', 'partial')->orderByDesc('id_nota')->value('valor'),
+                    $locked->notas()->where('tipo', 'partial_two')->orderByDesc('id_nota')->value('valor'),
+                );
+                if ($result !== null && $result !== $locked->final_result) {
+                    $this->enrollments->recordFinalResult($teacher, $tutoring, $locked, $result);
+                }
             }
 
             return $locked->load(ManageEnrollment::RELATIONS);
