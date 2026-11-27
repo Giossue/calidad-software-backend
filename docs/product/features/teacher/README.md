@@ -108,7 +108,16 @@ de coordinación.
    tema registrado por error se borra con **Eliminar tema** (en la pantalla del
    tema, con confirmación): se eliminan sus actividades, metodologías y archivos,
    se quita de las sesiones y una sesión que se queda sin temas deja de marcarlos
-   como vistos (`DELETE /tutorings/{tutoring}/topics/{topic}`, 204).
+   como vistos (`DELETE /tutorings/{tutoring}/topics/{topic}`, 204). Del mismo
+   modo se eliminan una actividad registrada por error, con sus metodologías
+   (`DELETE /tutorings/{tutoring}/topics/{topic}/activities/{activity}`, 204), y
+   una metodología (`DELETE …/activities/{activity}/methodologies/{methodology}`, 204).
+   La lista de sesiones de Contenido ofrece **Editar** (abre su asistencia) y
+   **Eliminar**: una sesión registrada por error se borra con su asistencia y su
+   vínculo con los temas, que se conservan como «sin sesión» y vuelven a calcular
+   si están vistos con las sesiones que les quedan
+   (`DELETE /tutorings/{tutoring}/sessions/{session}`, 204). Nada de esto se
+   permite en una tutoría ajena (404) ni en un período cerrado (403).
 7. En **Asistencia**, elegir en el calendario un día con clase del período,
    hasta hoy. Marcar a cada estudiante presente o ausente (o usar **Marcar
    todos**) y guardar; la sesión se puede corregir durante todo el PAO. Los
@@ -204,7 +213,9 @@ grupo diagnóstico.
 
 ## Historial e integridad
 
-- Inscripciones, temas, actividades y metodologías usan bajas lógicas. Deshabilitar
+- Inscripciones, temas, actividades y metodologías usan bajas lógicas; temas,
+  actividades, metodologías y sesiones registrados por error se pueden además
+  eliminar (ver el paso 6). Deshabilitar
   un padre bloquea nuevos cambios en sus elementos, conservando su consulta.
 - El nombre de un tema es único dentro de su tutoría y el de una actividad dentro
   de su tema, incluidos los registros deshabilitados.
